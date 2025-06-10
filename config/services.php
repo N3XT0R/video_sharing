@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    'sharing' => [
+        'share_interval' => env('SHARE_INTERVAL'),
+        'reminder_interval' => env('REMINDER_INTERVAL'),
+    ],
 ];
