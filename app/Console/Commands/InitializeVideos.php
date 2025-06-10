@@ -21,14 +21,35 @@ class InitializeVideos extends Command
      */
     protected $description = 'initialized new videos';
 
+    protected FileGrabbingService $service;
+
+    public function getService(): FileGrabbingService
+    {
+        return $this->service;
+    }
+
+    public function setService(FileGrabbingService $service): void
+    {
+        $this->service = $service;
+    }
+
     /**
      * Execute the console command.
      */
     public function handle(FileGrabbingService $service): int
     {
+        $this->setService($service);
         $exitCode = self::FAILURE;
 
-
         return $exitCode;
+    }
+
+    protected function unzipNewFiles(): void
+    {
+        $service = $this->getService();
+        $zipFiles = $service->getZipFiles();
+
+        foreach ($zipFiles as $zipFile) {
+        }
     }
 }
