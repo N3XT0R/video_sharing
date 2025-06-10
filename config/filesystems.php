@@ -37,6 +37,14 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        
+        'video' => [
+            'driver' => 'local',
+            'root' => storage_path('app/video'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
 
         'public' => [
             'driver' => 'local',

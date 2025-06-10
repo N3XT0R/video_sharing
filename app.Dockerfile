@@ -1,6 +1,6 @@
 FROM php:8.4-fpm
 RUN apt-get update \
-    && apt-get install -y ghostscript curl libzip-dev zlib1g-dev unzip libpng-dev libjpeg-dev libfreetype6-dev git mariadb-client libmagickwand-dev openssh-client mupdf-tools nfs-client --no-install-recommends
+    && apt-get install -y curl npm libzip-dev zlib1g-dev unzip libpng-dev libjpeg-dev libfreetype6-dev git mariadb-client libmagickwand-dev openssh-client mupdf-tools nfs-client --no-install-recommends
 RUN docker-php-ext-install pdo_mysql zip \
     && pecl install imagick \
     && pecl install xdebug \
