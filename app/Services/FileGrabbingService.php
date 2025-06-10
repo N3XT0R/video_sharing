@@ -63,8 +63,11 @@ class FileGrabbingService
         foreach ($zipFiles as $zipFile) {
             $zipArchive = new \ZipArchive();
             if ($zipArchive->open($disk->path($zipFile))) {
-                $zipArchive->extractTo($disk->path($path));
+                $result = $zipArchive->extractTo($disk->path($path));
                 $zipArchive->close();
+                if (true === $result) {
+                    $disk->delete($zipFile);
+                }
             } else {
                 throw new \RuntimeException('file '.$zipFile.' could not be extracted');
             }
