@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\FileGrabbingService;
 use Illuminate\Console\Command;
 
 class InitializeVideos extends Command
@@ -23,7 +24,7 @@ class InitializeVideos extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(FileGrabbingService $service): int
     {
         $exitCode = self::FAILURE;
 

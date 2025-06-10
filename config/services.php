@@ -35,6 +35,7 @@ return [
         ],
     ],
     'sharing' => [
+        'storage' => env('VIDEO_DS', 'video'),
         'share_interval' => env('SHARE_INTERVAL'),
         'reminder_interval' => env('REMINDER_INTERVAL'),
     ],
