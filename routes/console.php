@@ -36,3 +36,7 @@ Schedule::command('notify:offers')
 
 Schedule::command('previews:generate')
     ->everyThirtyMinutes();
+
+// Dropbox Refresh Token regelmäßig aktualisieren
+Schedule::command('dropbox:refresh-token')
+    ->everyMinute();

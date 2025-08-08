@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\Config;
 
 class DropboxController extends Controller
 {
@@ -44,10 +43,7 @@ class DropboxController extends Controller
     }
 
     /**
-     * Empfängt den Code, tauscht ihn gegen Tokens und speichert den refresh_token.
-     * Speichern:
-     *  - standardmäßig nur in der Response anzeigen,
-     *  - ODER automatisch in .env schreiben, wenn services.dropbox.save_to_env=true.
+     * Empfängt den Code, tauscht ihn gegen Tokens und speichert den refresh_token in der Datenbank.
      */
     public function callback(Request $request)
     {
@@ -76,78 +72,23 @@ class DropboxController extends Controller
         $accessToken = $resp['access_token'] ?? null;
         $expiresIn = $resp['expires_in'] ?? null;
 
-        // Optional: automatisch in .env schreiben
-        $savedToEnv = false;
-        if ($refreshToken && config('services.dropbox.save_to_env', false)) {
-            $savedToEnv = $this->writeEnvValue('DROPBOX_REFRESH_TOKEN', $refreshToken);
-
-            // Config neu laden (wirksam ab nächstem Request)
-            try {
-                Artisan::call('config:clear');
-                Artisan::call('config:cache');
-            } catch (\Throwable $e) {
-                // non-fatal; z. B. in lokalen Setups ohne Cache ok
-            }
+        if ($refreshToken) {
+            Config::updateOrCreate(
+                ['key' => 'dropbox_refresh_token'],
+                ['value' => $refreshToken]
+            );
         }
 
         return response()->json([
             'status' => 'ok',
             'message' => $refreshToken
-                ? ($savedToEnv ? 'Refresh Token gespeichert (env). App neu laden.' : 'Refresh Token erhalten. In .env eintragen.')
+                ? 'Refresh Token gespeichert. App neu laden.'
                 : 'Kein refresh_token erhalten (prüfe token_access_type=offline & Scopes).',
-            'save_these_to_env' => [
-                'DROPBOX_REFRESH_TOKEN' => $refreshToken,
-            ],
             'access_token_preview' => $accessToken ? substr($accessToken, 0, 12).'…' : null,
             'access_token_expires_in' => $expiresIn,
-            'saved_to_env' => $savedToEnv,
             'redirect_uri_used' => $redirect,
             'note' => 'Stelle sicher, dass die Redirect-URI exakt in der Dropbox-App hinterlegt ist.',
             'raw' => config('app.debug') ? $resp : null, // nur im Debug sinnvoll
         ]);
-    }
-
-    /**
-     * Hilfsfunktion: setzt/ersetzt einen Key in der .env.
-     * Gibt true zurück, wenn Schreiben erfolgreich war.
-     */
-    protected function writeEnvValue(string $key, string $value): bool
-    {
-        $envPath = base_path('.env');
-
-        try {
-            if (!File::exists($envPath) || !File::isWritable($envPath)) {
-                return false;
-            }
-
-            $content = File::get($envPath);
-            $line = $key.'='.$this->escapeEnvValue($value);
-
-            if (preg_match('/^'.preg_quote($key, '/').'=.*/m', $content)) {
-                $content = preg_replace('/^'.preg_quote($key, '/').'=.*/m', $line, $content);
-            } else {
-                $content = rtrim($content).PHP_EOL.$line.PHP_EOL;
-            }
-
-            File::put($envPath, $content);
-            return true;
-        } catch (\Throwable $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Einfache Escapes für Werte mit Leerzeichen/sonderzeichen.
-     */
-    protected function escapeEnvValue(string $value): string
-    {
-        // Wenn der Wert Sonderzeichen/Spaces enthält, in doppelte Anführungszeichen packen
-        if (preg_match('/\s|"|\'|#|=/', $value)) {
-            // Vorhandene Doppeltquotes escapen
-            $value = str_replace('"', '\"', $value);
-            return "\"{$value}\"";
-        }
-
-        return $value;
     }
 }

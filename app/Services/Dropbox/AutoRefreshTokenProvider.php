@@ -5,13 +5,14 @@ namespace App\Services\Dropbox;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Spatie\Dropbox\TokenProvider;
+use App\Models\Config;
 
 class AutoRefreshTokenProvider implements TokenProvider
 {
     public function __construct(
         private string $clientId,
         private string $clientSecret,
-        private string $refreshToken,
+        private ?string $refreshToken,
         private string $cacheKey = 'dropbox.access_token'
     ) {
     }
@@ -20,6 +21,10 @@ class AutoRefreshTokenProvider implements TokenProvider
     {
         if ($token = Cache::get($this->cacheKey)) {
             return $token;
+        }
+
+        if (!$this->refreshToken) {
+            throw new \RuntimeException('Dropbox: Kein Refresh Token konfiguriert.');
         }
 
         $resp = Http::asForm()->post('https://api.dropboxapi.com/oauth2/token', [
@@ -34,6 +39,14 @@ class AutoRefreshTokenProvider implements TokenProvider
 
         if (!$token) {
             throw new \RuntimeException('Dropbox: Kein access_token in Token-Response.');
+        }
+
+        if (!empty($resp['refresh_token']) && $resp['refresh_token'] !== $this->refreshToken) {
+            $this->refreshToken = $resp['refresh_token'];
+            Config::updateOrCreate(
+                ['key' => 'dropbox_refresh_token'],
+                ['value' => $this->refreshToken]
+            );
         }
 
         Cache::put($this->cacheKey, $token, now()->addSeconds($ttl));
