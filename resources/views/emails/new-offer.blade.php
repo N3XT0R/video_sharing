@@ -17,6 +17,8 @@
     Dieser Link ist gültig bis **{{ $expires_at->format('d.m.Y H:i') }}**.
     Danach werden die Dateien automatisch aus unserem System entfernt.
 
+    [Du willst doch Videos nicht verwenden? Sei so fair und teil es mit, damit andere Kanäle profitieren können]({{ $unusedUrl }})
+
     Viele Grüße
     {{ config('app.name') }}
 @endcomponent

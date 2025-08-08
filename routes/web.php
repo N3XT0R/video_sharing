@@ -11,5 +11,7 @@ Route::get('/', function () {
 
 Route::get('/offer/{batch}/{channel}', [OfferController::class, 'show'])->name('offer.show');
 Route::post('/offer/{batch}/{channel}/zip', [OfferController::class, 'zipSelected'])->name('offer.zip.selected');
+Route::get('/offer/{batch}/{channel}/unused', [OfferController::class, 'showUnused'])->name('offer.unused.show');
+Route::post('/offer/{batch}/{channel}/unused', [OfferController::class, 'storeUnused'])->name('offer.unused.store');
 
 Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])->name('assignments.download');
