@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class IngestScan extends Command
 {
+    const MAX_AMOUNT = 5;
     protected $signature = 'ingest:scan 
         {--inbox=/srv/ingest/pending : Wurzelordner der Uploads (rekursiv)} 
         {--disk= : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
@@ -56,7 +57,7 @@ class IngestScan extends Command
                 $bytes = filesize($path);
 
                 // Duplicate? -> lokale Datei löschen und weiter
-                if (Video::where('hash', $hash)->exists()) {
+                if (Video::query()->where('hash', $hash)->exists()) {
                     @unlink($path);
                     $dupCount++;
                     continue;
