@@ -24,12 +24,12 @@ class AssignmentService
     /**
      * Prepare an assignment for download and return a temporary URL.
      */
-    public function prepareDownload(Assignment $assignment): string
+    public function prepareDownload(Assignment $assignment, int $ttlHours = 144): string
     {
         $plain = Str::random(40);
         $expiry = $assignment->expires_at
-            ? min($assignment->expires_at, now()->addDays(6))
-            : now()->addDays(6);
+            ? min($assignment->expires_at, now()->addHours($ttlHours))
+            : now()->addHours($ttlHours);
 
         if ($assignment->status === 'queued') {
             $assignment->status = 'notified';
