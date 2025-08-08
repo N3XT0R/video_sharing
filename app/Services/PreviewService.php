@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Video;
 use Illuminate\Console\OutputStyle;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
@@ -37,13 +38,11 @@ final class PreviewService
 
         $duration = $end - $start;
         $sourceDisk = Storage::disk($video->disk ?? 'local');
-
         if (!$sourceDisk->exists($video->path)) {
             $this->error("Quelldatei nicht gefunden: disk={$video->disk} path={$video->path}");
             return null;
         }
 
-        $srcPath = $sourceDisk->path($video->path);
         $previewDisk = Storage::disk('public');
         $previewPath = $this->buildPath($video, $start, $end);
 
@@ -53,10 +52,20 @@ final class PreviewService
             return $previewDisk->url($previewPath);
         }
 
+        // Quelle auf lokalen Pfad auflösen (lokal: path(); remote: readStream -> Tempfile)
+        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $video->path);
+        if ($srcPath === null) {
+            $this->error('Konnte Quelle nicht für ffmpeg bereitstellen.');
+            return null;
+        }
+
         // ffmpeg ausführen
         $tmpOut = $this->makeTempFile('.mp4');
         if ($tmpOut === null) {
             $this->error('Konnte temporäre Datei nicht anlegen.');
+            if ($isTempSrc) {
+                @unlink($srcPath);
+            }
             return null;
         }
 
@@ -70,28 +79,33 @@ final class PreviewService
         $this->info("Erzeuge Preview: start={$start}s, end={$end}s, duration={$duration}s");
         $this->debug('ffmpeg args: '.json_encode($args, JSON_UNESCAPED_SLASHES));
 
-        $ok = $this->runFfmpeg($args, $elapsedSec);
-        if (!$ok || !is_file($tmpOut)) {
-            $this->error('ffmpeg fehlgeschlagen'.($elapsedSec !== null ? ' (t='.number_format($elapsedSec,
-                        2).'s)' : ''));
+        try {
+            $ok = $this->runFfmpeg($args, $elapsedSec);
+            if (!$ok || !is_file($tmpOut)) {
+                $this->error('ffmpeg fehlgeschlagen'.($elapsedSec !== null ? ' (t='.number_format($elapsedSec,
+                            2).'s)' : ''));
+                return null;
+            }
+
+            // Ergebnis in public speichern
+            $size = @filesize($tmpOut) ?: 0;
+            $put = $this->putFileToDisk($previewDisk, $previewPath, $tmpOut);
+            if (!$put) {
+                $this->error("Konnte Preview nicht in public speichern: {$previewPath}");
+                return null;
+            }
+
+            $this->info("Preview erstellt: {$previewPath} (".$this->humanBytes($size).($elapsedSec !== null ? ', t='.number_format($elapsedSec,
+                        2).'s' : '').')');
+
+            return $previewDisk->url($previewPath);
+        } finally {
+            // Cleanup temporärer Dateien
             @unlink($tmpOut);
-            return null;
+            if ($isTempSrc) {
+                @unlink($srcPath);
+            }
         }
-
-        // Ergebnis in public speichern
-        $size = @filesize($tmpOut) ?: 0;
-        $put = $this->putFileToDisk($previewDisk, $previewPath, $tmpOut);
-        @unlink($tmpOut);
-
-        if (!$put) {
-            $this->error("Konnte Preview nicht in public speichern: {$previewPath}");
-            return null;
-        }
-
-        $this->info("Preview erstellt: {$previewPath} (".$this->humanBytes($size).($elapsedSec !== null ? ', t='.number_format($elapsedSec,
-                    2).'s' : '').')');
-
-        return $previewDisk->url($previewPath);
     }
 
     /**
@@ -122,6 +136,64 @@ final class PreviewService
     {
         $hash = md5($video->id.'_'.$start.'_'.$end);
         return "previews/{$hash}.mp4";
+    }
+
+    /**
+     * Auflösung einer Disk-Resource auf einen lokalen lesbaren Pfad:
+     *  - lokale Disks: ->path($relative)
+     *  - Remote-Disks (Dropbox etc.): readStream() -> temporäre Datei
+     *
+     * @return array{0:?string,1:bool} [localPath|null, isTemp]
+     */
+    private function resolveLocalSourcePath(FilesystemAdapter $disk, string $relativePath): array
+    {
+        // 1) Versuch: native path()-Auflösung (nur lokale Disks)
+        try {
+            $path = $disk->path($relativePath); // kann bei Remote-Disks Exception werfen
+            if (is_string($path) && $path !== '' && is_file($path)) {
+                return [$path, false];
+            }
+        } catch (\Throwable $e) {
+            // fällt durch auf Remote-Handling
+            $this->debug('Disk path() nicht verfügbar: '.$e->getMessage());
+        }
+
+        // 2) Remote-Handling: Datei streamen und lokal puffern
+        $stream = $disk->readStream($relativePath);
+        if ($stream === false) {
+            $this->error("readStream fehlgeschlagen: {$relativePath}");
+            return [null, false];
+        }
+
+        $tmp = $this->makeTempFile('.src');
+        if ($tmp === null) {
+            fclose($stream);
+            $this->error('Konnte Tempdatei für Source nicht anlegen.');
+            return [null, false];
+        }
+
+        $out = @fopen($tmp, 'wb');
+        if ($out === false) {
+            fclose($stream);
+            @unlink($tmp);
+            $this->error('Konnte Tempdatei nicht öffnen (write).');
+            return [null, false];
+        }
+
+        try {
+            while (!feof($stream)) {
+                $buf = fread($stream, 1024 * 1024);
+                if ($buf === false) {
+                    break;
+                }
+                fwrite($out, $buf);
+            }
+        } finally {
+            fclose($stream);
+            fclose($out);
+        }
+
+        return [$tmp, true];
     }
 
     /**
@@ -218,7 +290,7 @@ final class PreviewService
     /**
      * Speichert eine lokale Datei in einen Laravel-Disk-Pfad.
      */
-    private function putFileToDisk($disk, string $dstPath, string $localFile): bool
+    private function putFileToDisk(FilesystemAdapter $disk, string $dstPath, string $localFile): bool
     {
         $stream = @fopen($localFile, 'rb');
         if ($stream === false) {
