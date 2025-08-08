@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\{Batch, Video};
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\{Log, Storage};
 use RuntimeException;
 use Spatie\Dropbox\Client as DropboxClient;
@@ -13,6 +14,14 @@ use Throwable;
 class IngestScanner
 {
     private const ALLOWED_EXTENSIONS = ['mp4', 'mov', 'mkv', 'avi', 'm4v', 'webm'];
+
+
+    protected OutputStyle $outputStyle;
+
+    public function setOutput(OutputStyle $outputStyle): void
+    {
+        $this->outputStyle = $outputStyle;
+    }
 
     /**
      * Scan an inbox recursively and ingest new videos.

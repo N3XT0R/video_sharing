@@ -24,10 +24,12 @@ class IngestScan extends Command
 
     public function handle(): int
     {
-        $inbox = rtrim((string) $this->option('inbox'), '/');
-        $diskName = (string) ($this->option('disk') ?: config('files.video_disk', env('FILES_VIDEOS_DISK', 'dropbox')));
+        $inbox = rtrim((string)$this->option('inbox'), '/');
+        $diskName = (string)($this->option('disk') ?: config('files.video_disk', env('FILES_VIDEOS_DISK', 'dropbox')));
         $this->info('started...');
 
+        $output = $this->getOutput();
+        $this->scanner->setOutput($output);
         try {
             $stats = $this->scanner->scan($inbox, $diskName);
             $this->info("Ingest done. new={$stats['new']} dups={$stats['dups']} err={$stats['err']} disk={$diskName}");
