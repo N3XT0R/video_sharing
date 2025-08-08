@@ -10,6 +10,7 @@ return new class extends Migration {
         Schema::create('channels', function (Blueprint $t) {
             $t->id();
             $t->string('name')->unique();
+            $t->string('creator_name');
             $t->string('email')->unique();
             $t->unsignedInteger('weight')->default(1); // für gewichtete RR
             $t->unsignedInteger('weekly_quota')->default(5);

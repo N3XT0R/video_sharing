@@ -1,7 +1,7 @@
 @component('mail::message')
     # Neue Videos verfügbar
 
-    Hallo {{ $channel->name }},
+    Hallo {{ $channel->creator_name }} ({{ $channel->name }}),
 
     für dich stehen neue Dashcam-Aufnahmen bereit (Batch #{{ $batch->id }}).
 
