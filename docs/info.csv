@@ -1,0 +1,5 @@
+filename(Genauer Dateiname im Ordner);start(MM:SS oder leer);end(MM:SS oder leer);note(Freitext/Anmerkung);bundle(Gemeinsame ID für zusammenhängende Videos);role(F=Front,R=Rear,etc.);submitted_by(Einsender/Quelle)
+windschatten_sprit_sparen.MP4;00:00;00:21;;; ;Max
+teenies_schlafen_an_der_ampel_F.MP4;00:50;01:25;;bndl001;F;Musterline
+teenies_schlafen_an_der_ampel_R.MP4;00:50;01:25;;bndl001;R;Max
+verkehrsinsel_überfahren.MP4;00:36;00:45;Gilt die abgeflachte Verkehrsinsel nicht auch als Sperrzone?;;;Musterline
