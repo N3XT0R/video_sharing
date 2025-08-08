@@ -100,7 +100,7 @@
 </head>
 <body>
 <div class="card">
-    <h1>Mini‑Game: Sammle die Clips</h1>
+    <h1>Mini-Game: Sammle die Clips</h1>
     <p>
         Steuere den <strong>blauen Kreis</strong> mit <strong>Pfeiltasten</strong> oder <strong>WASD</strong>.
         Sammle <span class="dot" style="background:var(--good)"></span><strong>grüne Clips</strong> für Punkte.
@@ -125,6 +125,12 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // === KONFIGURATION ===
+    const INITIAL_PLAYER_SPEED = 500;   // Spieler-Startgeschwindigkeit in px/s
+    const SPEED_INCREMENT = 20;         // Zuwachs pro Clip
+    const SPEED_CAP = 900;               // Max. Geschwindigkeit Spieler
+    const INITIAL_ENEMY_SPEED = 200;    // Gegner-Startgeschwindigkeit in px/s
+
     // HUD
     const scoreEl = document.getElementById('score');
     const timeEl = document.getElementById('time');
@@ -138,17 +144,16 @@
 
     // Game state
     const W = canvas.width, H = canvas.height;
-    const player = {x: W / 2, y: H / 2, r: 12, speed: 24};
+    const player = {x: W / 2, y: H / 2, r: 12, speed: INITIAL_PLAYER_SPEED};
     let inputs = {up: false, down: false, left: false, right: false};
-    let clips = [];               // collectibles
-    let enemy = {x: 80, y: 70, r: 12, dx: 1.8, dy: 1.6};
+    let clips = [];
+    let enemy = {x: 80, y: 70, r: 12, dx: INITIAL_ENEMY_SPEED, dy: INITIAL_ENEMY_SPEED};
     let score = 0;
-    let timeLeft = 90;            // seconds
+    let timeLeft = 90; // seconds
     let running = true;
     let lastTime = 0;
     let spawnTimer = 0;
 
-    // Helpers
     function clamp(v, min, max) {
         return Math.max(min, Math.min(max, v));
     }
@@ -172,9 +177,14 @@
     function reset() {
         player.x = W / 2;
         player.y = H / 2;
-        player.r = 12;
-        player.speed = 24;
-        enemy = {x: rand(40, W - 40), y: rand(40, H - 40), r: 12, dx: 1.8, dy: 1.6};
+        player.speed = INITIAL_PLAYER_SPEED;
+        enemy = {
+            x: rand(40, W - 40),
+            y: rand(40, H - 40),
+            r: 12,
+            dx: INITIAL_ENEMY_SPEED * (Math.random() > 0.5 ? 1 : -1),
+            dy: INITIAL_ENEMY_SPEED * (Math.random() > 0.5 ? 1 : -1)
+        };
         clips = [];
         for (let i = 0; i < 6; i++) spawnClip();
         score = 0;
@@ -188,14 +198,10 @@
 
     // Input
     const keyMap = {
-        'ArrowUp': 'up',
-        'KeyW': 'up',
-        'ArrowDown': 'down',
-        'KeyS': 'down',
-        'ArrowLeft': 'left',
-        'KeyA': 'left',
-        'ArrowRight': 'right',
-        'KeyD': 'right'
+        'ArrowUp': 'up', 'KeyW': 'up',
+        'ArrowDown': 'down', 'KeyS': 'down',
+        'ArrowLeft': 'left', 'KeyA': 'left',
+        'ArrowRight': 'right', 'KeyD': 'right'
     };
     addEventListener('keydown', e => {
         const k = keyMap[e.code];
@@ -215,7 +221,8 @@
 
     function update(dt) {
         if (!running) return;
-        // Timer
+
+        // Timer & Spawn
         spawnTimer += dt;
         if (spawnTimer > 0.7) {
             spawnClip();
@@ -240,12 +247,12 @@
             vx /= len;
             vy /= len;
         }
-        player.x = clamp(player.x + vx * player.speed * 60 * dt / 16.67, player.r, W - player.r);
-        player.y = clamp(player.y + vy * player.speed * 60 * dt / 16.67, player.r, H - player.r);
+        player.x = clamp(player.x + vx * player.speed * dt, player.r, W - player.r);
+        player.y = clamp(player.y + vy * player.speed * dt, player.r, H - player.r);
 
-        // Enemy bounce
-        enemy.x += enemy.dx * 60 * dt / 16.67;
-        enemy.y += enemy.dy * 60 * dt / 16.67;
+        // Move enemy
+        enemy.x += enemy.dx * dt;
+        enemy.y += enemy.dy * dt;
         if (enemy.x - enemy.r < 0 || enemy.x + enemy.r > W) enemy.dx *= -1;
         if (enemy.y - enemy.r < 0 || enemy.y + enemy.r > H) enemy.dy *= -1;
 
@@ -256,7 +263,7 @@
                 clips.splice(i, 1);
                 score++;
                 scoreEl.textContent = score;
-                if (player.speed < 4.2) player.speed += 0.05;
+                player.speed = Math.min(player.speed + SPEED_INCREMENT, SPEED_CAP);
             }
         }
         if (dist(player.x, player.y, enemy.x, enemy.y) < player.r + enemy.r) {
@@ -318,12 +325,12 @@
             ctx.textAlign = 'center';
             ctx.fillText('Game Over', W / 2, H / 2 - 8);
             ctx.font = '14px Inter, sans-serif';
-            ctx.fillText(`Score: ${score} · Best: ${best}  —  Drücke \"Neu starten\"`, W / 2, H / 2 + 18);
+            ctx.fillText(`Score: ${score} · Best: ${best}  —  Drücke "Neu starten"`, W / 2, H / 2 + 18);
         }
     }
 
     function loop(ts) {
-        const dt = Math.min(0.05, (ts - lastTime) / 1000 || 0); // clamp dt
+        const dt = (ts - lastTime) / 1000 || 0;
         lastTime = ts;
         update(dt);
         draw();
