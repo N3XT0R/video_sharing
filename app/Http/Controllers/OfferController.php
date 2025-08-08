@@ -6,8 +6,6 @@ use App\Models\{Assignment, Batch, Channel};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use ZipStream\Option\Archive as ZipOptions;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
@@ -22,7 +20,6 @@ class OfferController extends Controller
             ->whereIn('status', ['queued', 'notified'])
             ->get();
 
-        // Frische (kanalspezifische) Download-Links erzeugen
         foreach ($items as $a) {
             $plain = Str::random(40);
             $expiry = $a->expires_at ? min($a->expires_at, now()->addDays(6)) : now()->addDays(6);
@@ -31,7 +28,6 @@ class OfferController extends Controller
                 $a->status = 'notified';
                 $a->last_notified_at = now();
             }
-
             $a->download_token = hash('sha256', $plain);
             $a->expires_at = $expiry;
             $a->save();
@@ -63,46 +59,28 @@ class OfferController extends Controller
 
         abort_if($items->isEmpty(), 404);
 
-        $filename = sprintf('videos_%s_%s.zip', $batch->id, Str::slug($channel->name));
+        // Wichtig: Vor ZipStream KEINE Ausgabe erzeugen!
+        $filename = sprintf('videos_%s_%s.zip', $batch->id, \Str::slug($channel->name));
+        $zip = new ZipStream($filename); // v3.2 sendet die nötigen Header selbst
 
-        $response = new StreamedResponse(function () use ($items, $filename) {
-            // ZipStream v3.2 – Optionen setzen
-            $opt = new ZipOptions();
-            $opt->setSendHttpHeaders(false);                // Header kommen von Symfony
-            $opt->setOutputStream(fopen('php://output', 'wb'));
-            $opt->setFlushOutput(true);                     // sofortiges Flushing erlaubt
-            // $opt->setEnableZip64(true);                  // optional, falls >4GB Gesamtgröße möglich
-
-            $zip = new ZipStream($filename, $opt);
-
-            foreach ($items as $a) {
-                $rel = $a->video->path;
-                if (!Storage::exists($rel)) {
-                    continue;
-                }
-                $stream = Storage::readStream($rel);
-                if (!is_resource($stream)) {
-                    continue;
-                }
-
-                // Dateiname im ZIP: <hash>.<ext>
-                $nameInZip = basename($rel);
-                $zip->addFileFromStream($nameInZip, $stream);
-
-                fclose($stream);
+        foreach ($items as $a) {
+            $rel = $a->video->path;
+            if (!Storage::exists($rel)) {
+                continue;
             }
 
-            $zip->finish(); // wichtig: schließt das Archiv sauber ab
-        });
+            $stream = Storage::readStream($rel);
+            if (!is_resource($stream)) {
+                continue;
+            }
 
-        // Header selbst setzen (da ZipStream sie nicht sendet)
-        $response->headers->set('Content-Type', 'application/zip');
-        $response->headers->set(
-            'Content-Disposition',
-            'attachment; filename="'.$filename.'"'
-        );
-        // Kein Content-Length, weil gestreamt wird (chunked)
+            $zip->addFileFromStream(basename($rel), $stream);
+            fclose($stream);
+        }
 
-        return $response;
+        $zip->finish(); // schließt den Stream + sendet Footer
+        // ZipStream hat bereits alles an den Client geschickt.
+        // Laravel erwartet eine Response – gib "leer" zurück, ohne noch Inhalte zu senden:
+        return response()->noContent();
     }
 }
