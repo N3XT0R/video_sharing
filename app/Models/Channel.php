@@ -6,10 +6,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Video extends Model
+class Channel extends Model
 {
-    protected $fillable = ['hash', 'ext', 'bytes', 'path', 'meta'];
-    protected $casts = ['meta' => 'array'];
+    protected $fillable = ['name', 'email', 'weight', 'weekly_quota'];
 
     public function assignments()
     {
