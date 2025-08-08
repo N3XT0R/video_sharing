@@ -6,6 +6,7 @@ use App\Models\{Batch, Channel};
 use App\Services\AssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Storage, URL};
+use Illuminate\Support\Str;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
@@ -42,7 +43,7 @@ class OfferController extends Controller
 
         abort_if($items->isEmpty(), 404);
 
-        $filename = sprintf('videos_%s_%s.zip', $batch->id, \Str::slug($channel->name));
+        $filename = sprintf('videos_%s_%s.zip', $batch->id, Str::slug($channel->name));
         $zip = new ZipStream($filename);
 
         foreach ($items as $a) {
