@@ -22,6 +22,12 @@ final class PreviewService
         $this->output = $outputStyle;
     }
 
+    private function normalizeRelative(string $p): string
+    {
+        // Dropbox/Flysystem erwartet relative Pfade
+        return ltrim($p, '/');
+    }
+
     public function generate(Video $video, int $start, int $end): ?string
     {
         if (!$this->isValidRange($start, $end)) {
@@ -32,9 +38,10 @@ final class PreviewService
         $duration = $end - $start;
         /** @var FilesystemContract $sourceDisk */
         $sourceDisk = Storage::disk($video->disk ?? 'local');
+        $relPath = $this->normalizeRelative($video->path);
 
-        if (!$sourceDisk->exists($video->path)) {
-            $this->error("Quelldatei nicht gefunden: disk={$video->disk} path={$video->path}");
+        if (!$sourceDisk->exists($relPath)) {
+            $this->error("Quelldatei nicht gefunden: disk={$video->disk} path={$relPath}");
             return null;
         }
 
@@ -49,7 +56,7 @@ final class PreviewService
         }
 
         // Quelle -> lokaler Pfad (lokal: path(); remote: readStream -> Tempfile)
-        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $video->path);
+        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
         if ($srcPath === null) {
             $this->error('Konnte Quelle nicht für ffmpeg bereitstellen.');
             return null;
