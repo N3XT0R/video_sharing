@@ -120,6 +120,7 @@ class InfoImporter
         }
 
         fclose($fh);
+        @unlink($csvPath);
 
         return ['created' => $createdCount, 'updated' => $updatedCount, 'warnings' => $warningCount];
     }
