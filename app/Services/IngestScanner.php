@@ -7,8 +7,9 @@ namespace App\Services;
 use App\Models\Batch;
 use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
+use App\Services\PreviewService;
+use App\Services\InfoImporter;
 use Illuminate\Console\OutputStyle;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -30,7 +31,7 @@ final class IngestScanner
 
     private ?OutputStyle $output = null;
 
-    public function __construct(private PreviewService $previews)
+    public function __construct(private PreviewService $previews, private InfoImporter $infoImporter)
     {
     }
 
@@ -274,36 +275,41 @@ final class IngestScanner
 
     private function maybeImportCsvForDirectory(string $dirPath): void
     {
-        $hasCsv = $this->directoryContainsCsv($dirPath);
-        if (!$hasCsv) {
-            return;
-        }
-
-        // Artisan-Call isolieren; Fehler nicht killen lassen
-        try {
-            Artisan::call('info:import', ['--dir' => $dirPath, '--keep-csv' => 0]);
-        } catch (Throwable $e) {
-            Log::warning('info:import fehlgeschlagen', [
-                'dir' => $dirPath,
-                'e' => $e->getMessage(),
-            ]);
-            $this->log("Warnung: info:import für {$dirPath} fehlgeschlagen ({$e->getMessage()})");
+        $csvFiles = $this->findCsvFiles($dirPath);
+        foreach ($csvFiles as $csv) {
+            try {
+                $result = $this->infoImporter->import($csv);
+                if (($result['warnings'] ?? 0) === 0) {
+                    @unlink($csv);
+                }
+            } catch (Throwable $e) {
+                Log::warning('info:import fehlgeschlagen', [
+                    'dir' => $dirPath,
+                    'csv' => $csv,
+                    'e' => $e->getMessage(),
+                ]);
+                $this->log("Warnung: info:import für {$dirPath} fehlgeschlagen ({$e->getMessage()})");
+            }
         }
     }
 
-    private function directoryContainsCsv(string $dirPath): bool
+    /**
+     * @return string[]
+     */
+    private function findCsvFiles(string $dirPath): array
     {
+        $files = [];
         try {
             foreach (new \DirectoryIterator($dirPath) as $f) {
                 if ($f->isFile() && preg_match(self::CSV_REGEX, $f->getFilename())) {
-                    return true;
+                    $files[] = $f->getPathname();
                 }
             }
         } catch (\UnexpectedValueException) {
             // nicht lesbar -> behandeln wie "keine CSV"
         }
 
-        return false;
+        return $files;
     }
 
     private function makeRecursiveIterator(string $baseDir): \RecursiveIteratorIterator
