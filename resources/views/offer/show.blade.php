@@ -1,22 +1,18 @@
-@php use Illuminate\Support\Facades\URL; @endphp
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.app')
 
 @section('title', 'Angebot – '.$channel->name)
 @section('subtitle', 'Batch #'.$batch->id)
 
 @section('actions')
-    {{-- Actions-Leiste oben rechts (optional leer lassen, wir haben unten die Formular-Buttons) --}}
+    {{-- optional --}}
 @endsection
 
 @section('content')
     @php
-        // signierte POST-URL für "Auswahl als ZIP"
-        $zipPostUrl = URL::temporarySignedRoute(
-          'offer.zip.selected',
-          now()->addHours(6),
-          ['batch' => $batch->id, 'channel' => $channel->id]
-        );
-
         // nach bundle_key gruppieren (Fallback "Einzeln")
         $byBundle = $items->groupBy(function($a){
           $firstClip = optional($a->video->clips->first());
@@ -24,7 +20,6 @@
         });
     @endphp
 
-    {{-- Fehleranzeige --}}
     @if ($errors->any())
         <div class="panel flash--err" style="margin-bottom:16px;">
             <strong>Es gab ein Problem:</strong>
@@ -56,14 +51,20 @@
                                         {{ $v->original_name ?: basename($v->path) }}
                                     </div>
 
-                                    {{-- Thumb oder Inline-Preview --}}
-                                    @if(data_get($v->meta,'thumb') && \Illuminate\Support\Facades\Storage::exists(data_get($v->meta,'thumb')))
+                                    {{-- Thumb (optional eigener Disk in meta) oder Inline-Preview --}}
+                                    @php
+                                        $thumbPath = data_get($v->meta,'thumb');
+                                        $thumbDisk = data_get($v->meta,'thumb_disk','local'); // falls du Thumbs lokal ablegst
+                                    @endphp
+                                    @if($thumbPath && Storage::disk($thumbDisk)->exists($thumbPath))
                                         <img class="thumb"
-                                             src="{{ \Illuminate\Support\Facades\Storage::url(data_get($v->meta,'thumb')) }}"
+                                             src="{{ Storage::disk($thumbDisk)->url($thumbPath) }}"
                                              alt="Vorschaubild"
                                              style="width:100%;height:auto;border-radius:10px;background:#0e1116;">
                                     @else
-                                        <video class="thumb" src="{{ $a->temp_url }}" preload="metadata"
+                                        <video class="thumb"
+                                               src="{{ $a->temp_url }}"
+                                               preload="metadata"
                                                style="width:100%;height:auto;border-radius:10px;background:#0e1116;"
                                                controls playsinline></video>
                                     @endif
@@ -102,7 +103,7 @@
                                         </button>
                                     </div>
 
-                                    {{-- zweite, große Vorschau (optional) --}}
+                                    {{-- größere Vorschau (optional) --}}
                                     <div class="inline-preview" style="display:none; margin-top:8px;">
                                         <video controls preload="metadata" style="width:100%; border-radius:10px;">
                                             <source src="{{ $a->temp_url }}" type="video/mp4"/>

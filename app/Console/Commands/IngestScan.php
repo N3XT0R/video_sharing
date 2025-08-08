@@ -1,34 +1,39 @@
 <?php
 // app/Console/Commands/IngestScan.php
+
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
-use App\Models\Video;
-use App\Services\IngestScanner;
+use App\Models\{Batch, Video};
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 class IngestScan extends Command
 {
-    protected $signature = 'ingest:scan {--inbox=/srv/ingest/inbox}';
-    protected $description = 'Scannt Inbox, dedupe per SHA-256, verschiebt content-addressiert in storage.';
+    protected $signature = 'ingest:scan 
+        {--inbox=/srv/ingest/inbox : Wurzelordner der Uploads (rekursiv)} 
+        {--disk= : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
 
-    public function __construct(private IngestScanner $scanner)
-    {
-        parent::__construct();
-    }
+    protected $description = 'Scannt Inbox rekursiv, dedupe per SHA-256, verschiebt content-addressiert auf konfiguriertes Storage.';
 
-    // ...
     public function handle(): int
     {
-        $inbox = rtrim($this->option('inbox'), '/');
-        $batch = Batch::create(['type' => 'ingest', 'started_at' => now()]);
+        $inbox = rtrim((string)$this->option('inbox'), '/');
+        $diskName = (string)($this->option('disk') ?: config('files.video_disk', env('FILES_VIDEOS_DISK', 'dropbox')));
+        $disk = Storage::disk($diskName);
+
         if (!is_dir($inbox)) {
-            $this->error("Inbox $inbox fehlt");
+            $this->error("Inbox fehlt: {$inbox}");
             return 1;
         }
 
+        $batch = Batch::create(['type' => 'ingest', 'started_at' => now()]);
+
         $allowed = ['mp4', 'mov', 'mkv', 'avi', 'm4v', 'webm'];
-        $cntNew = $cntDup = 0;
+        $cntNew = 0;
+        $cntDup = 0;
+        $cntErr = 0;
 
         $it = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($inbox, \FilesystemIterator::SKIP_DOTS),
@@ -43,39 +48,65 @@ class IngestScan extends Command
             $ext = strtolower($fileInfo->getExtension());
             if (!in_array($ext, $allowed, true)) {
                 continue;
-            } // CSV etc. ignorieren
+            } // CSV, TXT etc. ignorieren
 
             try {
+                // Hash & Bytes von der lokalen Quelle ermitteln
                 $hash = hash_file('sha256', $path);
+                $bytes = filesize($path);
+
+                // Duplicate? -> lokale Datei löschen und weiter
                 if (Video::where('hash', $hash)->exists()) {
-                    unlink($path);
+                    @unlink($path);
                     $cntDup++;
                     continue;
                 }
 
+                // Content-addressierter Zielpfad
                 $sub = substr($hash, 0, 2).'/'.substr($hash, 2, 2);
-                $dstRel = "videos/$sub/$hash".($ext ? ".$ext" : "");
-                Storage::makeDirectory("videos/$sub");
-                rename($path, Storage::path($dstRel));
+                $dstRel = "videos/{$sub}/{$hash}".($ext ? ".{$ext}" : '');
 
+                // Upload als Stream (Cloud-kompatibel), dann Quelle löschen
+                $read = fopen($path, 'rb');
+                if ($read === false) {
+                    throw new \RuntimeException("Konnte Quelle nicht öffnen: {$path}");
+                }
+
+                // Für Cloud-Disks kein makeDirectory nötig
+                $disk->put($dstRel, $read);
+                if (is_resource($read)) {
+                    fclose($read);
+                }
+                @unlink($path);
+
+                // DB-Eintrag
                 Video::query()->create([
                     'hash' => $hash,
                     'ext' => $ext,
-                    'bytes' => filesize(Storage::path($dstRel)),
+                    'bytes' => $bytes,
                     'path' => $dstRel,
+                    'disk' => $diskName,
                     'meta' => null,
-                    // Nur der **Dateiname** ist relevant für CSV-Matching, nicht der Ordner
-                    'original_name' => basename($fileInfo->getFilename()),
+                    'original_name' => $fileInfo->getFilename(), // nur Dateiname, Ordner egal
                 ]);
+
                 $cntNew++;
+
+                // OPTIONAL: Thumbnails/Metadaten lokal generieren (ffprobe/ffmpeg)
+                // -> wenn gewünscht, hier per Queue/Job nachschieben.
+
             } catch (\Throwable $e) {
                 $this->error($e->getMessage());
+                $cntErr++;
             }
         }
 
-        $batch->update(['finished_at' => now(), 'stats' => ['new' => $cntNew, 'dups' => $cntDup]]);
-        $this->info("Ingest done. new=$cntNew dups=$cntDup");
+        $batch->update([
+            'finished_at' => now(),
+            'stats' => ['new' => $cntNew, 'dups' => $cntDup, 'err' => $cntErr, 'disk' => $diskName],
+        ]);
+
+        $this->info("Ingest done. new={$cntNew} dups={$cntDup} err={$cntErr} disk={$diskName}");
         return 0;
     }
-
 }

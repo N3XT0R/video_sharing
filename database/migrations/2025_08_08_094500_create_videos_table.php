@@ -13,6 +13,7 @@ return new class extends Migration {
             $t->string('ext', 8)->nullable();
             $t->unsignedBigInteger('bytes')->nullable();
             $t->string('path'); // storage relative path
+            $t->string('disk', 32)->default('local');
             $t->json('meta')->nullable(); // optional: duration, codec
             $t->timestamps();
         });

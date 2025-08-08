@@ -39,8 +39,6 @@ class OfferController extends Controller
             'batch' => $batch,
             'channel' => $channel,
             'items' => $items,
-            // Falls du irgendwo noch den alten GET-Button nutzt, kannst du zipUrl weglassen.
-            // Ich lasse ihn raus und gebe nur die POST-URL an die View weiter.
             'zipPostUrl' => $zipPostUrl,
         ]);
     }
@@ -127,16 +125,21 @@ class OfferController extends Controller
 
             // Videos hinzufügen, dann Flags setzen + Download loggen
             foreach ($items as $a) {
-                $rel = $a->video->path;
-                if (!Storage::exists($rel)) {
+                $v = $a->video;
+
+                // >>> WICHTIG: korrektes Storage pro Video nutzen (z. B. dropbox)
+                $disk = Storage::disk($v->disk ?? 'local');
+
+                if (!$disk->exists($v->path)) {
                     continue;
                 }
-                $s = Storage::readStream($rel);
+
+                $s = $disk->readStream($v->path);
                 if (!is_resource($s)) {
                     continue;
                 }
 
-                $nameInZip = $a->video->original_name ?: basename($rel);
+                $nameInZip = $v->original_name ?: basename($v->path);
                 $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
 
                 $zip->addFileFromStream($nameInZip, $s);
