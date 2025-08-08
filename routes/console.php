@@ -9,8 +9,8 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('weekly:run')
-    ->sundays()
-    ->at('23:00');
+    ->fridays()
+    ->at('19:00');
 
 // CSV-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('info:import --inbox=/srv/ingest/pending')
