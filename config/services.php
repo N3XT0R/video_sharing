@@ -43,6 +43,5 @@ return [
         'client_id' => env('DROPBOX_CLIENT_ID'),
         'client_secret' => env('DROPBOX_CLIENT_SECRET'),
         'scopes' => 'files.content.write files.content.read',
-        'save_to_env' => env('DROPBOX_SAVE_TO_ENV', false),
     ],
 ];
