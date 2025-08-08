@@ -85,6 +85,53 @@ class OfferController extends Controller
         return response()->noContent();
     }
 
+    public function showUnused(Request $req, Batch $batch, Channel $channel)
+    {
+        $this->ensureValidSignature($req);
+
+        $items = Assignment::with('video')
+            ->where('batch_id', $batch->id)
+            ->where('channel_id', $channel->id)
+            ->where('status', 'picked_up')
+            ->get();
+
+        $postUrl = URL::temporarySignedRoute(
+            'offer.unused.store',
+            now()->addHours(6),
+            ['batch' => $batch->id, 'channel' => $channel->id]
+        );
+
+        return view('offer.unused', compact('batch', 'channel', 'items', 'postUrl'));
+    }
+
+    public function storeUnused(Request $req, Batch $batch, Channel $channel)
+    {
+        $this->ensureValidSignature($req);
+
+        $ids = collect($req->input('assignment_ids', []))
+            ->filter(fn ($v) => ctype_digit((string) $v))
+            ->map('intval')
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
+        }
+
+        Assignment::query()
+            ->where('batch_id', $batch->id)
+            ->where('channel_id', $channel->id)
+            ->whereIn('id', $ids)
+            ->where('status', 'picked_up')
+            ->update([
+                'status' => 'queued',
+                'download_token' => null,
+                'expires_at' => null,
+                'last_notified_at' => null,
+            ]);
+
+        return back()->with('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
+    }
+
     private function ensureValidSignature(Request $req): void
     {
         abort_unless($req->hasValidSignature(), 403);

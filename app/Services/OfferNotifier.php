@@ -41,8 +41,14 @@ class OfferNotifier
                 ['batch' => $assignBatch->id, 'channel' => $channel->id]
             );
 
+            $unusedUrl = URL::temporarySignedRoute(
+                'offer.unused.show',
+                now()->addDays($ttlDays),
+                ['batch' => $assignBatch->id, 'channel' => $channel->id]
+            );
+
             Mail::to($channel->email)->queue(
-                new NewOfferMail($assignBatch, $channel, $offerUrl, now()->addDays($ttlDays))
+                new NewOfferMail($assignBatch, $channel, $offerUrl, now()->addDays($ttlDays), $unusedUrl)
             );
             $sent++;
         }
