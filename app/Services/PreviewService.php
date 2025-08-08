@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Video;
 use App\Models\Clip;
+use App\Models\Video;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +14,8 @@ use Symfony\Component\Process\Process;
 
 final class PreviewService
 {
+    private const MAX_FFMPEG_TIMEOUT = 3600.0; // seconds
+
     private ?OutputStyle $output = null;
 
     // ───────────────────────── public API ─────────────────────────
@@ -26,8 +28,9 @@ final class PreviewService
     public function generateForClip(Clip $clip): ?string
     {
         $video = $clip->video;
-        if (!$video) {
+        if (! $video) {
             $this->warn('Clip ohne zugehöriges Video.');
+
             return null;
         }
 
@@ -36,6 +39,7 @@ final class PreviewService
 
         if ($start === null || $end === null) {
             $this->warn("Clip {$clip->id} hat keinen gültigen Zeitbereich.");
+
             return null;
         }
 
@@ -44,8 +48,9 @@ final class PreviewService
 
     public function generate(Video $video, int $start, int $end): ?string
     {
-        if (!$this->isValidRange($start, $end)) {
+        if (! $this->isValidRange($start, $end)) {
             $this->warn("Ungültiger Zeitbereich: start={$start}, end={$end}");
+
             return null;
         }
 
@@ -61,6 +66,7 @@ final class PreviewService
 
         if ($previewDisk->exists($previewPath)) {
             $this->info("Preview vorhanden (Cache): {$previewPath}");
+
             return $previewDisk->url($previewPath);
         }
 
@@ -68,6 +74,7 @@ final class PreviewService
         [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
         if ($srcPath === null) {
             $this->error("Quelldatei nicht lesbar: disk={$video->disk} path={$relPath}");
+
             return null;
         }
 
@@ -78,6 +85,7 @@ final class PreviewService
             if ($isTempSrc) {
                 @unlink($srcPath);
             }
+
             return null;
         }
 
@@ -93,22 +101,24 @@ final class PreviewService
 
         try {
             $ok = $this->runFfmpeg($args, $elapsedSec);
-            if (!$ok || !is_file($tmpOut)) {
+            if (! $ok || ! is_file($tmpOut)) {
                 $this->error('ffmpeg fehlgeschlagen'.($elapsedSec !== null ? ' (t='.number_format($elapsedSec,
-                            2).'s)' : ''));
+                    2).'s)' : ''));
+
                 return null;
             }
 
             // Ergebnis speichern
             $size = @filesize($tmpOut) ?: 0;
             $put = $this->putFileToDisk($previewDisk, $previewPath, $tmpOut);
-            if (!$put) {
+            if (! $put) {
                 $this->error("Konnte Preview nicht in public speichern: {$previewPath}");
+
                 return null;
             }
 
             $this->info("Preview erstellt: {$previewPath} (".$this->humanBytes($size).($elapsedSec !== null ? ', t='.number_format($elapsedSec,
-                        2).'s' : '').')');
+                2).'s' : '').')');
 
             return $previewDisk->url($previewPath);
         } finally {
@@ -121,7 +131,7 @@ final class PreviewService
 
     public function url(Video $video, int $start, int $end): ?string
     {
-        if (!$this->isValidRange($start, $end)) {
+        if (! $this->isValidRange($start, $end)) {
             return null;
         }
 
@@ -147,6 +157,7 @@ final class PreviewService
     private function buildPath(Video $video, int $start, int $end): string
     {
         $hash = md5($video->id.'_'.$start.'_'.$end);
+
         return "previews/{$hash}.mp4";
     }
 
@@ -186,6 +197,7 @@ final class PreviewService
             if ($tmp === null) {
                 @fclose($stream);
                 $this->error('Konnte Tempdatei für Source nicht anlegen.');
+
                 return [null, false];
             }
 
@@ -194,6 +206,7 @@ final class PreviewService
                 @fclose($stream);
                 @unlink($tmp);
                 $this->error('Konnte Tempdatei nicht öffnen (write).');
+
                 return [null, false];
             }
 
@@ -219,15 +232,18 @@ final class PreviewService
             $tmp = $this->makeTempFile('.src');
             if ($tmp === null) {
                 $this->error('Konnte Tempdatei für Source (get) nicht anlegen.');
+
                 return [null, false];
             }
             $bytes = @file_put_contents($tmp, $contents);
             if ($bytes === false) {
                 @unlink($tmp);
                 $this->error('Konnte Tempdatei (get) nicht schreiben.');
+
                 return [null, false];
             }
             $this->info("Quelle über get() geladen: {$relativePath} (".$this->humanBytes($bytes).')');
+
             return [$tmp, true];
         }
 
@@ -239,27 +255,27 @@ final class PreviewService
      */
     private function makeFfmpegArgs(string $srcPath, string $dstPath, int $start, int $duration): array
     {
-        $ffmpeg = (string)config('services.ffmpeg.bin', 'ffmpeg');
-        $crf = (int)config('services.ffmpeg.crf', 28);
-        $preset = (string)config('services.ffmpeg.preset', 'veryfast');
-        $extra = (array)config('services.ffmpeg.video_args', []); // z. B. ['-vf','scale=-2:720']
+        $ffmpeg = (string) config('services.ffmpeg.bin', 'ffmpeg');
+        $crf = (int) config('services.ffmpeg.crf', 28);
+        $preset = (string) config('services.ffmpeg.preset', 'veryfast');
+        $extra = (array) config('services.ffmpeg.video_args', []); // z. B. ['-vf','scale=-2:720']
 
         $args = [
             $ffmpeg,
             '-y',
             '-ss',
-            (string)$start,
+            (string) $start,
             '-i',
             $srcPath,
             '-t',
-            (string)$duration,
+            (string) $duration,
             '-an',
             '-vcodec',
             'libx264',
             '-preset',
             $preset,
             '-crf',
-            (string)$crf,
+            (string) $crf,
         ];
 
         if ($extra) {
@@ -278,17 +294,16 @@ final class PreviewService
      */
     private function runFfmpeg(array $args, ?float &$elapsedSec = null): bool
     {
-        $timeout = config('services.ffmpeg.timeout');
+        $timeout = (float) config('services.ffmpeg.timeout', self::MAX_FFMPEG_TIMEOUT);
+        $timeout = min($timeout, self::MAX_FFMPEG_TIMEOUT);
         $idle = config('services.ffmpeg.idle_timeout');
 
         $t0 = microtime(true);
 
         $process = new Process($args);
-        if ($timeout !== null) {
-            $process->setTimeout((float)$timeout);
-        }
+        $process->setTimeout($timeout);
         if ($idle !== null && method_exists($process, 'setIdleTimeout')) {
-            $process->setIdleTimeout((float)$idle);
+            $process->setIdleTimeout((float) $idle);
         }
 
         $process->run(function (string $type, string $buffer): void {
@@ -308,7 +323,7 @@ final class PreviewService
 
         $this->error(sprintf(
             'ffmpeg exit=%s (%s)',
-            (string)$process->getExitCode(),
+            (string) $process->getExitCode(),
             $process->getExitCodeText() ?: 'unknown'
         ));
         $this->debug("stdout tail:\n".$this->tailLines($process->getOutput(), 10));
@@ -320,13 +335,14 @@ final class PreviewService
     private function putFileToDisk(FilesystemContract $disk, string $dstPath, string $localFile): bool
     {
         $stream = @fopen($localFile, 'rb');
-        if (!is_resource($stream)) {
+        if (! is_resource($stream)) {
             $this->error("Konnte lokale Datei nicht öffnen: {$localFile}");
+
             return false;
         }
 
         try {
-            return (bool)$disk->put($dstPath, $stream);
+            return (bool) $disk->put($dstPath, $stream);
         } finally {
             if (is_resource($stream)) {
                 @fclose($stream);
@@ -343,8 +359,10 @@ final class PreviewService
         if ($suffix !== '') {
             $renamed = $tmp.$suffix;
             @rename($tmp, $renamed);
+
             return $renamed;
         }
+
         return $tmp;
     }
 
@@ -376,6 +394,7 @@ final class PreviewService
     private function tailLines(string $text, int $n): string
     {
         $lines = preg_split('/\R/', $text) ?: [];
+
         return implode(PHP_EOL, array_slice($lines, -$n));
     }
 
@@ -387,6 +406,7 @@ final class PreviewService
             $bytes /= 1024;
             $i++;
         }
+
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 }
