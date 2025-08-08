@@ -51,6 +51,12 @@ class DropboxController extends Controller
      */
     public function callback(Request $request)
     {
+        // State prüfen
+        $expected = $request->session()->pull('dropbox_oauth_state');
+        if (!$expected || $request->string('state') !== $expected) {
+            abort(Response::HTTP_FORBIDDEN, 'Invalid state');
+        }
+
         if (!$request->filled('code')) {
             abort(Response::HTTP_BAD_REQUEST, 'Kein Code erhalten');
         }
