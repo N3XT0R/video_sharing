@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipStream\Option\Archive as ZipOptions;
@@ -23,33 +22,32 @@ class OfferController extends Controller
             ->whereIn('status', ['queued', 'notified'])
             ->get();
 
+        // Frische (kanalspezifische) Download-Links erzeugen
         foreach ($items as $a) {
-            if ($a->status === 'queued') {
-                $plain = Str::random(40);
-                $a->download_token = hash('sha256', $plain);
-                $a->expires_at = now()->addDays(6);
-                $a->last_notified_at = now();
-                $a->status = 'notified';
-                $a->save();
+            $plain = Str::random(40);
+            $expiry = $a->expires_at ? min($a->expires_at, now()->addDays(6)) : now()->addDays(6);
 
-                $a->temp_url = URL::temporarySignedRoute(
-                    'assignments.download', $a->expires_at, ['assignment' => $a->id, 't' => $plain]
-                );
-            } else {
-                $a->temp_url = URL::temporarySignedRoute(
-                    'assignments.download', $a->expires_at, ['assignment' => $a->id, 't' => 'reuse']
-                );
+            if ($a->status === 'queued') {
+                $a->status = 'notified';
+                $a->last_notified_at = now();
             }
+
+            $a->download_token = hash('sha256', $plain);
+            $a->expires_at = $expiry;
+            $a->save();
+
+            $a->temp_url = URL::temporarySignedRoute(
+                'assignments.download', $expiry, ['assignment' => $a->id, 't' => $plain]
+            );
         }
 
         return view('offer.show', [
             'batch' => $batch,
             'channel' => $channel,
             'items' => $items,
-            'zipUrl' => URL::temporarySignedRoute('offer.zip', now()->addHours(6), [
-                'batch' => $batch->id,
-                'channel' => $channel->id
-            ]),
+            'zipUrl' => URL::temporarySignedRoute(
+                'offer.zip', now()->addHours(6), ['batch' => $batch->id, 'channel' => $channel->id]
+            ),
         ]);
     }
 
@@ -63,33 +61,48 @@ class OfferController extends Controller
             ->whereIn('status', ['queued', 'notified'])
             ->get();
 
-        if ($items->isEmpty()) {
-            abort(404);
-        }
+        abort_if($items->isEmpty(), 404);
 
         $filename = sprintf('videos_%s_%s.zip', $batch->id, Str::slug($channel->name));
+
         $response = new StreamedResponse(function () use ($items, $filename) {
+            // ZipStream v3.2 – Optionen setzen
             $opt = new ZipOptions();
-            $opt->setSendHttpHeaders(false);
+            $opt->setSendHttpHeaders(false);                // Header kommen von Symfony
+            $opt->setOutputStream(fopen('php://output', 'wb'));
+            $opt->setFlushOutput(true);                     // sofortiges Flushing erlaubt
+            // $opt->setEnableZip64(true);                  // optional, falls >4GB Gesamtgröße möglich
+
             $zip = new ZipStream($filename, $opt);
 
             foreach ($items as $a) {
-                $path = $a->video->path;
-                if (!Storage::exists($path)) {
+                $rel = $a->video->path;
+                if (!Storage::exists($rel)) {
                     continue;
                 }
-                $stream = Storage::readStream($path);
-                $zip->addFileFromStream(basename($path), $stream);
-                if (is_resource($stream)) {
-                    fclose($stream);
+                $stream = Storage::readStream($rel);
+                if (!is_resource($stream)) {
+                    continue;
                 }
+
+                // Dateiname im ZIP: <hash>.<ext>
+                $nameInZip = basename($rel);
+                $zip->addFileFromStream($nameInZip, $stream);
+
+                fclose($stream);
             }
 
-            $zip->finish();
+            $zip->finish(); // wichtig: schließt das Archiv sauber ab
         });
 
+        // Header selbst setzen (da ZipStream sie nicht sendet)
         $response->headers->set('Content-Type', 'application/zip');
-        $response->headers->set('Content-Disposition', 'attachment; filename="'.$filename.'"');
+        $response->headers->set(
+            'Content-Disposition',
+            'attachment; filename="'.$filename.'"'
+        );
+        // Kein Content-Length, weil gestreamt wird (chunked)
+
         return $response;
     }
 }
