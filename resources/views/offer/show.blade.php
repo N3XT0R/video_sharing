@@ -63,7 +63,7 @@
                                              style="width:100%;height:auto;border-radius:10px;background:#0e1116;">
                                     @else
                                         <video class="thumb"
-                                               src="{{ $a->temp_url }}"
+                                               src="{{ $a->preview_url }}"
                                                preload="metadata"
                                                style="width:100%;height:auto;border-radius:10px;background:#0e1116;"
                                                controls playsinline></video>
@@ -106,7 +106,7 @@
                                     {{-- größere Vorschau (optional) --}}
                                     <div class="inline-preview" style="display:none; margin-top:8px;">
                                         <video controls preload="metadata" style="width:100%; border-radius:10px;">
-                                            <source src="{{ $a->temp_url }}" type="video/mp4"/>
+                                            <source src="{{ $a->preview_url }}" type="video/mp4"/>
                                             Dein Browser unterstützt das Video-Tag nicht.
                                         </video>
                                     </div>
