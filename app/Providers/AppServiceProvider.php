@@ -40,14 +40,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Storage::extend('dropbox', function ($app, $config) {
-            $client = new DropboxClient($config['authorization_token']);
-            $root = $config['root'] ?? '';
+            $client = new DropboxClient(app(AutoRefreshTokenProvider::class));
+            $root = (string)($config['root'] ?? '');
             $adapter = new DropboxAdapter($client, $root);
 
-            // Flysystem-Instanz
             $filesystem = new Filesystem($adapter);
 
-            // WICHTIG: Laravel-Adapter zurückgeben, nicht $filesystem!
+            // Für Laravel 11/12 funktioniert diese Signatur:
             return new FilesystemAdapter($filesystem, $adapter, $config);
         });
     }

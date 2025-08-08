@@ -40,6 +40,7 @@ final class PreviewService
 
         $previewDisk = Storage::disk('public');
         $previewPath = $this->buildPath($video, $start, $end);
+        $sourceDisk->files();
 
         // Cache-Hit
         if ($previewDisk->exists($previewPath)) {
