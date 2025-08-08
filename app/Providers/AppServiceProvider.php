@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Services\Dropbox\AutoRefreshTokenProvider;
 use App\Models\Config;
+use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
             $cfg = config('filesystems.disks.dropbox');
             $refresh = null;
             try {
-                $refresh = Config::firstWhere('key', 'dropbox_refresh_token')?->value;
+                $refresh = Config::query()->firstWhere('key', 'dropbox_refresh_token')?->value;
             } catch (\Throwable $e) {
                 // Table möglicherweise noch nicht migriert
             }

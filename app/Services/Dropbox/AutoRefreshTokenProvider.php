@@ -2,10 +2,10 @@
 
 namespace App\Services\Dropbox;
 
+use App\Models\Config;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Spatie\Dropbox\TokenProvider;
-use App\Models\Config;
 
 class AutoRefreshTokenProvider implements TokenProvider
 {
@@ -43,7 +43,7 @@ class AutoRefreshTokenProvider implements TokenProvider
 
         if (!empty($resp['refresh_token']) && $resp['refresh_token'] !== $this->refreshToken) {
             $this->refreshToken = $resp['refresh_token'];
-            Config::updateOrCreate(
+            Config::query()->updateOrCreate(
                 ['key' => 'dropbox_refresh_token'],
                 ['value' => $this->refreshToken]
             );

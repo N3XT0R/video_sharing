@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Config;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
-use App\Models\Config;
 
 class DropboxController extends Controller
 {
@@ -79,7 +79,7 @@ class DropboxController extends Controller
         $expiresIn = $resp['expires_in'] ?? null;
 
         if ($refreshToken) {
-            Config::updateOrCreate(
+            Config::query()->updateOrCreate(
                 ['key' => 'dropbox_refresh_token'],
                 ['value' => $refreshToken]
             );
