@@ -16,9 +16,9 @@ class IngestScanner
     private const ALLOWED_EXTENSIONS = ['mp4', 'mov', 'mkv', 'avi', 'm4v', 'webm'];
 
 
-    protected OutputStyle $outputStyle;
+    protected ?OutputStyle $outputStyle = null;
 
-    public function setOutput(OutputStyle $outputStyle): void
+    public function setOutput(?OutputStyle $outputStyle = null): void
     {
         $this->outputStyle = $outputStyle;
     }
