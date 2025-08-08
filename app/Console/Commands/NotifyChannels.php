@@ -19,9 +19,9 @@ class NotifyChannels extends Command
     public function handle(): int
     {
         $ttl = (int)$this->option('ttl-hours');
-        $batch = Batch::create(['type' => 'notify', 'started_at' => now()]);
+        $batch = Batch::query()->create(['type' => 'notify', 'started_at' => now()]);
 
-        $groups = Assignment::where('status', 'queued')
+        $groups = Assignment::query()->where('status', 'queued')
             ->with(['channel', 'video'])
             ->get()
             ->groupBy('channel_id');

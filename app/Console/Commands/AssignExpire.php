@@ -15,17 +15,18 @@ class AssignExpire extends Command
     public function handle(): int
     {
         $cooldownDays = (int)$this->option('cooldown-days');
-        $batch = Batch::create([
+        $batch = Batch::query()->create([
             'type' => 'assign',
             'started_at' => now()
         ]); // protokolliere als Teil eines Assign-Zyklus
         $cnt = 0;
-        Assignment::where('status', 'notified')
+        
+        Assignment::query()->where('status', 'notified')
             ->where('expires_at', '<', now())
             ->chunkById(500, function ($items) use (&$cnt, $cooldownDays) {
                 foreach ($items as $a) {
                     $a->update(['status' => 'expired']);
-                    ChannelVideoBlock::updateOrCreate(
+                    ChannelVideoBlock::query()->updateOrCreate(
                         ['channel_id' => $a->channel_id, 'video_id' => $a->video_id],
                         ['until' => now()->addDays($cooldownDays)]
                     );

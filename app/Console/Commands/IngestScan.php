@@ -16,7 +16,7 @@ class IngestScan extends Command
     public function handle(): int
     {
         $inbox = $this->option('inbox');
-        $batch = Batch::create(['type' => 'ingest', 'started_at' => now()]);
+        $batch = Batch::query()->create(['type' => 'ingest', 'started_at' => now()]);
         if (!is_dir($inbox)) {
             $this->error("Inbox $inbox fehlt");
             return 1;
@@ -30,7 +30,7 @@ class IngestScan extends Command
             try {
                 $hash = hash_file('sha256', $src);
                 $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
-                if (Video::where('hash', $hash)->exists()) {
+                if (Video::query()->where('hash', $hash)->exists()) {
                     unlink($src);
                     $cntDup++;
                     continue;
@@ -41,7 +41,7 @@ class IngestScan extends Command
                 Storage::makeDirectory("videos/$sub");
                 rename($src, Storage::path($dstRel));
 
-                Video::create([
+                Video::query()->create([
                     'hash' => $hash,
                     'ext' => $ext,
                     'bytes' => filesize(Storage::path($dstRel)),
