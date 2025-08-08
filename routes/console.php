@@ -14,6 +14,13 @@ Schedule::command('weekly:run')
     ->fridays()
     ->at('19:00');
 
+
+// video-Import aus Upload-Ordner – alle 30 Minuten
+Schedule::command('ingest:scan', [
+    '--inbox' => '/srv/ingest/pending/',
+])->everyThirtyMinutes()
+    ->emailOutputTo($email);
+
 // CSV-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('info:import', [
     '--inbox' => '/srv/ingest/pending/',
