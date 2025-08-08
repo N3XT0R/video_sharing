@@ -31,6 +31,9 @@ class IngestScanner
             try {
                 $hash = hash_file('sha256', $src);
                 $ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
+                $orig = basename($src); // Original-Name aus der Inbox
+
+
                 if (Video::query()->where('hash', $hash)->exists()) {
                     unlink($src);
                     $cntDup++;
@@ -48,6 +51,7 @@ class IngestScanner
                     'bytes' => filesize(Storage::path($dstRel)),
                     'path' => $dstRel,
                     'meta' => null,
+                    'original_name' => $orig,
                 ]);
                 $cntNew++;
             } catch (\Throwable $e) {

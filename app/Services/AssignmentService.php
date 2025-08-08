@@ -14,10 +14,11 @@ class AssignmentService
      */
     public function fetchPending(Batch $batch, Channel $channel): Collection
     {
-        return Assignment::with('video')
-            ->where('batch_id', $batch->id)
-            ->where('channel_id', $channel->id)
+        return Assignment::with(['video.clips']) // wichtig für ZIP + Offer-View
+        ->where('batch_id', $batch->getKey())
+            ->where('channel_id', $channel->getKey())
             ->whereIn('status', ['queued', 'notified'])
+            ->orderBy('id')
             ->get();
     }
 

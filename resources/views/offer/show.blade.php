@@ -1,108 +1,56 @@
-<?php
+@extends('layouts.app')
 
-use Illuminate\Support\Facades\Storage;
+@section('title', 'Angebot – '.$channel->name)
+@section('subtitle', 'Batch #'.$batch->id)
 
-?>
+@section('actions')
+    <a class="btn" href="{{ $zipUrl }}">Alles als ZIP</a>
+@endsection
 
-        <!doctype html>
-<html lang="de">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Angebot – {{ $channel->name }}</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu;
-            max-width: 1100px;
-            margin: 20px auto;
-            padding: 0 16px
-        }
+@section('content')
+    {{-- Optional: Gruppen-Block (Bundles) VOR deinem Grid --}}
+    @php
+        $byBundle = $items->groupBy(function($a){
+          $firstClip = optional($a->video->clips->first());
+          return $firstClip && $firstClip->bundle_key ? $firstClip->bundle_key : 'Einzeln';
+        });
+    @endphp
 
-        .grid {
-            display: grid;
-            grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px
-        }
-
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 12px
-        }
-
-        .thumb {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #eee
-        }
-
-        .meta {
-            font-size: 12px;
-            color: #555;
-            margin-top: 6px
-        }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            text-decoration: none
-        }
-
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px
-        }
-    </style>
-</head>
-<body>
-<div class="topbar">
-    <h1>Neue Videos für {{ $channel->name }} (Batch #{{ $batch->id }})</h1>
-    <a class="btn" href="{{ $zipUrl }}">Alles als ZIP herunterladen</a>
-</div>
-
-@if($items->isEmpty())
-    <p>Für diesen Batch sind keine Videos verfügbar.</p>
-@else
-    <div class="grid">
-        @foreach($items as $a)
-            @php($v = $a->video)
-            <div class="card">
-                @if(data_get($v->meta,'thumb') && Storage::exists(data_get($v->meta,'thumb')))
-                    <img class="thumb" src="{{ Storage::url(data_get($v->meta,'thumb')) }}" alt="thumb">
-                @else
-                    <video class="thumb" src="{{ $a->temp_url }}" preload="metadata"></video>
-                @endif
-                <div class="meta">
-                    <div><strong>{{ $v->hash }}.{{ $v->ext }}</strong></div>
-                    <div>{{ number_format($v->bytes/1048576,1) }} MB @if(data_get($v->meta,'duration'))
-                            · {{ number_format(data_get($v->meta,'duration'),1) }}s
-                        @endif</div>
-                </div>
-                <div class="actions">
-                    <a class="btn" href="{{ $a->temp_url }}">Download</a>
-                    <button class="btn" onclick="this.nextElementSibling.style.display='block'">Vorschau</button>
-                    <div style="display:none;margin-top:8px">
-                        <video controls width="100%" preload="metadata">
-                            <source src="{{ $a->temp_url }}" type="video/mp4"/>
-                            Dein Browser unterstützt das Video-Tag nicht.
-                        </video>
+    @foreach($byBundle as $bundle => $group)
+        <h3 style="margin:18px 2px;">Gruppe: {{ $bundle }}</h3>
+        <div class="grid">
+            @foreach($group as $a)
+                <div class="card">
+                    <div style="font-weight:600; margin-bottom:6px;">
+                        {{ $a->video->original_name ?: basename($a->video->path) }}
+                    </div>
+                    <video class="thumb" src="{{ $a->temp_url }}" preload="metadata"
+                           style="width:100%;height:auto;border-radius:10px;background:#0e1116;"></video>
+                    <div class="muted" style="margin-top:6px;">
+                        {{ number_format(($a->video->bytes ?? 0)/1048576,1) }} MB
+                    </div>
+                    @foreach($a->video->clips as $clip)
+                        <div class="muted" style="margin-top:4px;">
+                            @if($clip->role)
+                                <strong>{{ $clip->role }}:</strong>
+                            @endif
+                            @if(!is_null($clip->start_sec))
+                                {{ gmdate('i:s',$clip->start_sec) }}
+                            @endif
+                            –
+                            @if(!is_null($clip->end_sec))
+                                {{ gmdate('i:s',$clip->end_sec) }}
+                            @endif
+                            @if($clip->note)
+                                · {{ $clip->note }}
+                            @endif
+                        </div>
+                    @endforeach
+                    <div style="margin-top:8px;">
+                        <a class="btn" href="{{ $a->temp_url }}">Download</a>
                     </div>
                 </div>
-            </div>
-        @endforeach
-    </div>
-@endif
-</body>
-</html>
+            @endforeach
+        </div>
+    @endforeach
+@endsection
