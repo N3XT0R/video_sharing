@@ -1,7 +1,5 @@
 <?php
-
-declare(strict_types=1);
-
+// app/Console/Commands/AssignExpire.php
 namespace App\Console\Commands;
 
 use App\Models\{Assignment, Batch, ChannelVideoBlock};
@@ -20,7 +18,7 @@ class AssignExpire extends Command
             'started_at' => now()
         ]); // protokolliere als Teil eines Assign-Zyklus
         $cnt = 0;
-        
+
         Assignment::query()->where('status', 'notified')
             ->where('expires_at', '<', now())
             ->chunkById(500, function ($items) use (&$cnt, $cooldownDays) {

@@ -15,17 +15,17 @@ class AssignDistribute extends Command
 
     public function handle(): int
     {
-        $batch = Batch::create(['type' => 'assign', 'started_at' => now()]);
+        $batch = Batch::query()->create(['type' => 'assign', 'started_at' => now()]);
 
         // Neue Videos seit letztem Assign-Finish ermitteln
-        $last = Batch::where('type', 'assign')->whereNotNull('finished_at')->latest()->first();
-        $newVideos = Video::when($last, fn($q) => $q->where('created_at', '>', $last->finished_at))
+        $last = Batch::query()->where('type', 'assign')->whereNotNull('finished_at')->latest()->first();
+        $newVideos = Video::query()->when($last, fn($q) => $q->where('created_at', '>', $last->finished_at))
             ->orderBy('id')
             ->get();
 
         // Expired zurück in den Pool (einmalig pro Video)
-        $expiredVideoIds = Assignment::where('status', 'expired')->pluck('video_id')->unique();
-        $expiredVideos = Video::whereIn('id', $expiredVideoIds)->get();
+        $expiredVideoIds = Assignment::query()->where('status', 'expired')->pluck('video_id')->unique();
+        $expiredVideos = Video::query()->whereIn('id', $expiredVideoIds)->get();
 
         $poolVideos = $newVideos->concat($expiredVideos)->unique('id')->values();
         if ($poolVideos->isEmpty()) {
@@ -35,7 +35,7 @@ class AssignDistribute extends Command
         }
 
         // Kanal-Pool nach Gewicht
-        $channels = Channel::orderBy('id')->get();
+        $channels = Channel::query()->orderBy('id')->get();
         if ($channels->isEmpty()) {
             $this->warn('Keine Kanäle konfiguriert.');
             return 0;
@@ -52,7 +52,7 @@ class AssignDistribute extends Command
         $skipped = 0;
         foreach ($poolVideos as $v) {
             // blockierte Kanäle für dieses Video (Cooldown) ausschließen
-            $blockedChannelIds = ChannelVideoBlock::where('video_id', $v->id)->where('until', '>',
+            $blockedChannelIds = ChannelVideoBlock::query()->where('video_id', $v->id)->where('until', '>',
                 now())->pluck('channel_id')->all();
 
             // Finde den nächsten Kanal mit Rest-Quota, der nicht blockiert ist und noch kein Assignment zu (video,channel) hat
@@ -69,7 +69,7 @@ class AssignDistribute extends Command
                 if (in_array($candidate->id, $blockedChannelIds, true)) {
                     continue;
                 }
-                $exists = Assignment::where('video_id', $v->id)->where('channel_id', $candidate->id)->exists();
+                $exists = Assignment::query()->where('video_id', $v->id)->where('channel_id', $candidate->id)->exists();
                 if ($exists) {
                     continue;
                 }
@@ -82,7 +82,7 @@ class AssignDistribute extends Command
                 continue;
             }
 
-            Assignment::create([
+            Assignment::query()->create([
                 'video_id' => $v->id,
                 'channel_id' => $target->id,
                 'batch_id' => $batch->id,

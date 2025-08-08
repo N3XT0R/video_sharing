@@ -1,7 +1,5 @@
 <?php
-
-declare(strict_types=1);
-
+// app/Console/Commands/IngestScan.php
 namespace App\Console\Commands;
 
 use App\Models\{Batch, Video};
