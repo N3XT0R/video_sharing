@@ -29,39 +29,39 @@ class InfoImport extends Command
 
         if ($csvPath === '' && $dir === '') {
             $this->error('Gib entweder --dir=/pfad/zum/ordner ODER --csv=/pfad/zur/datei.csv an.');
-            return 1;
+            return self::FAILURE;
         }
 
         if ($dir !== '' && $csvPath === '') {
             if (!is_dir($dir)) {
                 $this->error("Ordner nicht gefunden: {$dir}");
-                return 1;
+                return self::FAILURE;
             }
             // genau EINE CSV/TXT im Ordner finden
             $candidates = glob(rtrim($dir, '/').'/*.{csv,CSV,txt,TXT}', GLOB_BRACE) ?: [];
             if (count($candidates) === 0) {
                 $this->error("Keine CSV/TXT in {$dir} gefunden.");
-                return 1;
+                return self::FAILURE;
             }
             if (count($candidates) > 1) {
                 $this->error("Mehrere CSV/TXT in {$dir} gefunden. Bitte eine mit --csv=... auswählen:");
                 foreach ($candidates as $c) {
                     $this->line(' - '.$c);
                 }
-                return 1;
+                return self::FAILURE;
             }
             $csvPath = $candidates[0];
         }
 
         if (!is_file($csvPath)) {
             $this->error("CSV nicht gefunden: {$csvPath}");
-            return 1;
+            return self::FAILURE;
         }
 
         $fh = fopen($csvPath, 'rb');
         if (!$fh) {
             $this->error("Kann CSV nicht öffnen: {$csvPath}");
-            return 1;
+            return self::FAILURE;
         }
 
         // Erste Zeile ist die Spaltenbeschreibung – lesen & verwerfen
@@ -69,13 +69,13 @@ class InfoImport extends Command
         if ($headerLine === false) {
             fclose($fh);
             $this->warn('Leere CSV.');
-            return 0;
+            return self::SUCCESS;
         }
 
         // UTF-8 BOM am Anfang der ersten Datenzeile tolerieren
-        $count = 0;
-        $updated = 0;
-        $warn = 0;
+        $createdCount = 0;
+        $updatedCount = 0;
+        $warningCount = 0;
 
         while (($row = fgetcsv($fh, 0, ';')) !== false) {
             // CSV kann weniger Spalten haben – auffüllen
@@ -116,7 +116,7 @@ class InfoImport extends Command
 
             if (!$video) {
                 $this->warn("Kein Video gefunden für filename='{$base}'");
-                $warn++;
+                $warningCount++;
                 continue;
             }
 
@@ -144,7 +144,7 @@ class InfoImport extends Command
                 }
                 if ($dirty) {
                     $clip->save();
-                    $updated++;
+                    $updatedCount++;
                 }
             } else {
                 Clip::create([
@@ -156,15 +156,15 @@ class InfoImport extends Command
                     'role' => $role !== '' ? $role : null,
                     'submitted_by' => $submittedBy !== '' ? $submittedBy : null,
                 ]);
-                $count++;
+                $createdCount++;
             }
         }
 
         fclose($fh);
 
-        $this->info("Import fertig: neu={$count}, aktualisiert={$updated}, Warnungen={$warn}");
+        $this->info("Import fertig: neu={$createdCount}, aktualisiert={$updatedCount}, Warnungen={$warningCount}");
         $this->line("Reihenfolge im Cron: ingest:scan → info:import (--dir oder --csv) → weekly:run");
-        return 0;
+        return self::SUCCESS;
     }
 
     private function parseTimeToSec(?string $s): ?int

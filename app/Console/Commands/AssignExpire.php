@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 // app/Console/Commands/AssignExpire.php
 namespace App\Console\Commands;
 
@@ -17,9 +19,9 @@ class AssignExpire extends Command
 
     public function handle(): int
     {
-        $cooldownDays = (int)$this->option('cooldown-days');
-        $cnt = $this->expirer->expire($cooldownDays);
-        $this->info("Expired: $cnt");
-        return 0;
+        $cooldownDays = (int) $this->option('cooldown-days');
+        $expiredCount = $this->expirer->expire($cooldownDays);
+        $this->info("Expired: {$expiredCount}");
+        return self::SUCCESS;
     }
 }

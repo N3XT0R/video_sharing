@@ -25,15 +25,15 @@ class IngestScan extends Command
 
         if (!is_dir($inbox)) {
             $this->error("Inbox fehlt: {$inbox}");
-            return 1;
+            return self::FAILURE;
         }
 
         $batch = Batch::create(['type' => 'ingest', 'started_at' => now()]);
 
         $allowed = ['mp4', 'mov', 'mkv', 'avi', 'm4v', 'webm'];
-        $cntNew = 0;
-        $cntDup = 0;
-        $cntErr = 0;
+        $newCount = 0;
+        $dupCount = 0;
+        $errorCount = 0;
 
         $it = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($inbox, \FilesystemIterator::SKIP_DOTS),
@@ -58,7 +58,7 @@ class IngestScan extends Command
                 // Duplicate? -> lokale Datei löschen und weiter
                 if (Video::where('hash', $hash)->exists()) {
                     @unlink($path);
-                    $cntDup++;
+                    $dupCount++;
                     continue;
                 }
 
@@ -90,23 +90,24 @@ class IngestScan extends Command
                     'original_name' => $fileInfo->getFilename(), // nur Dateiname, Ordner egal
                 ]);
 
-                $cntNew++;
+                $newCount++;
 
                 // OPTIONAL: Thumbnails/Metadaten lokal generieren (ffprobe/ffmpeg)
                 // -> wenn gewünscht, hier per Queue/Job nachschieben.
 
             } catch (\Throwable $e) {
                 $this->error($e->getMessage());
-                $cntErr++;
+                $errorCount++;
             }
         }
 
         $batch->update([
             'finished_at' => now(),
-            'stats' => ['new' => $cntNew, 'dups' => $cntDup, 'err' => $cntErr, 'disk' => $diskName],
+            'stats' => ['new' => $newCount, 'dups' => $dupCount, 'err' => $errorCount, 'disk' => $diskName],
         ]);
 
-        $this->info("Ingest done. new={$cntNew} dups={$cntDup} err={$cntErr} disk={$diskName}");
-        return 0;
+        $this->info("Ingest done. new={$newCount} dups={$dupCount} err={$errorCount} disk={$diskName}");
+        return self::SUCCESS;
     }
 }
+
