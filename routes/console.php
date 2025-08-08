@@ -8,5 +8,24 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('ingest:scan')->hourly();
-Schedule::command('weekly:run')->weeklyOn(0, '02:00');
+Schedule::command('weekly:run')
+    ->sundays()
+    ->at('23:00');
+
+// CSV-Import aus Upload-Ordner – alle 30 Minuten
+Schedule::command('info:import --inbox=/srv/ingest/pending')
+    ->everyThirtyMinutes();
+
+// Abgelaufene Offers aufräumen – täglich 03:00
+Schedule::command('assign:expire')
+    ->dailyAt('03:00');
+
+// Videos neu verteilen, falls nicht heruntergeladen – Sonntag 03:00
+Schedule::command('assign:distribute')
+    ->sundays()
+    ->at('03:00');
+
+// Kanäle benachrichtigen, wenn neue Inhalte da sind – Sonntag 06:00
+Schedule::command('notify:offers')
+    ->sundays()
+    ->at('06:00');
