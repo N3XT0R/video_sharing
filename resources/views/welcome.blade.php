@@ -1,12 +1,10 @@
-{{-- resources/views/welcome.blade.php --}}
-        <!doctype html>
+<!doctype html>
 <html lang="de">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>DashClip Delivery</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
             font-family: 'Inter', sans-serif;
