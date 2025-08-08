@@ -39,8 +39,17 @@ class IngestScanner
             }
 
             try {
-                $result = $this->processFile($path, strtolower($fileInfo->getExtension()), $fileInfo->getFilename(), $diskName);
+                $result = $this->processFile($path, strtolower($fileInfo->getExtension()), $fileInfo->getFilename(),
+                    $diskName);
                 $stats[$result]++;
+                $batch->update([
+                    'stats' => [
+                        'new' => $stats['new'],
+                        'dups' => $stats['dups'],
+                        'err' => $stats['err'],
+                        'disk' => $diskName
+                    ],
+                ]);
             } catch (Throwable $e) {
                 Log::error($e->getMessage());
                 $stats['err']++;
@@ -95,8 +104,8 @@ class IngestScanner
 
     private function buildDestinationPath(string $hash, string $ext): string
     {
-        $sub = substr($hash, 0, 2) . '/' . substr($hash, 2, 2);
-        return "videos/{$sub}/{$hash}" . ($ext ? ".{$ext}" : '');
+        $sub = substr($hash, 0, 2).'/'.substr($hash, 2, 2);
+        return "videos/{$sub}/{$hash}".($ext ? ".{$ext}" : '');
     }
 
     private function uploadFile(string $path, string $dstRel, string $diskName, int $bytes): bool
@@ -134,7 +143,7 @@ class IngestScanner
     {
         $chunkSize = 8 * 1024 * 1024; // 8MB
         $root = config('filesystems.disks.dropbox.root', '');
-        $targetPath = '/' . trim($root . '/' . $dstRel, '/');
+        $targetPath = '/'.trim($root.'/'.$dstRel, '/');
         $client = new DropboxClient(config('filesystems.disks.dropbox.authorization_token'));
 
         $firstChunk = fread($read, $chunkSize);
