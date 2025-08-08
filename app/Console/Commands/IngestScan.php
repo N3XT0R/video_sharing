@@ -96,7 +96,7 @@ class IngestScan extends Command
                         'path' => $dstRel,
                         'disk' => $diskName,
                         'meta' => null,
-                        'original_name' => $fileInfo->getFilename(), // nur Dateiname, Ordner egal
+                        'original_name' => $fileInfo->getFilename(),
                     ]);
 
                     $newCount++;
