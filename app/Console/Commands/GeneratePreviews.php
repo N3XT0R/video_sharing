@@ -24,13 +24,15 @@ class GeneratePreviews extends Command
             ->whereIn('status', ['queued', 'notified'])
             ->get();
 
+        $this->previews->setOutput($this->output);
+
         foreach ($assignments as $assignment) {
             $clip = $assignment->video->clips->first();
             if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
                 $this->previews->generate(
                     $assignment->video,
-                    (int) $clip->start_sec,
-                    (int) $clip->end_sec
+                    (int)$clip->start_sec,
+                    (int)$clip->end_sec
                 );
             }
         }
