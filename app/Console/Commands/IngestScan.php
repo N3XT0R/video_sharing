@@ -55,15 +55,17 @@ class IngestScan extends Command
                 continue;
             } // CSV, TXT etc. ignorieren
 
+            $fileName = $fileInfo->getFilename();
+
             try {
-                $this->info('processing file: '.$fileInfo->getFilename());
+                $this->info('processing file: '.$fileName);
                 // Hash & Bytes von der lokalen Quelle ermitteln
                 $hash = hash_file('sha256', $path);
                 $bytes = filesize($path);
 
                 // Duplicate? -> lokale Datei löschen und weiter
                 if (Video::query()->where('hash', $hash)->exists()) {
-                    $this->info('duplicated file: '.$fileInfo->getFilename());
+                    $this->info('duplicated file: '.$fileName);
                     @unlink($path);
                     $dupCount++;
                     continue;
@@ -80,7 +82,7 @@ class IngestScan extends Command
                 }
 
                 // Für Cloud-Disks kein makeDirectory nötig
-                $this->info('uploading file: '.$fileInfo->getFilename());
+                $this->info('uploading file: '.$fileName);
                 $this->info($dstRel);
                 if ($disk->put($dstRel, $read)) {
                     if (is_resource($read)) {
@@ -96,14 +98,14 @@ class IngestScan extends Command
                         'path' => $dstRel,
                         'disk' => $diskName,
                         'meta' => null,
-                        'original_name' => $fileInfo->getFilename(),
+                        'original_name' => $fileName,
                     ]);
 
                     $newCount++;
-                    $this->info('finished file: '.$fileInfo->getFilename());
+                    $this->info('finished file: '.$fileName);
                 } else {
                     $errorCount++;
-                    $this->error('error file: '.$fileInfo->getFilename());
+                    $this->error('error file: '.$fileName);
                 }
             } catch (\Throwable $e) {
                 $this->error($e->getMessage());
