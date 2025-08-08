@@ -1,4 +1,5 @@
 @component('mail::message')
+    @include('emails.partials.header')
     # Neue Videos verfügbar
 
     Hallo {{ $channel->creator_name ?: 'Liebes Team' }} ({{ $channel->name }}),
