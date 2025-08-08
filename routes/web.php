@@ -10,7 +10,7 @@ Route::get('/', function () {
 });
 
 Route::get('/game', function () {
-    return view('welcome');
+    return view('game');
 })->name('game');
 
 
