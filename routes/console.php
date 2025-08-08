@@ -24,7 +24,7 @@ Schedule::command('ingest:scan', [
 
 // CSV-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('info:import', [
-    '--inbox' => '/srv/ingest/pending/',
+    '--dir' => '/srv/ingest/pending/',
 ])
     ->everyThirtyMinutes()
     ->emailOutputTo($email);
