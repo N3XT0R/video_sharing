@@ -18,7 +18,8 @@ class InfoImport extends Command
         {--csv= : Optional: direkter Pfad zur CSV/TXT}
         {--infer-role=1 : Rolle (F/R) aus Dateinamen _F/_R ableiten, wenn Spalte leer}
         {--default-bundle= : Bundle-Fallback, wenn in CSV leer}
-        {--default-submitter= : submitted_by-Fallback, wenn in CSV leer}';
+        {--default-submitter= : submitted_by-Fallback, wenn in CSV leer}
+        {--keep-csv=0 : CSV/TXT nach Import behalten (1 = nicht löschen)}';
 
     protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role/submitted_by) aus einer CSV in den angegebenen Upload-Ordner.';
 
@@ -84,13 +85,15 @@ class InfoImport extends Command
                 fn($msg) => $this->warn($msg)
             );
 
-            // ✅ Nur bei erfolgreichem Import löschen
-            if (is_file($csvPath)) {
+            // CSV nur löschen, wenn nicht --keep-csv=1
+            if (!$this->optionTruthy('keep-csv') && is_file($csvPath)) {
                 if (@unlink($csvPath)) {
                     $this->info("CSV/TXT gelöscht: {$csvPath}");
                 } else {
                     $this->warn("CSV/TXT konnte nicht gelöscht werden: {$csvPath}");
                 }
+            } elseif ($this->optionTruthy('keep-csv')) {
+                $this->line("CSV/TXT behalten: {$csvPath}");
             }
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
