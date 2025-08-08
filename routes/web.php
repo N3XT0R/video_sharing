@@ -9,8 +9,7 @@ Route::get('/', function () {
 });
 
 
-Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])
-    ->name('assignments.download');
-
 Route::get('/offer/{batch}/{channel}', [OfferController::class, 'show'])->name('offer.show');
-Route::get('/offer/{batch}/{channel}/zip', [OfferController::class, 'zip'])->name('offer.zip');
+Route::post('/offer/{batch}/{channel}/zip', [OfferController::class, 'zipSelected'])->name('offer.zip.selected');
+
+Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])->name('assignments.download');

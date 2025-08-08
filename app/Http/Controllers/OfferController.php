@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Batch, Channel};
+use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Storage, URL};
@@ -35,79 +35,113 @@ class OfferController extends Controller
         ]);
     }
 
-    public function zip(Request $req, Batch $batch, Channel $channel)
+    public function zipSelected(Request $req, Batch $batch, Channel $channel)
     {
         abort_unless($req->hasValidSignature(), 403);
+        $ids = collect($req->input('assignment_ids', []))
+            ->filter(fn($v) => ctype_digit((string)$v))
+            ->map('intval')
+            ->values();
 
-        $items = $this->assignments->fetchPending($batch, $channel);
+        if ($ids->isEmpty()) {
+            return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
+        }
 
-        abort_if($items->isEmpty(), 404);
+        // Nur Assignments dieses Batches & Kanals zulassen
+        $items = Assignment::with('video')
+            ->where('batch_id', $batch->id)
+            ->where('channel_id', $channel->id)
+            ->whereIn('id', $ids)
+            ->whereIn('status', ['queued', 'notified']) // noch nicht gepickt
+            ->get();
 
-        $filename = sprintf('videos_%s_%s.zip', $batch->id, Str::slug($channel->name));
+        if ($items->isEmpty()) {
+            return back()->withErrors(['invalid' => 'Die Auswahl ist nicht mehr verfügbar.']);
+        }
+
+        // ZIP starten – keine Ausgabe vorher!
+        $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
         $zip = new ZipStream($filename);
 
-        // 4.1 CSV-Inhalt bauen
-        $rows = [];
-        $rows[] = ['filename', 'hash', 'size_mb', 'start', 'end', 'note', 'bundle', 'role'];
-        foreach ($items as $a) {
-            $v = $a->video;
-            // Clips (können 0..n sein), dann je Clip eine Zeile; sonst eine Default-Zeile
-            $clips = $v->clips()->get();
-            if ($clips->isEmpty()) {
-                $rows[] = [
-                    $v->original_name ?: basename($v->path),
-                    $v->hash,
-                    number_format($v->bytes / 1048576, 1, '.', ''),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ];
-            } else {
-                foreach ($clips as $c) {
+        try {
+            // info.csv nur für die ausgewählten Elemente
+            $rows = [];
+            $rows[] = ['filename', 'hash', 'size_mb', 'start', 'end', 'note', 'bundle', 'role'];
+
+            foreach ($items as $a) {
+                $v = $a->video;
+                $clips = $v->clips ?? collect();
+                if ($clips->isEmpty()) {
                     $rows[] = [
                         $v->original_name ?: basename($v->path),
                         $v->hash,
-                        number_format($v->bytes / 1048576, 1, '.', ''),
-                        $c->start_sec !== null ? gmdate('i:s', $c->start_sec) : null,
-                        $c->end_sec !== null ? gmdate('i:s', $c->end_sec) : null,
-                        $c->note,
-                        $c->bundle_key,
-                        $c->role,
+                        number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
                     ];
+                } else {
+                    foreach ($clips as $c) {
+                        $rows[] = [
+                            $v->original_name ?: basename($v->path),
+                            $v->hash,
+                            number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
+                            isset($c->start_sec) ? gmdate('i:s', (int)$c->start_sec) : null,
+                            isset($c->end_sec) ? gmdate('i:s', (int)$c->end_sec) : null,
+                            $c->note,
+                            $c->bundle_key,
+                            $c->role,
+                        ];
+                    }
                 }
             }
-        }
-// CSV in String schreiben
-        $fp = fopen('php://temp', 'w+');
-        fwrite($fp, "\xEF\xBB\xBF");
-        foreach ($rows as $r) {
-            fputcsv($fp, $r, ';');
-        } // Semikolon-getrennt (DE-Excel freundlich)
-        rewind($fp);
-        $csv = stream_get_contents($fp);
-        fclose($fp);
 
-// 4.2 CSV dem ZIP hinzufügen
-        $zip->addFile('info.csv', $csv);
-
-// 4.3 Videos hinzufügen
-        foreach ($items as $a) {
-            $rel = $a->video->path;
-            if (!Storage::exists($rel)) {
-                continue;
+            $fp = fopen('php://temp', 'w+');
+            fwrite($fp, "\xEF\xBB\xBF"); // BOM für Excel
+            foreach ($rows as $r) {
+                fputcsv($fp, $r, ';');
             }
-            $s = Storage::readStream($rel);
-            if (!is_resource($s)) {
-                continue;
+            rewind($fp);
+            $csv = stream_get_contents($fp);
+            fclose($fp);
+            $zip->addFile('info.csv', $csv);
+
+            // Videos hinzufügen
+            foreach ($items as $a) {
+                $rel = $a->video->path;
+                if (!Storage::exists($rel)) {
+                    continue;
+                }
+                $s = Storage::readStream($rel);
+                if (!is_resource($s)) {
+                    continue;
+                }
+
+                $nameInZip = $a->video->original_name ?: basename($rel);
+                $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
+
+                $zip->addFileFromStream($nameInZip, $s);
+                fclose($s);
+
+                // Flag pro Video: jetzt als "abgeholt" markieren
+                $a->status = 'picked_up';
+                $a->save();
+
+                // Download-Log (Typ zip)
+                Download::query()->create([
+                    'assignment_id' => $a->id,
+                    'downloaded_at' => now(),
+                    'ip' => $req->ip(),
+                    'user_agent' => $req->userAgent(),
+                    'bytes_sent' => null, // unbekannt bei Stream
+                ]);
             }
-            $nameInZip = ($a->video->original_name ?: basename($rel)); // schöner Name
-            $zip->addFileFromStream($nameInZip, $s);
-            fclose($s);
+        } finally {
+            $zip->finish();
         }
 
-        $zip->finish();
         return response()->noContent();
     }
 }
