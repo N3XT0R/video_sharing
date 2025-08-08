@@ -19,25 +19,36 @@ class OfferController extends Controller
     {
         abort_unless($req->hasValidSignature(), 403);
 
-        $items = $this->assignments->fetchPending($batch, $channel);
+        // Pending Assignments inkl. Clips laden (N+1 vermeiden)
+        $items = $this->assignments->fetchPending($batch, $channel)
+            ->loadMissing('video.clips');
 
+        // Pro Assignment die temporäre Download-URL vorbereiten
         foreach ($items as $assignment) {
             $assignment->temp_url = $this->assignments->prepareDownload($assignment);
         }
+
+        // Signierte POST-URL für „Auswahl als ZIP herunterladen“
+        $zipPostUrl = URL::temporarySignedRoute(
+            'offer.zip.selected',
+            now()->addHours(6),
+            ['batch' => $batch->id, 'channel' => $channel->id]
+        );
 
         return view('offer.show', [
             'batch' => $batch,
             'channel' => $channel,
             'items' => $items,
-            'zipUrl' => URL::temporarySignedRoute(
-                'offer.zip', now()->addHours(6), ['batch' => $batch->id, 'channel' => $channel->id]
-            ),
+            // Falls du irgendwo noch den alten GET-Button nutzt, kannst du zipUrl weglassen.
+            // Ich lasse ihn raus und gebe nur die POST-URL an die View weiter.
+            'zipPostUrl' => $zipPostUrl,
         ]);
     }
 
     public function zipSelected(Request $req, Batch $batch, Channel $channel)
     {
         abort_unless($req->hasValidSignature(), 403);
+
         $ids = collect($req->input('assignment_ids', []))
             ->filter(fn($v) => ctype_digit((string)$v))
             ->map('intval')
@@ -47,8 +58,8 @@ class OfferController extends Controller
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        // Nur Assignments dieses Batches & Kanals zulassen
-        $items = Assignment::with('video')
+        // Nur Assignments dieses Batches & Kanals zulassen + Clips eager laden
+        $items = Assignment::with('video.clips')
             ->where('batch_id', $batch->id)
             ->where('channel_id', $channel->id)
             ->whereIn('id', $ids)
@@ -64,13 +75,14 @@ class OfferController extends Controller
         $zip = new ZipStream($filename);
 
         try {
-            // info.csv nur für die ausgewählten Elemente
+            // info.csv nur für die ausgewählten Elemente (inkl. submitted_by)
             $rows = [];
-            $rows[] = ['filename', 'hash', 'size_mb', 'start', 'end', 'note', 'bundle', 'role'];
+            $rows[] = ['filename', 'hash', 'size_mb', 'start', 'end', 'note', 'bundle', 'role', 'submitted_by'];
 
             foreach ($items as $a) {
                 $v = $a->video;
                 $clips = $v->clips ?? collect();
+
                 if ($clips->isEmpty()) {
                     $rows[] = [
                         $v->original_name ?: basename($v->path),
@@ -80,7 +92,8 @@ class OfferController extends Controller
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        null,
                     ];
                 } else {
                     foreach ($clips as $c) {
@@ -93,22 +106,26 @@ class OfferController extends Controller
                             $c->note,
                             $c->bundle_key,
                             $c->role,
+                            $c->submitted_by,
                         ];
                     }
                 }
             }
 
+            // CSV in String schreiben (Semikolon, UTF-8 BOM für Excel)
             $fp = fopen('php://temp', 'w+');
-            fwrite($fp, "\xEF\xBB\xBF"); // BOM für Excel
+            fwrite($fp, "\xEF\xBB\xBF"); // BOM
             foreach ($rows as $r) {
                 fputcsv($fp, $r, ';');
             }
             rewind($fp);
             $csv = stream_get_contents($fp);
             fclose($fp);
+
+            // CSV ins ZIP
             $zip->addFile('info.csv', $csv);
 
-            // Videos hinzufügen
+            // Videos hinzufügen, dann Flags setzen + Download loggen
             foreach ($items as $a) {
                 $rel = $a->video->path;
                 if (!Storage::exists($rel)) {
@@ -125,7 +142,7 @@ class OfferController extends Controller
                 $zip->addFileFromStream($nameInZip, $s);
                 fclose($s);
 
-                // Flag pro Video: jetzt als "abgeholt" markieren
+                // Pro Video-Assignment als abgeholt markieren
                 $a->status = 'picked_up';
                 $a->save();
 
@@ -139,9 +156,10 @@ class OfferController extends Controller
                 ]);
             }
         } finally {
-            $zip->finish();
+            $zip->finish(); // sorgt dafür, dass das Archiv sauber geschlossen wird
         }
 
+        // ZipStream hat die Antwort bereits an den Client gesendet
         return response()->noContent();
     }
 }
