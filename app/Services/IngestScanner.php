@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Batch;
 use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
+use App\Services\PreviewService;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,10 @@ final class IngestScanner
     private const CSV_REGEX = '/\.(csv|txt)$/i';
 
     private ?OutputStyle $output = null;
+
+    public function __construct(private PreviewService $previews)
+    {
+    }
 
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
@@ -121,23 +126,39 @@ final class IngestScanner
 
         $dstRel = $this->buildDestinationPath($hash, $ext);
 
-        $this->log("Upload nach {$dstRel}");
+        // Video vor dem Upload anlegen, damit Preview aus lokalem Pfad generiert werden kann
+        $video = Video::query()->create([
+            'hash' => $hash,
+            'ext' => $ext,
+            'bytes' => $bytes,
+            'path' => $this->makeStorageRelative($path),
+            'disk' => 'local',
+            'meta' => null,
+            'original_name' => $fileName,
+        ]);
 
+        $previewUrl = null;
+        try {
+            $this->previews->setOutput($this->output);
+            $previewUrl = $this->previews->generate($video, 0, 10);
+        } catch (Throwable $e) {
+            Log::warning('Preview generation failed', ['file' => $path, 'e' => $e->getMessage()]);
+            $this->log("Warnung: Preview konnte nicht erstellt werden ({$e->getMessage()})");
+        }
+
+        $this->log("Upload nach {$dstRel}");
         $uploaded = $this->uploadFile($path, $dstRel, $diskName, $bytes);
 
         if (!$uploaded) {
+            $video->delete();
             $this->log('Upload fehlgeschlagen');
             return 'err';
         }
 
-        Video::query()->create([
-            'hash' => $hash,
-            'ext' => $ext,
-            'bytes' => $bytes,
+        $video->update([
             'path' => $dstRel,
             'disk' => $diskName,
-            'meta' => null,
-            'original_name' => $fileName,
+            'preview_url' => $previewUrl,
         ]);
 
         $this->log('Upload abgeschlossen');
@@ -295,6 +316,28 @@ final class IngestScanner
         $batch->update([
             'stats' => $stats + ['disk' => $diskName],
         ]);
+    }
+
+    private function makeStorageRelative(string $absolute): string
+    {
+        $root = rtrim(str_replace('\\', '/', storage_path('app')), '/');
+        $absolute = str_replace('\\', '/', $absolute);
+
+        if (str_starts_with($absolute, $root.'/')) {
+            return substr($absolute, strlen($root) + 1);
+        }
+
+        $rootParts = explode('/', trim($root, '/'));
+        $absParts = explode('/', trim($absolute, '/'));
+        $i = 0;
+        while (isset($rootParts[$i], $absParts[$i]) && $rootParts[$i] === $absParts[$i]) {
+            $i++;
+        }
+
+        $relParts = array_fill(0, count($rootParts) - $i, '..');
+        $relParts = array_merge($relParts, array_slice($absParts, $i));
+
+        return implode('/', $relParts);
     }
 
     private function ensureDirectory(string $dir): void
