@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Video extends Model
 {
-    protected $fillable = ['hash', 'ext', 'bytes', 'path', 'meta', 'original_name', 'disk'];
+    protected $fillable = ['hash', 'ext', 'bytes', 'path', 'meta', 'original_name', 'disk', 'preview_url'];
     protected $casts = ['meta' => 'array'];
 
     public function assignments(): HasMany
