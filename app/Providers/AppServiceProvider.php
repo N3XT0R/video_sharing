@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem;
@@ -28,7 +29,11 @@ class AppServiceProvider extends ServiceProvider
             $root = $config['root'] ?? '';
             $adapter = new DropboxAdapter($client, $root);
 
-            return new Filesystem($adapter);
+            // Flysystem-Instanz
+            $filesystem = new Filesystem($adapter);
+
+            // WICHTIG: Laravel-Adapter zurückgeben, nicht $filesystem!
+            return new FilesystemAdapter($filesystem, $adapter, $config);
         });
     }
 }

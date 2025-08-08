@@ -72,7 +72,7 @@ return [
         'dropbox' => [
             'driver' => 'dropbox',
             'authorization_token' => env('DROPBOX_TOKEN'),
-            'root' => 'share', //verzeichnis auf dropbox
+            'root' => env('DROPBOX_ROOT', '/share'), //verzeichnis auf dropbox
         ],
 
     ],
