@@ -10,12 +10,69 @@ return new class extends Migration {
         Schema::create('channels', function (Blueprint $t) {
             $t->id();
             $t->string('name')->unique();
-            $t->string('creator_name');
+            $t->string('creator_name')->nullable();
             $t->string('email')->unique();
             $t->unsignedInteger('weight')->default(1); // für gewichtete RR
             $t->unsignedInteger('weekly_quota')->default(5);
             $t->timestamps();
         });
+
+        DB::table('channels')->insert([
+            [
+                'creator_name' => 'Julius',
+                'name' => 'DashboardHeroes',
+                'email' => 'dashboardhero.ger@gmail.com',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'creator_name' => null,
+                'name' => 'RLP Dashcam',
+                'email' => 'clips@rlpdashcam.com',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'creator_name' => 'Leon',
+                'name' => 'Lets Dashcam',
+                'email' => 'letsdashcam@web.de',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'creator_name' => 'Julius',
+                'name' => 'DashboardHeroes',
+                'email' => 'eure-videos@web.de',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'creator_name' => null,
+                'name' => 'Road Rave Germany',
+                'email' => 'roadravegermany@gmail.com',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'creator_name' => null,
+                'name' => 'NEDK - NOCH EIN DASHCAM KANAL',
+                'email' => 'nedk.videos@gmail.com',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
     }
 
     public function down(): void
