@@ -72,6 +72,15 @@ return new class extends Migration {
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'creator_name' => 'Videoknecht Tom & Mauzi',
+                'name' => 'Dashcam Stories',
+                'email' => 'videos@dashcamstories.de',
+                'weight' => 1,
+                'weekly_quota' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 

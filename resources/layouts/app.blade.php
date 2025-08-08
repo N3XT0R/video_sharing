@@ -59,8 +59,18 @@
         }
 
         .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             font-weight: 700;
             letter-spacing: .3px;
+        }
+
+        .brand img.logo {
+            height: 32px;
+            width: auto;
+            display: block;
+            border-radius: 6px;
         }
 
         .container {
@@ -138,7 +148,8 @@
 <body>
 <header class="topbar">
     <div class="brand">
-        {{ config('app.name', 'App') }}
+        <img class="logo" src="{{ asset('images/logo.png') }}" alt="{{ config('app.name', 'App') }} Logo">
+        <span>{{ config('app.name', 'App') }}</span>
         <span class="muted" style="font-weight:400;">@yield('subtitle')</span>
     </div>
     <nav>
@@ -160,7 +171,7 @@
                 @endforeach
             </ul>
         </div>
-    @endif>
+    @endif
 
     {{-- Seiteninhalt --}}
     @yield('content')
@@ -171,4 +182,5 @@
 </footer>
 
 @stack('scripts')
-@yi
+</body>
+</html>

@@ -9,8 +9,8 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('weekly:run')
-    ->sundays()
-    ->at('23:00');
+    ->fridays()
+    ->at('19:00');
 
 // CSV-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('info:import --inbox=/srv/ingest/pending')
@@ -20,15 +20,15 @@ Schedule::command('info:import --inbox=/srv/ingest/pending')
 Schedule::command('assign:expire')
     ->dailyAt('03:00');
 
-// Videos neu verteilen, falls nicht heruntergeladen – Sonntag 03:00
+// Videos neu verteilen, falls nicht heruntergeladen – freitags 17:00
 Schedule::command('assign:distribute')
-    ->sundays()
-    ->at('03:00');
+    ->fridays()
+    ->at('16:00');
 
-// Kanäle benachrichtigen, wenn neue Inhalte da sind – Sonntag 06:00
+// Kanäle benachrichtigen, wenn neue Inhalte da sind – freitags 19:00
 Schedule::command('notify:offers')
-    ->sundays()
-    ->at('06:00');
+    ->fridays()
+    ->at('19:00');
 
 Schedule::command('previews:generate')
     ->everyThirtyMinutes();
