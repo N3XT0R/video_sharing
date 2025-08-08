@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Console\Commands;
 
@@ -18,7 +19,7 @@ class NotifyOffers extends Command
 
     public function handle(): int
     {
-        $ttlDays = (int)$this->option('ttl-days');
+        $ttlDays = (int) $this->option('ttl-days');
 
         try {
             $result = $this->notifier->notify($ttlDays);
@@ -30,6 +31,7 @@ class NotifyOffers extends Command
         } catch (RuntimeException $e) {
             $this->warn($e->getMessage());
         }
-        return 0;
+        return self::SUCCESS;
     }
 }
+

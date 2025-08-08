@@ -22,11 +22,11 @@ class AssignDistribute extends Command
     {
         try {
             $quota = $this->option('quota');
-            $stats = $this->distributor->distribute($quota !== null ? (int)$quota : null);
+            $stats = $this->distributor->distribute($quota !== null ? (int) $quota : null);
             $this->info("Assigned={$stats['assigned']}, skipped={$stats['skipped']}");
         } catch (RuntimeException $e) {
             $this->warn($e->getMessage());
         }
-        return 0;
+        return self::SUCCESS;
     }
 }

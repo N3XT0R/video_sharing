@@ -16,6 +16,6 @@ class WeeklyRun extends Command
         $this->call('assign:expire');
         $this->call('assign:distribute');
         $this->call('notify:offers');
-        return 0;
+        return self::SUCCESS;
     }
 }
