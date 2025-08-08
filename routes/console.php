@@ -10,6 +10,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+
 Schedule::command('weekly:run')
     ->fridays()
     ->at('19:00');
@@ -20,6 +21,9 @@ Schedule::command('ingest:scan', [
     '--inbox' => '/srv/ingest/pending/',
 ])->everyThirtyMinutes()
     ->emailOutputTo($email);
+
+Schedule::command('previews:generate')
+    ->everyThirtyMinutes();
 
 // CSV-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('info:import', [
@@ -42,9 +46,6 @@ Schedule::command('notify:offers')
     ->fridays()
     ->at('19:00')
     ->emailOutputTo($email);
-
-Schedule::command('previews:generate')
-    ->everyThirtyMinutes();
 
 // Dropbox Refresh Token regelmäßig aktualisieren
 Schedule::command('dropbox:refresh-token')
