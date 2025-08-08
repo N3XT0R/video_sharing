@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class IngestScan extends Command
 {
     protected $signature = 'ingest:scan 
-        {--inbox=/srv/ingest/inbox : Wurzelordner der Uploads (rekursiv)} 
+        {--inbox=/srv/ingest/pending : Wurzelordner der Uploads (rekursiv)} 
         {--disk= : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
 
     protected $description = 'Scannt Inbox rekursiv, dedupe per SHA-256, verschiebt content-addressiert auf konfiguriertes Storage.';
