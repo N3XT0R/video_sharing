@@ -21,5 +21,5 @@
     [Du willst doch Videos nicht verwenden? Sei so fair und teil es mit, damit andere Kanäle profitieren können]({{ $unusedUrl }})
 
     Viele Grüße
-    {{ config('app.name') }}
+    {{ config('app.name') }} / Ilya
 @endcomponent
