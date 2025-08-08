@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 
 class IngestScan extends Command
 {
-    const MAX_AMOUNT = 5;
     protected $signature = 'ingest:scan 
         {--inbox=/srv/ingest/pending : Wurzelordner der Uploads (rekursiv)} 
         {--disk= : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
