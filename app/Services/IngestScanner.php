@@ -4,30 +4,35 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\{Batch, Video};
+use App\Models\Batch;
+use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Console\OutputStyle;
-use Illuminate\Support\Facades\{Artisan, Log, Storage};
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Spatie\Dropbox\Client as DropboxClient;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Throwable;
 
-class IngestScanner
+/**
+ * Scannt rekursiv einen Eingangsordner und übernimmt neue Videodateien
+ * in den konfigurierten Storage. Erkennt Duplikate über SHA-256.
+ */
+final class IngestScanner
 {
+    /** @var string[] */
     private const ALLOWED_EXTENSIONS = ['mp4', 'mov', 'mkv', 'avi', 'm4v', 'webm'];
 
+    private const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
+    private const CSV_REGEX = '/\.(csv|txt)$/i';
 
-    protected ?OutputStyle $outputStyle = null;
-
-    private function log(string $message): void
-    {
-        $this->outputStyle?->writeln($message);
-    }
+    private ?OutputStyle $output = null;
 
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
-        $this->outputStyle = $outputStyle;
+        $this->output = $outputStyle;
     }
 
     /**
@@ -37,26 +42,28 @@ class IngestScanner
      */
     public function scan(string $inbox, string $diskName): array
     {
-        if (!is_dir($inbox)) {
-            throw new RuntimeException("Inbox fehlt: {$inbox}");
-        }
+        $this->assertDirectory($inbox);
 
-        $this->log("Starte Scan: {$inbox} -> {$diskName}");
-        $batch = Batch::query()->create(['type' => 'ingest', 'started_at' => now()]);
+        $this->log(sprintf('Starte Scan: %s -> %s', $inbox, $diskName));
+
+        $batch = Batch::query()->create([
+            'type' => 'ingest',
+            'started_at' => now(),
+        ]);
+
         $stats = ['new' => 0, 'dups' => 0, 'err' => 0];
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($inbox, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
+        $iterator = $this->makeRecursiveIterator($inbox);
 
-        /**
-         * @var \SplFileInfo $fileInfo
-         */
+        /** @var \SplFileInfo $fileInfo */
         foreach ($iterator as $path => $fileInfo) {
+            // 1) Falls der Eintrag ein Ordner ist: optional CSV im Unterordner importieren
             if ($fileInfo->isDir()) {
-                Artisan::call('info:import', ['--dir' => $fileInfo->getPath()]);
+                $this->maybeImportCsvForDirectory($fileInfo->getPathname());
+                continue; // nur Verzeichnis-Logik; Dateien kommen in eigener Schleife
             }
+
+            // 2) Nur echte, zulässige Videodateien verarbeiten
             if (!$fileInfo->isFile() || !$this->isAllowedExtension($fileInfo)) {
                 continue;
             }
@@ -64,19 +71,18 @@ class IngestScanner
             $this->log("Verarbeite {$path}");
 
             try {
-                $result = $this->processFile($path, strtolower($fileInfo->getExtension()), $fileInfo->getFilename(),
-                    $diskName);
+                $result = $this->processFile(
+                    path: $path,
+                    ext: strtolower($fileInfo->getExtension()),
+                    fileName: $fileInfo->getFilename(),
+                    diskName: $diskName
+                );
+
                 $stats[$result]++;
-                $batch->update([
-                    'stats' => [
-                        'new' => $stats['new'],
-                        'dups' => $stats['dups'],
-                        'err' => $stats['err'],
-                        'disk' => $diskName
-                    ],
-                ]);
+
+                $this->updateBatchStats($batch, $stats, $diskName);
             } catch (Throwable $e) {
-                Log::error($e->getMessage());
+                Log::error($e->getMessage(), ['file' => $path]);
                 $this->log("Fehler: {$e->getMessage()}");
                 $stats['err']++;
             }
@@ -84,13 +90,15 @@ class IngestScanner
 
         $batch->update([
             'finished_at' => now(),
-            'stats' => ['new' => $stats['new'], 'dups' => $stats['dups'], 'err' => $stats['err'], 'disk' => $diskName],
+            'stats' => $stats + ['disk' => $diskName],
         ]);
 
-        $this->log("Fertig. Neu: {$stats['new']} Doppelt: {$stats['dups']} Fehler: {$stats['err']}");
+        $this->log(sprintf('Fertig. Neu: %d  Doppelt: %d  Fehler: %d', $stats['new'], $stats['dups'], $stats['err']));
 
         return $stats;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────────
 
     private function isAllowedExtension(\SplFileInfo $file): bool
     {
@@ -105,14 +113,16 @@ class IngestScanner
         $hash = hash_file('sha256', $path);
         $bytes = filesize($path);
 
-        if (Video::query()->where('hash', $hash)->exists()) {
+        if ($this->isDuplicate($hash)) {
             @unlink($path);
             $this->log('Duplikat übersprungen');
             return 'dups';
         }
 
         $dstRel = $this->buildDestinationPath($hash, $ext);
+
         $this->log("Upload nach {$dstRel}");
+
         $uploaded = $this->uploadFile($path, $dstRel, $diskName, $bytes);
 
         if (!$uploaded) {
@@ -134,60 +144,63 @@ class IngestScanner
         return 'new';
     }
 
+    private function isDuplicate(string $hash): bool
+    {
+        return Video::query()->where('hash', $hash)->exists();
+    }
+
     private function buildDestinationPath(string $hash, string $ext): string
     {
         $sub = substr($hash, 0, 2).'/'.substr($hash, 2, 2);
-        return "videos/{$sub}/{$hash}".($ext ? ".{$ext}" : '');
+        return sprintf('videos/%s/%s%s', $sub, $hash, $ext !== '' ? ".{$ext}" : '');
     }
 
-    private function uploadFile(string $path, string $dstRel, string $diskName, int $bytes): bool
+    private function uploadFile(string $srcPath, string $dstRel, string $diskName, int $bytes): bool
     {
-        $read = fopen($path, 'rb');
+        $read = fopen($srcPath, 'rb');
         if ($read === false) {
-            throw new RuntimeException("Konnte Quelle nicht öffnen: {$path}");
+            throw new RuntimeException("Konnte Quelle nicht öffnen: {$srcPath}");
         }
 
-        try {
-            $bar = null;
-            if ($this->outputStyle) {
-                $bar = $this->outputStyle->createProgressBar($bytes);
-                $bar->start();
-            }
+        $bar = $this->createProgressBar($bytes);
 
+        try {
             if ($diskName === 'dropbox') {
                 $this->uploadToDropbox($read, $dstRel, $bytes, $bar);
-                if (is_resource($read)) {
-                    fclose($read);
-                }
-                @unlink($path);
+                @unlink($srcPath);
                 $bar?->finish();
                 return true;
             }
 
             $disk = Storage::disk($diskName);
             $dest = $disk->path($dstRel);
-            $dir = dirname($dest);
-            if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
+
+            $this->ensureDirectory(dirname($dest));
+
             $write = fopen($dest, 'wb');
-            $chunkSize = 8 * 1024 * 1024;
-            while (!feof($read)) {
-                $chunk = fread($read, $chunkSize);
-                if ($chunk === false) {
-                    break;
+            if ($write === false) {
+                throw new RuntimeException("Konnte Ziel nicht öffnen: {$dest}");
+            }
+
+            try {
+                while (!feof($read)) {
+                    $chunk = fread($read, self::CHUNK_SIZE);
+                    if ($chunk === false) {
+                        break;
+                    }
+                    fwrite($write, $chunk);
+                    $bar?->advance(strlen($chunk));
                 }
-                fwrite($write, $chunk);
-                $bar?->advance(strlen($chunk));
+            } finally {
+                fclose($write);
             }
-            fclose($write);
-            if (is_resource($read)) {
-                fclose($read);
-            }
-            @unlink($path);
+
+            @unlink($srcPath);
             $bar?->finish();
+
             return true;
         } finally {
+            // sicheres Close, falls oben Exceptions fliegen
             if (is_resource($read)) {
                 fclose($read);
             }
@@ -196,29 +209,122 @@ class IngestScanner
 
     private function uploadToDropbox($read, string $dstRel, int $bytes, ?ProgressBar $bar = null): void
     {
-        $chunkSize = 8 * 1024 * 1024; // 8MB
-        $root = config('filesystems.disks.dropbox.root', '');
+        $root = (string)config('filesystems.disks.dropbox.root', '');
         $targetPath = '/'.trim($root.'/'.$dstRel, '/');
 
+        /** @var AutoRefreshTokenProvider $provider */
         $provider = app(AutoRefreshTokenProvider::class);
         $client = new DropboxClient($provider);
 
-        $firstChunk = fread($read, $chunkSize);
+        // Edge-Case: leere Datei
+        if ($bytes === 0) {
+            $client->upload($targetPath, '');
+            return;
+        }
+
+        $firstChunk = fread($read, self::CHUNK_SIZE) ?: '';
         $cursor = $client->uploadSessionStart($firstChunk);
         $bar?->advance(strlen($firstChunk));
 
-        if (strlen($firstChunk) < $bytes) {
-            while (!feof($read)) {
-                $chunk = fread($read, $chunkSize);
-                if (feof($read)) {
-                    $client->uploadSessionFinish($chunk, $cursor, $targetPath);
-                } else {
-                    $cursor = $client->uploadSessionAppend($chunk, $cursor);
-                }
-                $bar?->advance(strlen($chunk));
+        $transferred = strlen($firstChunk);
+
+        while (!feof($read)) {
+            $chunk = fread($read, self::CHUNK_SIZE) ?: '';
+            $transferred += strlen($chunk);
+
+            if ($transferred >= $bytes) {
+                // letzter Chunk
+                $client->uploadSessionFinish($chunk, $cursor, $targetPath);
+            } else {
+                $cursor = $client->uploadSessionAppend($chunk, $cursor);
             }
-        } else {
-            $client->uploadSessionFinish('', $cursor, $targetPath);
+
+            $bar?->advance(strlen($chunk));
         }
+    }
+
+    private function maybeImportCsvForDirectory(string $dirPath): void
+    {
+        $hasCsv = $this->directoryContainsCsv($dirPath);
+        if (!$hasCsv) {
+            return;
+        }
+
+        // Artisan-Call isolieren; Fehler nicht killen lassen
+        try {
+            Artisan::call('info:import', ['--dir' => $dirPath]);
+        } catch (Throwable $e) {
+            Log::warning('info:import fehlgeschlagen', [
+                'dir' => $dirPath,
+                'e' => $e->getMessage(),
+            ]);
+            $this->log("Warnung: info:import für {$dirPath} fehlgeschlagen ({$e->getMessage()})");
+        }
+    }
+
+    private function directoryContainsCsv(string $dirPath): bool
+    {
+        try {
+            foreach (new \DirectoryIterator($dirPath) as $f) {
+                if ($f->isFile() && preg_match(self::CSV_REGEX, $f->getFilename())) {
+                    return true;
+                }
+            }
+        } catch (\UnexpectedValueException) {
+            // nicht lesbar -> behandeln wie "keine CSV"
+        }
+
+        return false;
+    }
+
+    private function makeRecursiveIterator(string $baseDir): \RecursiveIteratorIterator
+    {
+        return new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $baseDir,
+                \FilesystemIterator::SKIP_DOTS
+                | \FilesystemIterator::CURRENT_AS_FILEINFO
+                | \FilesystemIterator::FOLLOW_SYMLINKS
+            ),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+    }
+
+    private function updateBatchStats(Batch $batch, array $stats, string $diskName): void
+    {
+        $batch->update([
+            'stats' => $stats + ['disk' => $diskName],
+        ]);
+    }
+
+    private function ensureDirectory(string $dir): void
+    {
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new RuntimeException("Konnte Zielordner nicht erstellen: {$dir}");
+        }
+    }
+
+    private function assertDirectory(string $path): void
+    {
+        if (!is_dir($path)) {
+            throw new RuntimeException("Inbox fehlt: {$path}");
+        }
+    }
+
+    private function createProgressBar(int $max): ?ProgressBar
+    {
+        if ($this->output === null) {
+            return null;
+        }
+
+        $bar = $this->output->createProgressBar($max);
+        $bar->start();
+
+        return $bar;
+    }
+
+    private function log(string $message): void
+    {
+        $this->output?->writeln($message);
     }
 }
