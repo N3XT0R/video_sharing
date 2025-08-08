@@ -81,6 +81,7 @@ class IngestScan extends Command
 
                 // Für Cloud-Disks kein makeDirectory nötig
                 $this->info('uploading file: '.$fileInfo->getFilename());
+                $this->info($dstRel);
                 $disk->put($dstRel, $read);
                 if (is_resource($read)) {
                     fclose($read);
