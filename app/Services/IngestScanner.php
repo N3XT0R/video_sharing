@@ -137,10 +137,19 @@ final class IngestScanner
             'original_name' => $fileName,
         ]);
 
+        // Clip-Informationen nach Anlage des Videos erneut importieren
+        $this->maybeImportCsvForDirectory(dirname($path));
+        $video->refresh();
+
         $previewUrl = null;
         try {
             $this->previews->setOutput($this->output);
-            $previewUrl = $this->previews->generate($video, 0, 10);
+            $clip = $video->clips()->first();
+            if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
+                $previewUrl = $this->previews->generateForClip($clip);
+            } else {
+                $previewUrl = $this->previews->generate($video, 0, 10);
+            }
         } catch (Throwable $e) {
             Log::warning('Preview generation failed', ['file' => $path, 'e' => $e->getMessage()]);
             $this->log("Warnung: Preview konnte nicht erstellt werden ({$e->getMessage()})");
