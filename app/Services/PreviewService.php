@@ -17,9 +17,6 @@ final class PreviewService
 
     // ───────────────────────── public API ─────────────────────────
 
-    /**
-     * Optional: Console-Ausgabe aktivieren (z. B. in Commands).
-     */
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
         $this->output = $outputStyle;
@@ -33,7 +30,6 @@ final class PreviewService
         }
 
         $duration = $end - $start;
-
         /** @var FilesystemContract $sourceDisk */
         $sourceDisk = Storage::disk($video->disk ?? 'local');
         $relPath = $this->normalizeRelative($video->path);
@@ -47,7 +43,7 @@ final class PreviewService
             return $previewDisk->url($previewPath);
         }
 
-        // Quelle → lokaler Pfad (lokal via path(); remote via readStream() → Temp)
+        // Quelle → lokaler Pfad (lokal via path(); remote via readStream()/get() → Temp)
         [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
         if ($srcPath === null) {
             $this->error("Quelldatei nicht lesbar: disk={$video->disk} path={$relPath}");
@@ -135,8 +131,9 @@ final class PreviewService
 
     /**
      * Disk → lokaler Pfad:
-     *  - Wenn die Disk ein lokales path() anbietet und die Datei existiert → direkt nutzen.
-     *  - Ansonsten: readStream() und in eine Tempdatei kopieren.
+     *  1) lokale Disks: path()
+     *  2) remote: readStream() → Tempdatei
+     *  3) Fallback: get() → Tempdatei (RAM-intensiver, aber robust)
      *
      * @return array{0:?string,1:bool} [localPath|null, isTemp]
      */
@@ -160,41 +157,62 @@ final class PreviewService
             $stream = $disk->readStream($relativePath);
         } catch (\Throwable $e) {
             $this->error("readStream Exception: {$relativePath} :: {$e->getMessage()}");
+            $stream = null;
+        }
+
+        if (is_resource($stream)) {
+            $tmp = $this->makeTempFile('.src');
+            if ($tmp === null) {
+                @fclose($stream);
+                $this->error('Konnte Tempdatei für Source nicht anlegen.');
+                return [null, false];
+            }
+
+            $out = @fopen($tmp, 'wb');
+            if ($out === false) {
+                @fclose($stream);
+                @unlink($tmp);
+                $this->error('Konnte Tempdatei nicht öffnen (write).');
+                return [null, false];
+            }
+
+            try {
+                stream_copy_to_stream($stream, $out);
+            } finally {
+                @fclose($stream);
+                @fclose($out);
+            }
+
+            return [$tmp, true];
+        }
+
+        // 3) Fallback: get() (lädt den kompletten Inhalt in den Speicher)
+        try {
+            $contents = $disk->get($relativePath);
+        } catch (\Throwable $e) {
+            $this->error("get() Exception: {$relativePath} :: {$e->getMessage()}");
             return [null, false];
         }
 
-        if (!is_resource($stream)) {
-            $this->error("readStream fehlgeschlagen: {$relativePath} (got ".gettype($stream).')');
+        if (!is_string($contents) || $contents === '') {
+            $this->error("get() lieferte keinen Inhalt: {$relativePath} (type=".gettype($contents).')');
             return [null, false];
         }
 
         $tmp = $this->makeTempFile('.src');
         if ($tmp === null) {
-            @fclose($stream);
-            $this->error('Konnte Tempdatei für Source nicht anlegen.');
+            $this->error('Konnte Tempdatei für Source (get) nicht anlegen.');
             return [null, false];
         }
 
-        $out = @fopen($tmp, 'wb');
-        if ($out === false) {
-            @fclose($stream);
+        $bytes = @file_put_contents($tmp, $contents);
+        if ($bytes === false) {
             @unlink($tmp);
-            $this->error('Konnte Tempdatei nicht öffnen (write).');
+            $this->error('Konnte Tempdatei (get) nicht schreiben.');
             return [null, false];
         }
 
-        try {
-            // effizient kopieren
-            stream_copy_to_stream($stream, $out);
-        } finally {
-            if (is_resource($stream)) {
-                @fclose($stream);
-            }
-            if (is_resource($out)) {
-                @fclose($out);
-            }
-        }
-
+        $this->info("Quelle über get() geladen: {$relativePath} (".$this->humanBytes($bytes).')');
         return [$tmp, true];
     }
 

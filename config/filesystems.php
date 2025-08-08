@@ -75,7 +75,7 @@ return [
             'refresh_token' => null, // Token liegt in der Datenbank
             'client_id' => env('DROPBOX_CLIENT_ID'),
             'client_secret' => env('DROPBOX_CLIENT_SECRET'),
-            'root' => env('DROPBOX_ROOT', '/share'), //verzeichnis auf dropbox
+            'root' => env('DROPBOX_ROOT', 'share'), //verzeichnis auf dropbox
         ],
 
     ],

@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Storage::extend('dropbox', function ($app, $config) {
             $client = new DropboxClient(app(AutoRefreshTokenProvider::class));
-            $root = (string)($config['root'] ?? '');
+            $root = trim((string)($config['root'] ?? ''), '/'); // <— neu
             $adapter = new DropboxAdapter($client, $root);
 
             $filesystem = new Filesystem($adapter);
