@@ -29,3 +29,6 @@ Schedule::command('assign:distribute')
 Schedule::command('notify:offers')
     ->fridays()
     ->at('19:00');
+
+Schedule::command('previews:generate')
+    ->everyThirtyMinutes();
