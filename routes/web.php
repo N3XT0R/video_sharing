@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AssignmentDownloadController;
+use App\Http\Controllers\DropboxController;
 use App\Http\Controllers\OfferController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +16,7 @@ Route::get('/offer/{batch}/{channel}/unused', [OfferController::class, 'showUnus
 Route::post('/offer/{batch}/{channel}/unused', [OfferController::class, 'storeUnused'])->name('offer.unused.store');
 
 Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])->name('assignments.download');
+
+
+Route::get('/dropbox/connect', [DropboxController::class, 'connect'])->name('dropbox.connect');
+Route::get('/dropbox/callback', [DropboxController::class, 'callback'])->name('dropbox.callback');

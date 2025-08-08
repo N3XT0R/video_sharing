@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\{Batch, Video};
+use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\{Log, Storage};
 use RuntimeException;
@@ -192,7 +193,9 @@ class IngestScanner
         $chunkSize = 8 * 1024 * 1024; // 8MB
         $root = config('filesystems.disks.dropbox.root', '');
         $targetPath = '/'.trim($root.'/'.$dstRel, '/');
-        $client = new DropboxClient(config('filesystems.disks.dropbox.authorization_token'));
+        
+        $provider = app(AutoRefreshTokenProvider::class);
+        $client = new DropboxClient($provider);
 
         $firstChunk = fread($read, $chunkSize);
         $cursor = $client->uploadSessionStart($firstChunk);

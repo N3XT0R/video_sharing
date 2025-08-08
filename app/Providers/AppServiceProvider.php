@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -16,7 +17,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(AutoRefreshTokenProvider::class, function ($app) {
+            $cfg = config('filesystems.disks.dropbox');
+            return new AutoRefreshTokenProvider(
+                $cfg['client_id'] ?? env('DROPBOX_CLIENT_ID'),
+                $cfg['client_secret'] ?? env('DROPBOX_CLIENT_SECRET'),
+                $cfg['refresh_token'] ?? env('DROPBOX_REFRESH_TOKEN')
+            );
+        });
     }
 
     /**
