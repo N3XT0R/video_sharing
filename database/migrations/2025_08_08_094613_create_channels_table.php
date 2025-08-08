@@ -44,8 +44,8 @@ return new class extends Migration {
                 'updated_at' => now(),
             ],
             [
-                'creator_name' => 'Julius',
-                'name' => 'DashboardHeroes',
+                'creator_name' => 'Leo',
+                'name' => 'Augen auf!',
                 'email' => 'eure-videos@web.de',
                 'weight' => 1,
                 'created_at' => now(),
