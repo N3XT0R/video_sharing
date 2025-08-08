@@ -6,10 +6,10 @@ namespace App\Services;
 
 use App\Models\{Batch, Video};
 use Illuminate\Console\OutputStyle;
-use Illuminate\Support\Facades\{Http, Log, Storage};
-use Symfony\Component\Console\Helper\ProgressBar;
+use Illuminate\Support\Facades\{Log, Storage};
 use RuntimeException;
 use Spatie\Dropbox\Client as DropboxClient;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Throwable;
 
 class IngestScanner
@@ -192,82 +192,24 @@ class IngestScanner
         $chunkSize = 8 * 1024 * 1024; // 8MB
         $root = config('filesystems.disks.dropbox.root', '');
         $targetPath = '/'.trim($root.'/'.$dstRel, '/');
-        $client = $this->createDropboxClient();
+        $client = new DropboxClient(config('filesystems.disks.dropbox.authorization_token'));
 
         $firstChunk = fread($read, $chunkSize);
-        $cursor = $this->callDropbox(fn (DropboxClient $c) => $c->uploadSessionStart($firstChunk), $client);
+        $cursor = $client->uploadSessionStart($firstChunk);
         $bar?->advance(strlen($firstChunk));
 
         if (strlen($firstChunk) < $bytes) {
             while (!feof($read)) {
                 $chunk = fread($read, $chunkSize);
                 if (feof($read)) {
-                    $this->callDropbox(fn (DropboxClient $c) => $c->uploadSessionFinish($chunk, $cursor, $targetPath), $client);
+                    $client->uploadSessionFinish($chunk, $cursor, $targetPath);
                 } else {
-                    $cursor = $this->callDropbox(fn (DropboxClient $c) => $c->uploadSessionAppend($chunk, $cursor), $client);
+                    $cursor = $client->uploadSessionAppend($chunk, $cursor);
                 }
                 $bar?->advance(strlen($chunk));
             }
         } else {
-            $this->callDropbox(fn (DropboxClient $c) => $c->uploadSessionFinish('', $cursor, $targetPath), $client);
-        }
-    }
-
-    private function createDropboxClient(): DropboxClient
-    {
-        return new DropboxClient(config('filesystems.disks.dropbox.authorization_token'));
-    }
-
-    private function callDropbox(callable $operation, DropboxClient &$client): mixed
-    {
-        try {
-            return $operation($client);
-        } catch (Throwable $e) {
-            $message = strtolower($e->getMessage());
-            if ($e->getCode() === 401 || str_contains($message, 'expired_access_token')) {
-                $this->refreshDropboxToken();
-                $client = $this->createDropboxClient();
-                return $operation($client);
-            }
-            throw $e;
-        }
-    }
-
-    private function refreshDropboxToken(): void
-    {
-        $refreshToken = config('filesystems.disks.dropbox.refresh_token');
-        $clientId = config('filesystems.disks.dropbox.client_id');
-        $clientSecret = config('filesystems.disks.dropbox.client_secret');
-
-        if (!$refreshToken || !$clientId || !$clientSecret) {
-            throw new RuntimeException('Dropbox OAuth Konfiguration unvollständig.');
-        }
-
-        $response = Http::asForm()->post('https://api.dropbox.com/oauth2/token', [
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $refreshToken,
-            'client_id' => $clientId,
-            'client_secret' => $clientSecret,
-        ]);
-
-        if (!$response->successful()) {
-            throw new RuntimeException('Dropbox Token konnte nicht erneuert werden: '.$response->body());
-        }
-
-        $token = (string) $response->json('access_token');
-        if ($token === '') {
-            throw new RuntimeException('Dropbox Token fehlt im Antwortkörper.');
-        }
-
-        config(['filesystems.disks.dropbox.authorization_token' => $token]);
-
-        $env = base_path('.env');
-        if (is_file($env) && is_writable($env)) {
-            $contents = file_get_contents($env);
-            if ($contents !== false) {
-                $contents = preg_replace('/^DROPBOX_TOKEN=.*$/m', 'DROPBOX_TOKEN='.$token, $contents);
-                file_put_contents($env, $contents);
-            }
+            $client->uploadSessionFinish('', $cursor, $targetPath);
         }
     }
 }
