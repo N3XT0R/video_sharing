@@ -72,6 +72,9 @@ return [
         'dropbox' => [
             'driver' => 'dropbox',
             'authorization_token' => env('DROPBOX_TOKEN'),
+            'refresh_token' => env('DROPBOX_REFRESH_TOKEN'),
+            'client_id' => env('DROPBOX_APP_KEY'),
+            'client_secret' => env('DROPBOX_APP_SECRET'),
             'root' => env('DROPBOX_ROOT', '/share'), //verzeichnis auf dropbox
         ],
 
