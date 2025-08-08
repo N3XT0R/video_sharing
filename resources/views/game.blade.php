@@ -106,12 +106,12 @@
         Sammle <span class="dot" style="background:var(--good)"></span><strong>grüne Clips</strong> für Punkte.
         Weiche dem <span class="dot" style="background:var(--bad)"></span><strong>roten Störer</strong> aus – Kollision
         = Game Over.
-        Hol dir in <strong>60 Sekunden</strong> so viele Punkte wie möglich.
+        Hol dir in <strong>90 Sekunden</strong> so viele Punkte wie möglich.
     </p>
     <div class="row">
         <div class="hud">
             <div>Score: <span id="score">0</span></div>
-            <div>Zeit: <span id="time">60</span>s</div>
+            <div>Zeit: <span id="time">90</span>s</div>
             <div>Best: <span id="best">0</span></div>
         </div>
         <div>
@@ -138,12 +138,12 @@
 
     // Game state
     const W = canvas.width, H = canvas.height;
-    const player = {x: W / 2, y: H / 2, r: 12, speed: 3.2};
+    const player = {x: W / 2, y: H / 2, r: 12, speed: 24};
     let inputs = {up: false, down: false, left: false, right: false};
     let clips = [];               // collectibles
-    let enemy = {x: 80, y: 70, r: 14, dx: 2.6, dy: 2.2};
+    let enemy = {x: 80, y: 70, r: 12, dx: 1.8, dy: 1.6};
     let score = 0;
-    let timeLeft = 60;            // seconds
+    let timeLeft = 90;            // seconds
     let running = true;
     let lastTime = 0;
     let spawnTimer = 0;
@@ -173,13 +173,13 @@
         player.x = W / 2;
         player.y = H / 2;
         player.r = 12;
-        player.speed = 3.2;
-        enemy = {x: rand(40, W - 40), y: rand(40, H - 40), r: 14, dx: 2.6, dy: 2.2};
+        player.speed = 24;
+        enemy = {x: rand(40, W - 40), y: rand(40, H - 40), r: 12, dx: 1.8, dy: 1.6};
         clips = [];
-        for (let i = 0; i < 4; i++) spawnClip();
+        for (let i = 0; i < 6; i++) spawnClip();
         score = 0;
         scoreEl.textContent = score;
-        timeLeft = 60;
+        timeLeft = 90;
         timeEl.textContent = timeLeft;
         running = true;
         lastTime = performance.now();
@@ -217,7 +217,7 @@
         if (!running) return;
         // Timer
         spawnTimer += dt;
-        if (spawnTimer > 1.2) {
+        if (spawnTimer > 0.7) {
             spawnClip();
             spawnTimer = 0;
         }
@@ -256,8 +256,7 @@
                 clips.splice(i, 1);
                 score++;
                 scoreEl.textContent = score;
-                // leichte Beschleunigung als Feedback
-                if (player.speed < 4.2) player.speed += 0.06;
+                if (player.speed < 4.2) player.speed += 0.05;
             }
         }
         if (dist(player.x, player.y, enemy.x, enemy.y) < player.r + enemy.r) {
@@ -319,7 +318,7 @@
             ctx.textAlign = 'center';
             ctx.fillText('Game Over', W / 2, H / 2 - 8);
             ctx.font = '14px Inter, sans-serif';
-            ctx.fillText(`Score: ${score} · Best: ${best}  —  Drücke "Neu starten"`, W / 2, H / 2 + 18);
+            ctx.fillText(`Score: ${score} · Best: ${best}  —  Drücke \"Neu starten\"`, W / 2, H / 2 + 18);
         }
     }
 
