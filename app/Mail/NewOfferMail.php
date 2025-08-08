@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\{Batch, Channel};
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -15,7 +16,7 @@ class NewOfferMail extends Mailable
         public Batch $batch,
         public Channel $channel,
         public string $offerUrl,
-        public \Carbon\Carbon $expiresAt,
+        public Carbon $expiresAt,
         public string $unusedUrl,
     ) {
     }
