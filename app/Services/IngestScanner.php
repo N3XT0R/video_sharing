@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\{Batch, Video};
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\{Log, Storage};
+use Symfony\Component\Console\Helper\ProgressBar;
 use RuntimeException;
 use Spatie\Dropbox\Client as DropboxClient;
 use Throwable;
@@ -17,6 +18,11 @@ class IngestScanner
 
 
     protected ?OutputStyle $outputStyle = null;
+
+    private function log(string $message): void
+    {
+        $this->outputStyle?->writeln($message);
+    }
 
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
@@ -34,6 +40,7 @@ class IngestScanner
             throw new RuntimeException("Inbox fehlt: {$inbox}");
         }
 
+        $this->log("Starte Scan: {$inbox} -> {$diskName}");
         $batch = Batch::query()->create(['type' => 'ingest', 'started_at' => now()]);
         $stats = ['new' => 0, 'dups' => 0, 'err' => 0];
 
@@ -46,6 +53,8 @@ class IngestScanner
             if (!$fileInfo->isFile() || !$this->isAllowedExtension($fileInfo)) {
                 continue;
             }
+
+            $this->log("Verarbeite {$path}");
 
             try {
                 $result = $this->processFile($path, strtolower($fileInfo->getExtension()), $fileInfo->getFilename(),
@@ -61,6 +70,7 @@ class IngestScanner
                 ]);
             } catch (Throwable $e) {
                 Log::error($e->getMessage());
+                $this->log("Fehler: {$e->getMessage()}");
                 $stats['err']++;
             }
         }
@@ -69,6 +79,8 @@ class IngestScanner
             'finished_at' => now(),
             'stats' => ['new' => $stats['new'], 'dups' => $stats['dups'], 'err' => $stats['err'], 'disk' => $diskName],
         ]);
+
+        $this->log("Fertig. Neu: {$stats['new']} Doppelt: {$stats['dups']} Fehler: {$stats['err']}");
 
         return $stats;
     }
@@ -88,13 +100,16 @@ class IngestScanner
 
         if (Video::query()->where('hash', $hash)->exists()) {
             @unlink($path);
+            $this->log('Duplikat übersprungen');
             return 'dups';
         }
 
         $dstRel = $this->buildDestinationPath($hash, $ext);
+        $this->log("Upload nach {$dstRel}");
         $uploaded = $this->uploadFile($path, $dstRel, $diskName, $bytes);
 
         if (!$uploaded) {
+            $this->log('Upload fehlgeschlagen');
             return 'err';
         }
 
@@ -108,6 +123,7 @@ class IngestScanner
             'original_name' => $fileName,
         ]);
 
+        $this->log('Upload abgeschlossen');
         return 'new';
     }
 
@@ -125,22 +141,45 @@ class IngestScanner
         }
 
         try {
+            $bar = null;
+            if ($this->outputStyle) {
+                $bar = $this->outputStyle->createProgressBar($bytes);
+                $bar->start();
+            }
+
             if ($diskName === 'dropbox') {
-                $this->uploadToDropbox($read, $dstRel, $bytes);
-                fclose($read);
+                $this->uploadToDropbox($read, $dstRel, $bytes, $bar);
+                if (is_resource($read)) {
+                    fclose($read);
+                }
                 @unlink($path);
+                $bar?->finish();
                 return true;
             }
 
             $disk = Storage::disk($diskName);
-            $uploaded = $disk->put($dstRel, $read);
+            $dest = $disk->path($dstRel);
+            $dir = dirname($dest);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            $write = fopen($dest, 'wb');
+            $chunkSize = 8 * 1024 * 1024;
+            while (!feof($read)) {
+                $chunk = fread($read, $chunkSize);
+                if ($chunk === false) {
+                    break;
+                }
+                fwrite($write, $chunk);
+                $bar?->advance(strlen($chunk));
+            }
+            fclose($write);
             if (is_resource($read)) {
                 fclose($read);
             }
-            if ($uploaded) {
-                @unlink($path);
-            }
-            return $uploaded;
+            @unlink($path);
+            $bar?->finish();
+            return true;
         } finally {
             if (is_resource($read)) {
                 fclose($read);
@@ -148,7 +187,7 @@ class IngestScanner
         }
     }
 
-    private function uploadToDropbox($read, string $dstRel, int $bytes): void
+    private function uploadToDropbox($read, string $dstRel, int $bytes, ?ProgressBar $bar = null): void
     {
         $chunkSize = 8 * 1024 * 1024; // 8MB
         $root = config('filesystems.disks.dropbox.root', '');
@@ -157,6 +196,7 @@ class IngestScanner
 
         $firstChunk = fread($read, $chunkSize);
         $cursor = $client->uploadSessionStart($firstChunk);
+        $bar?->advance(strlen($firstChunk));
 
         if (strlen($firstChunk) < $bytes) {
             while (!feof($read)) {
@@ -166,6 +206,7 @@ class IngestScanner
                 } else {
                     $cursor = $client->uploadSessionAppend($chunk, $cursor);
                 }
+                $bar?->advance(strlen($chunk));
             }
         } else {
             $client->uploadSessionFinish('', $cursor, $targetPath);
