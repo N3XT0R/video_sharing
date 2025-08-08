@@ -1,9 +1,4 @@
 @component('mail::message')
-    {{-- Preheader (hidden in Clients, aber in der Vorschau sichtbar) --}}
-    <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;">
-        Neue Dashcam-Aufnahmen für {{ $channel->name }} sind verfügbar – gültig bis {{ $expiresAt->timezone('Europe/Berlin')->format('d.m.Y, H:i') }}.
-    </span>
-
     @include('emails.partials.header')
 
     # Neue Videos verfügbar
@@ -11,6 +6,8 @@
     Hallo {{ $channel->creator_name ?: 'Liebes Team' }} ({{ $channel->name }}),
 
     für dich stehen neue Dashcam-Aufnahmen bereit (Batch #{{ $batch->id }}).
+    **Du siehst diese Clips als Erster** – nur wenn du sie nicht brauchst, kann sie später ein anderer Kanal erhalten.
+    So bleibt jede Vergabe fair und exklusiv.
 
     Klicke auf den Button, um
     - **alle verfügbaren Videos** anzusehen,
@@ -22,16 +19,10 @@
     @endcomponent
 
     **Gültig bis:** {{ $expiresAt->timezone('Europe/Berlin')->format('d.m.Y, H:i') }}.
-    Danach werden die Dateien automatisch entfernt.
+    Danach werden die Dateien automatisch aus unserem System entfernt.
 
-    Falls der Button nicht funktioniert:
-    {{ $offerUrl }}
-
-    ---
-
-    Nutzt ihr die Clips **nicht**?
-    **Bitte kurz hier melden**, damit andere Kanäle sie verwenden können:
-    {{ $unusedUrl }}
+    [Willst du diese Videos nicht verwenden? Sei so fair und gib sie zurück]({{ $unusedUrl }}) –
+    so können andere Kanäle profitieren und das Material nutzen.
 
     Viele Grüße
     {{ config('app.name') }} / Ilya
