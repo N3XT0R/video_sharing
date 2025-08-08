@@ -19,7 +19,7 @@ class InfoImporter
      */
     public function import(string $csvPath, array $options = [], ?callable $onWarning = null): array
     {
-        $inferRole = (bool) ($options['infer-role'] ?? false);
+        $inferRole = (bool)($options['infer-role'] ?? false);
         $defaultBundle = $options['default-bundle'] ?? '';
         $defaultSubmitter = $options['default-submitter'] ?? '';
 
@@ -42,7 +42,7 @@ class InfoImporter
         while (($row = fgetcsv($fh, 0, ';')) !== false) {
             $row = array_pad($row, 7, '');
             [$filename, $start, $end, $note, $bundle, $role, $submittedBy] = array_map(
-                fn ($v) => $this->trimUtf8Bom((string) $v),
+                fn($v) => $this->trimUtf8Bom((string)$v),
                 $row
             );
 
@@ -69,9 +69,9 @@ class InfoImporter
             }
 
             $base = basename($filename);
-            $video = Video::where('original_name', $base)->first();
+            $video = Video::query()->where('original_name', $base)->first();
 
-            if (! $video) {
+            if (!$video) {
                 $warningCount++;
                 if ($onWarning) {
                     $onWarning("Kein Video gefunden für filename='{$base}'");
@@ -80,10 +80,11 @@ class InfoImporter
                 continue;
             }
 
-            $clip = Clip::where('video_id', $video->id)
-                ->when($startSec !== null, fn ($q) => $q->where('start_sec', $startSec), fn ($q) => $q->whereNull('start_sec'))
-                ->when($endSec !== null, fn ($q) => $q->where('end_sec', $endSec), fn ($q) => $q->whereNull('end_sec'))
-                ->when($role !== '', fn ($q) => $q->where('role', $role), fn ($q) => $q->whereNull('role'))
+            $clip = Clip::query()->where('video_id', $video->id)
+                ->when($startSec !== null, fn($q) => $q->where('start_sec', $startSec),
+                    fn($q) => $q->whereNull('start_sec'))
+                ->when($endSec !== null, fn($q) => $q->where('end_sec', $endSec), fn($q) => $q->whereNull('end_sec'))
+                ->when($role !== '', fn($q) => $q->where('role', $role), fn($q) => $q->whereNull('role'))
                 ->first();
 
             if ($clip) {
@@ -105,7 +106,7 @@ class InfoImporter
                     $updatedCount++;
                 }
             } else {
-                Clip::create([
+                Clip::query()->create([
                     'video_id' => $video->id,
                     'start_sec' => $startSec,
                     'end_sec' => $endSec,
@@ -125,25 +126,25 @@ class InfoImporter
 
     private function parseTimeToSec(?string $s, ?callable $onWarning, int &$warningCount): ?int
     {
-        $s = trim((string) $s);
+        $s = trim((string)$s);
         if ($s === '') {
             return null;
         }
 
         if (preg_match('/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/', $s, $m)) {
-            $h = (int) ($m[1] ?? 0);
-            $mm = (int) $m[2];
-            $ss = (int) $m[3];
+            $h = (int)($m[1] ?? 0);
+            $mm = (int)$m[2];
+            $ss = (int)$m[3];
 
             return $h * 3600 + $mm * 60 + $ss;
         }
 
         if (preg_match('/^([0-5]?\d):([0-5]\d)$/', $s, $m)) {
-            return ((int) $m[1]) * 60 + (int) $m[2];
+            return ((int)$m[1]) * 60 + (int)$m[2];
         }
 
         if (ctype_digit($s)) {
-            return (int) $s;
+            return (int)$s;
         }
 
         $warningCount++;
