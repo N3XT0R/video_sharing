@@ -24,6 +24,8 @@
     [Willst du diese Videos nicht verwenden? Sei so fair und gib sie zurück]({{ $unusedUrl }}) –
     so können andere Kanäle profitieren und das Material nutzen.
 
+    > P.S.: Falls dir mal langweilig ist, schau doch mal auf unsere Startseite. 😉
+
     Viele Grüße
     {{ config('app.name') }} / Ilya
 @endcomponent
