@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Assignment;
+use App\Models\Video;
 use App\Services\PreviewService;
 use Illuminate\Console\Command;
 
 class GeneratePreviews extends Command
 {
     protected $signature = 'previews:generate';
-    protected $description = 'Generate preview clips for queued or notified assignments.';
+    protected $description = 'Generate preview clips for videos without an existing preview.';
 
     public function __construct(private PreviewService $previews)
     {
@@ -20,20 +20,24 @@ class GeneratePreviews extends Command
 
     public function handle(): int
     {
-        $assignments = Assignment::with('video.clips')
-            ->whereIn('status', ['queued', 'notified'])
+        $videos = Video::with('clips')
+            ->whereNull('preview_url')
             ->get();
 
         $this->previews->setOutput($this->output);
 
-        foreach ($assignments as $assignment) {
-            $clip = $assignment->video->clips->first();
+        foreach ($videos as $video) {
+            $clip = $video->clips->first();
             if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
-                $this->previews->generate(
-                    $assignment->video,
+                $url = $this->previews->generate(
+                    $video,
                     (int)$clip->start_sec,
                     (int)$clip->end_sec
                 );
+                if ($url) {
+                    $video->preview_url = $url;
+                    $video->save();
+                }
             }
         }
 
