@@ -23,6 +23,7 @@ class IngestScan extends Command
         $inbox = rtrim((string)$this->option('inbox'), '/');
         $diskName = (string)($this->option('disk') ?: config('files.video_disk', env('FILES_VIDEOS_DISK', 'dropbox')));
         $disk = Storage::disk($diskName);
+        $this->info('started...');
 
         if (!is_dir($inbox)) {
             $this->error("Inbox fehlt: {$inbox}");
@@ -41,6 +42,9 @@ class IngestScan extends Command
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
+        /**
+         * @var \SplFileInfo $fileInfo
+         */
         foreach ($it as $path => $fileInfo) {
             if (!$fileInfo->isFile()) {
                 continue;
@@ -52,12 +56,14 @@ class IngestScan extends Command
             } // CSV, TXT etc. ignorieren
 
             try {
+                $this->info('processing file: '.$fileInfo->getFilename());
                 // Hash & Bytes von der lokalen Quelle ermitteln
                 $hash = hash_file('sha256', $path);
                 $bytes = filesize($path);
 
                 // Duplicate? -> lokale Datei löschen und weiter
                 if (Video::query()->where('hash', $hash)->exists()) {
+                    $this->info('duplicated file: '.$fileInfo->getFilename());
                     @unlink($path);
                     $dupCount++;
                     continue;
@@ -74,6 +80,7 @@ class IngestScan extends Command
                 }
 
                 // Für Cloud-Disks kein makeDirectory nötig
+                $this->info('uploading file: '.$fileInfo->getFilename());
                 $disk->put($dstRel, $read);
                 if (is_resource($read)) {
                     fclose($read);
@@ -93,9 +100,7 @@ class IngestScan extends Command
 
                 $newCount++;
 
-                // OPTIONAL: Thumbnails/Metadaten lokal generieren (ffprobe/ffmpeg)
-                // -> wenn gewünscht, hier per Queue/Job nachschieben.
-
+                $this->info('finished file: '.$fileInfo->getFilename());
             } catch (\Throwable $e) {
                 $this->error($e->getMessage());
                 $errorCount++;
