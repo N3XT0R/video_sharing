@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Video;
+use App\Models\Clip;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,25 @@ final class PreviewService
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
         $this->output = $outputStyle;
+    }
+
+    public function generateForClip(Clip $clip): ?string
+    {
+        $video = $clip->video;
+        if (!$video) {
+            $this->warn('Clip ohne zugehöriges Video.');
+            return null;
+        }
+
+        $start = $clip->start_sec;
+        $end = $clip->end_sec;
+
+        if ($start === null || $end === null) {
+            $this->warn("Clip {$clip->id} hat keinen gültigen Zeitbereich.");
+            return null;
+        }
+
+        return $this->generate($video, $start, $end);
     }
 
     public function generate(Video $video, int $start, int $end): ?string

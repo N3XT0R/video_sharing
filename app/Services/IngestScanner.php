@@ -8,8 +8,8 @@ use App\Models\Batch;
 use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use App\Services\PreviewService;
+use App\Services\InfoImporter;
 use Illuminate\Console\OutputStyle;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -31,7 +31,7 @@ final class IngestScanner
 
     private ?OutputStyle $output = null;
 
-    public function __construct(private PreviewService $previews)
+    public function __construct(private PreviewService $previews, private InfoImporter $infoImporter)
     {
     }
 
@@ -137,10 +137,19 @@ final class IngestScanner
             'original_name' => $fileName,
         ]);
 
+        // Clip-Informationen nach Anlage des Videos erneut importieren
+        $this->maybeImportCsvForDirectory(dirname($path));
+        $video->refresh();
+
         $previewUrl = null;
         try {
             $this->previews->setOutput($this->output);
-            $previewUrl = $this->previews->generate($video, 0, 10);
+            $clip = $video->clips()->first();
+            if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
+                $previewUrl = $this->previews->generateForClip($clip);
+            } else {
+                $previewUrl = $this->previews->generate($video, 0, 10);
+            }
         } catch (Throwable $e) {
             Log::warning('Preview generation failed', ['file' => $path, 'e' => $e->getMessage()]);
             $this->log("Warnung: Preview konnte nicht erstellt werden ({$e->getMessage()})");
@@ -266,36 +275,41 @@ final class IngestScanner
 
     private function maybeImportCsvForDirectory(string $dirPath): void
     {
-        $hasCsv = $this->directoryContainsCsv($dirPath);
-        if (!$hasCsv) {
-            return;
-        }
-
-        // Artisan-Call isolieren; Fehler nicht killen lassen
-        try {
-            Artisan::call('info:import', ['--dir' => $dirPath]);
-        } catch (Throwable $e) {
-            Log::warning('info:import fehlgeschlagen', [
-                'dir' => $dirPath,
-                'e' => $e->getMessage(),
-            ]);
-            $this->log("Warnung: info:import für {$dirPath} fehlgeschlagen ({$e->getMessage()})");
+        $csvFiles = $this->findCsvFiles($dirPath);
+        foreach ($csvFiles as $csv) {
+            try {
+                $result = $this->infoImporter->import($csv);
+                if (($result['warnings'] ?? 0) === 0) {
+                    @unlink($csv);
+                }
+            } catch (Throwable $e) {
+                Log::warning('info:import fehlgeschlagen', [
+                    'dir' => $dirPath,
+                    'csv' => $csv,
+                    'e' => $e->getMessage(),
+                ]);
+                $this->log("Warnung: info:import für {$dirPath} fehlgeschlagen ({$e->getMessage()})");
+            }
         }
     }
 
-    private function directoryContainsCsv(string $dirPath): bool
+    /**
+     * @return string[]
+     */
+    private function findCsvFiles(string $dirPath): array
     {
+        $files = [];
         try {
             foreach (new \DirectoryIterator($dirPath) as $f) {
                 if ($f->isFile() && preg_match(self::CSV_REGEX, $f->getFilename())) {
-                    return true;
+                    $files[] = $f->getPathname();
                 }
             }
         } catch (\UnexpectedValueException) {
             // nicht lesbar -> behandeln wie "keine CSV"
         }
 
-        return false;
+        return $files;
     }
 
     private function makeRecursiveIterator(string $baseDir): \RecursiveIteratorIterator
