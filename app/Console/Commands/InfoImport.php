@@ -19,7 +19,7 @@ class InfoImport extends Command
         {--infer-role=1 : Rolle (F/R) aus Dateinamen _F/_R ableiten, wenn Spalte leer}
         {--default-bundle= : Bundle-Fallback, wenn in CSV leer}
         {--default-submitter= : submitted_by-Fallback, wenn in CSV leer}
-        {--keep-csv=0 : CSV/TXT nach Import behalten (1 = nicht löschen)}';
+        {--keep-csv=1 : CSV/TXT nach Import behalten (1 = nicht löschen)}';
 
     protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role/submitted_by) aus einer CSV.';
 

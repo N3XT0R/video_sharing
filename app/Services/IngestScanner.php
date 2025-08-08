@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Models\Batch;
 use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
-use App\Services\PreviewService;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -282,7 +281,7 @@ final class IngestScanner
 
         // Artisan-Call isolieren; Fehler nicht killen lassen
         try {
-            Artisan::call('info:import', ['--dir' => $dirPath]);
+            Artisan::call('info:import', ['--dir' => $dirPath, '--keep-csv' => 0]);
         } catch (Throwable $e) {
             Log::warning('info:import fehlgeschlagen', [
                 'dir' => $dirPath,
