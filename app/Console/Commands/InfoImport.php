@@ -14,7 +14,7 @@ class InfoImport extends Command
      * filename;start;end;note;bundle;role;submitted_by
      */
     protected $signature = 'info:import
-        {--dir= : Upload-Ordner mit Clips + genau 1 CSV/TXT}
+        {--dir= : Upload-Ordner mit Clips; alle CSV/TXT darunter werden importiert}
         {--csv= : Optional: direkter Pfad zur CSV/TXT}
         {--infer-role=1 : Rolle (F/R) aus Dateinamen _F/_R ableiten, wenn Spalte leer}
         {--default-bundle= : Bundle-Fallback, wenn in CSV leer}
@@ -33,49 +33,61 @@ class InfoImport extends Command
             return self::FAILURE;
         }
 
-        if ($dir !== '' && $csvPath === '') {
+        $csvPaths = [];
+
+        if ($csvPath !== '') {
+            $csvPaths[] = $csvPath;
+        } elseif ($dir !== '') {
             if (! is_dir($dir)) {
                 $this->error("Ordner nicht gefunden: {$dir}");
 
                 return self::FAILURE;
             }
-            // genau EINE CSV/TXT im Ordner finden
-            $candidates = glob(rtrim($dir, '/').'/*.{csv,CSV,txt,TXT}', GLOB_BRACE) ?: [];
-            if (count($candidates) === 0) {
+
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+            foreach ($iterator as $file) {
+                if ($file->isFile() && preg_match('/\.(csv|txt)$/i', $file->getFilename())) {
+                    $csvPaths[] = $file->getPathname();
+                }
+            }
+
+            if (count($csvPaths) === 0) {
                 $this->error("Keine CSV/TXT in {$dir} gefunden.");
 
                 return self::FAILURE;
             }
-            if (count($candidates) > 1) {
-                $this->error("Mehrere CSV/TXT in {$dir} gefunden. Bitte eine mit --csv=... auswählen:");
-                foreach ($candidates as $c) {
-                    $this->line(' - '.$c);
-                }
+        }
+
+        $totalCreated = 0;
+        $totalUpdated = 0;
+        $totalWarnings = 0;
+
+        foreach ($csvPaths as $path) {
+            if (! is_file($path)) {
+                $this->error("CSV nicht gefunden: {$path}");
 
                 return self::FAILURE;
             }
-            $csvPath = $candidates[0];
+
+            try {
+                $this->line('Importiere '.$path.' ...');
+                $result = $importer->import($path, [
+                    'infer-role' => $this->optionTruthy('infer-role'),
+                    'default-bundle' => (string) $this->option('default-bundle'),
+                    'default-submitter' => (string) $this->option('default-submitter'),
+                ], fn ($msg) => $this->warn($msg));
+            } catch (\Throwable $e) {
+                $this->error($e->getMessage());
+
+                return self::FAILURE;
+            }
+
+            $totalCreated += $result['created'];
+            $totalUpdated += $result['updated'];
+            $totalWarnings += $result['warnings'];
         }
 
-        if (! is_file($csvPath)) {
-            $this->error("CSV nicht gefunden: {$csvPath}");
-
-            return self::FAILURE;
-        }
-
-        try {
-            $result = $importer->import($csvPath, [
-                'infer-role' => $this->optionTruthy('infer-role'),
-                'default-bundle' => (string) $this->option('default-bundle'),
-                'default-submitter' => (string) $this->option('default-submitter'),
-            ], fn ($msg) => $this->warn($msg));
-        } catch (\Throwable $e) {
-            $this->error($e->getMessage());
-
-            return self::FAILURE;
-        }
-
-        $this->info("Import fertig: neu={$result['created']}, aktualisiert={$result['updated']}, Warnungen={$result['warnings']}");
+        $this->info("Import fertig: neu={$totalCreated}, aktualisiert={$totalUpdated}, Warnungen={$totalWarnings}");
         $this->line('Reihenfolge im Cron: ingest:scan → info:import (--dir oder --csv) → weekly:run');
 
         return self::SUCCESS;
