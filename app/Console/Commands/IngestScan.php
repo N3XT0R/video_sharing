@@ -82,26 +82,29 @@ class IngestScan extends Command
                 // Für Cloud-Disks kein makeDirectory nötig
                 $this->info('uploading file: '.$fileInfo->getFilename());
                 $this->info($dstRel);
-                $disk->put($dstRel, $read);
-                if (is_resource($read)) {
-                    fclose($read);
+                if ($disk->put($dstRel, $read)) {
+                    if (is_resource($read)) {
+                        fclose($read);
+                    }
+                    @unlink($path);
+
+                    // DB-Eintrag
+                    Video::query()->create([
+                        'hash' => $hash,
+                        'ext' => $ext,
+                        'bytes' => $bytes,
+                        'path' => $dstRel,
+                        'disk' => $diskName,
+                        'meta' => null,
+                        'original_name' => $fileInfo->getFilename(), // nur Dateiname, Ordner egal
+                    ]);
+
+                    $newCount++;
+                    $this->info('finished file: '.$fileInfo->getFilename());
+                } else {
+                    $errorCount++;
+                    $this->error('error file: '.$fileInfo->getFilename());
                 }
-                @unlink($path);
-
-                // DB-Eintrag
-                Video::query()->create([
-                    'hash' => $hash,
-                    'ext' => $ext,
-                    'bytes' => $bytes,
-                    'path' => $dstRel,
-                    'disk' => $diskName,
-                    'meta' => null,
-                    'original_name' => $fileInfo->getFilename(), // nur Dateiname, Ordner egal
-                ]);
-
-                $newCount++;
-
-                $this->info('finished file: '.$fileInfo->getFilename());
             } catch (\Throwable $e) {
                 $this->error($e->getMessage());
                 $errorCount++;
