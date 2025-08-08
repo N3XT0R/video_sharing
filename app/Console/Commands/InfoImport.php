@@ -24,26 +24,37 @@ class InfoImport extends Command
 
     public function handle(InfoImporter $importer): int
     {
-        $csvPath = (string) ($this->option('csv') ?? '');
-        $dir = (string) ($this->option('dir') ?? '');
+        $csvPath = (string)($this->option('csv') ?? '');
+        $dir = (string)($this->option('dir') ?? '');
 
         if ($csvPath === '' && $dir === '') {
             $this->error('Gib entweder --dir=/pfad/zum/ordner ODER --csv=/pfad/zur/datei.csv an.');
-
             return self::FAILURE;
         }
 
         if ($dir !== '' && $csvPath === '') {
-            if (! is_dir($dir)) {
+            if (!is_dir($dir)) {
                 $this->error("Ordner nicht gefunden: {$dir}");
-
                 return self::FAILURE;
             }
-            // genau EINE CSV/TXT im Ordner finden
-            $candidates = glob(rtrim($dir, '/').'/*.{csv,CSV,txt,TXT}', GLOB_BRACE) ?: [];
+
+            $base = rtrim($dir, "/\\");
+            $candidates = [];
+
+            try {
+                $it = new \DirectoryIterator($base);
+                foreach ($it as $file) {
+                    if ($file->isFile() && preg_match('/\.(csv|txt)$/i', $file->getFilename())) {
+                        $candidates[] = $file->getPathname();
+                    }
+                }
+            } catch (\UnexpectedValueException $e) {
+                $this->error("Ordner kann nicht gelesen werden: {$dir} ({$e->getMessage()})");
+                return self::FAILURE;
+            }
+
             if (count($candidates) === 0) {
                 $this->error("Keine CSV/TXT in {$dir} gefunden.");
-
                 return self::FAILURE;
             }
             if (count($candidates) > 1) {
@@ -51,27 +62,25 @@ class InfoImport extends Command
                 foreach ($candidates as $c) {
                     $this->line(' - '.$c);
                 }
-
                 return self::FAILURE;
             }
+
             $csvPath = $candidates[0];
         }
 
-        if (! is_file($csvPath)) {
+        if (!is_file($csvPath)) {
             $this->error("CSV nicht gefunden: {$csvPath}");
-
             return self::FAILURE;
         }
 
         try {
             $result = $importer->import($csvPath, [
                 'infer-role' => $this->optionTruthy('infer-role'),
-                'default-bundle' => (string) $this->option('default-bundle'),
-                'default-submitter' => (string) $this->option('default-submitter'),
-            ], fn ($msg) => $this->warn($msg));
+                'default-bundle' => (string)$this->option('default-bundle'),
+                'default-submitter' => (string)$this->option('default-submitter'),
+            ], fn($msg) => $this->warn($msg));
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
-
             return self::FAILURE;
         }
 
@@ -87,7 +96,7 @@ class InfoImport extends Command
         if ($val === null) {
             return false;
         }
-        $s = strtolower((string) $val);
+        $s = strtolower((string)$val);
 
         return in_array($s, ['1', 'true', 'on', 'yes', 'y'], true);
     }
