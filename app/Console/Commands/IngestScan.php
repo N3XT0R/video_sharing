@@ -8,6 +8,7 @@ namespace App\Console\Commands;
 use App\Models\{Batch, Video};
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Dropbox\Client as DropboxClient;
 
 class IngestScan extends Command
 {
@@ -83,12 +84,52 @@ class IngestScan extends Command
                 // Für Cloud-Disks kein makeDirectory nötig
                 $this->info('uploading file: '.$fileName);
                 $this->info($dstRel);
-                if ($disk->put($dstRel, $read)) {
+
+                $uploadedSuccess = false;
+                if ($diskName === 'dropbox') {
+                    $chunkSize = 8 * 1024 * 1024; // 8MB
+                    $root = config('filesystems.disks.dropbox.root', '');
+                    $targetPath = '/' . trim($root . '/' . $dstRel, '/');
+                    $client = new DropboxClient(config('filesystems.disks.dropbox.authorization_token'));
+
+                    $bar = $this->output->createProgressBar($bytes);
+                    $bar->start();
+
+                    $firstChunk = fread($read, $chunkSize);
+                    $cursor = $client->uploadSessionStart($firstChunk);
+                    $bar->advance(strlen($firstChunk));
+
+                    if (strlen($firstChunk) < $bytes) {
+                        while (!feof($read)) {
+                            $chunk = fread($read, $chunkSize);
+                            if (feof($read)) {
+                                $client->uploadSessionFinish($chunk, $cursor, $targetPath);
+                            } else {
+                                $cursor = $client->uploadSessionAppend($chunk, $cursor);
+                            }
+                            $bar->advance(strlen($chunk));
+                        }
+                    } else {
+                        $client->uploadSessionFinish('', $cursor, $targetPath);
+                    }
+
+                    $bar->finish();
+                    $this->newLine();
+                    fclose($read);
+                    @unlink($path);
+                    $uploadedSuccess = true;
+                } else {
+                    $this->line('hochladen…');
+                    $uploadedSuccess = $disk->put($dstRel, $read);
                     if (is_resource($read)) {
                         fclose($read);
                     }
-                    @unlink($path);
+                    if ($uploadedSuccess) {
+                        @unlink($path);
+                    }
+                }
 
+                if ($uploadedSuccess) {
                     // DB-Eintrag
                     Video::query()->create([
                         'hash' => $hash,
