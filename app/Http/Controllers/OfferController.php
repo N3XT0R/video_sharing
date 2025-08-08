@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel, Download};
-use App\Services\AssignmentService;
+use App\Services\{AssignmentService, PreviewService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
@@ -12,7 +12,7 @@ use ZipStream\ZipStream;
 
 class OfferController extends Controller
 {
-    public function __construct(private AssignmentService $assignments)
+    public function __construct(private AssignmentService $assignments, private PreviewService $previews)
     {
     }
 
@@ -26,6 +26,22 @@ class OfferController extends Controller
 
         foreach ($items as $assignment) {
             $assignment->temp_url = $this->assignments->prepareDownload($assignment);
+
+            $previewUrl = $assignment->temp_url;
+            $clip = $assignment->video->clips->first();
+
+            if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
+                $existing = $this->previews->url(
+                    $assignment->video,
+                    (int) $clip->start_sec,
+                    (int) $clip->end_sec
+                );
+                if ($existing) {
+                    $previewUrl = $existing;
+                }
+            }
+
+            $assignment->preview_url = $previewUrl;
         }
 
         $zipPostUrl = URL::temporarySignedRoute(
