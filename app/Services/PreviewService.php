@@ -17,15 +17,12 @@ final class PreviewService
 
     // ───────────────────────── public API ─────────────────────────
 
+    /**
+     * Optional: Console-Ausgabe aktivieren (z. B. in Commands).
+     */
     public function setOutput(?OutputStyle $outputStyle = null): void
     {
         $this->output = $outputStyle;
-    }
-
-    private function normalizeRelative(string $p): string
-    {
-        // Dropbox/Flysystem erwartet relative Pfade
-        return ltrim($p, '/');
     }
 
     public function generate(Video $video, int $start, int $end): ?string
@@ -36,33 +33,28 @@ final class PreviewService
         }
 
         $duration = $end - $start;
+
         /** @var FilesystemContract $sourceDisk */
         $sourceDisk = Storage::disk($video->disk ?? 'local');
         $relPath = $this->normalizeRelative($video->path);
 
-        if (!$sourceDisk->exists($relPath)) {
-            $this->error("Quelldatei nicht gefunden: disk={$video->disk} path={$relPath}");
-            return null;
-        }
-
+        // Ziel (Cache) prüfen
         $previewDisk = Storage::disk('public');
         $previewPath = $this->buildPath($video, $start, $end);
-        $sourceDisk->files();
 
-        // Cache-Hit
         if ($previewDisk->exists($previewPath)) {
             $this->info("Preview vorhanden (Cache): {$previewPath}");
             return $previewDisk->url($previewPath);
         }
 
-        // Quelle -> lokaler Pfad (lokal: path(); remote: readStream -> Tempfile)
+        // Quelle → lokaler Pfad (lokal via path(); remote via readStream() → Temp)
         [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
         if ($srcPath === null) {
-            $this->error('Konnte Quelle nicht für ffmpeg bereitstellen.');
+            $this->error("Quelldatei nicht lesbar: disk={$video->disk} path={$relPath}");
             return null;
         }
 
-        // ffmpeg ausführen
+        // ffmpeg vorbereiten
         $tmpOut = $this->makeTempFile('.mp4');
         if ($tmpOut === null) {
             $this->error('Konnte temporäre Datei nicht anlegen.');
@@ -90,7 +82,7 @@ final class PreviewService
                 return null;
             }
 
-            // Ergebnis in public speichern
+            // Ergebnis speichern
             $size = @filesize($tmpOut) ?: 0;
             $put = $this->putFileToDisk($previewDisk, $previewPath, $tmpOut);
             if (!$put) {
@@ -129,6 +121,12 @@ final class PreviewService
         return $start >= 0 && $end > $start;
     }
 
+    private function normalizeRelative(string $p): string
+    {
+        // Dropbox/Flysystem erwartet relative Pfade (root wird vom Adapter vorangestellt)
+        return ltrim($p, '/');
+    }
+
     private function buildPath(Video $video, int $start, int $end): string
     {
         $hash = md5($video->id.'_'.$start.'_'.$end);
@@ -144,12 +142,12 @@ final class PreviewService
      */
     private function resolveLocalSourcePath(FilesystemContract $disk, string $relativePath): array
     {
-        // Versuch: path() (nicht Teil des Contracts, daher method_exists)
+        // 1) Lokale Disks: path()
         if (method_exists($disk, 'path')) {
             try {
                 /** @var string $path */
                 $path = $disk->path($relativePath);
-                if (is_string($path) && $path !== '' && is_file($path)) {
+                if (is_string($path) && $path !== '' && is_file($path) && is_readable($path)) {
                     return [$path, false];
                 }
             } catch (\Throwable $e) {
@@ -157,23 +155,29 @@ final class PreviewService
             }
         }
 
-        // Remote: stream -> Tempdatei
-        $stream = $disk->readStream($relativePath);
-        if ($stream === false) {
-            $this->error("readStream fehlgeschlagen: {$relativePath}");
+        // 2) Remote: readStream()
+        try {
+            $stream = $disk->readStream($relativePath);
+        } catch (\Throwable $e) {
+            $this->error("readStream Exception: {$relativePath} :: {$e->getMessage()}");
+            return [null, false];
+        }
+
+        if (!is_resource($stream)) {
+            $this->error("readStream fehlgeschlagen: {$relativePath} (got ".gettype($stream).')');
             return [null, false];
         }
 
         $tmp = $this->makeTempFile('.src');
         if ($tmp === null) {
-            fclose($stream);
+            @fclose($stream);
             $this->error('Konnte Tempdatei für Source nicht anlegen.');
             return [null, false];
         }
 
         $out = @fopen($tmp, 'wb');
         if ($out === false) {
-            fclose($stream);
+            @fclose($stream);
             @unlink($tmp);
             $this->error('Konnte Tempdatei nicht öffnen (write).');
             return [null, false];
@@ -183,13 +187,20 @@ final class PreviewService
             // effizient kopieren
             stream_copy_to_stream($stream, $out);
         } finally {
-            fclose($stream);
-            fclose($out);
+            if (is_resource($stream)) {
+                @fclose($stream);
+            }
+            if (is_resource($out)) {
+                @fclose($out);
+            }
         }
 
         return [$tmp, true];
     }
 
+    /**
+     * Erstellt sichere ffmpeg-Argumente basierend auf Konfiguration.
+     */
     private function makeFfmpegArgs(string $srcPath, string $dstPath, int $start, int $duration): array
     {
         $ffmpeg = (string)config('services.ffmpeg.bin', 'ffmpeg');
@@ -223,6 +234,12 @@ final class PreviewService
         return $args;
     }
 
+    /**
+     * Führt ffmpeg via Symfony Process aus, loggt live stdout/stderr und liefert Erfolg + Zeit zurück.
+     *
+     * @param  array<int,string>  $args
+     * @param  float|null  $elapsedSec  (out)
+     */
     private function runFfmpeg(array $args, ?float &$elapsedSec = null): bool
     {
         $timeout = config('services.ffmpeg.timeout');
@@ -253,7 +270,8 @@ final class PreviewService
             return true;
         }
 
-        $this->error(sprintf('ffmpeg exit=%s (%s)',
+        $this->error(sprintf(
+            'ffmpeg exit=%s (%s)',
             (string)$process->getExitCode(),
             $process->getExitCodeText() ?: 'unknown'
         ));
@@ -266,14 +284,17 @@ final class PreviewService
     private function putFileToDisk(FilesystemContract $disk, string $dstPath, string $localFile): bool
     {
         $stream = @fopen($localFile, 'rb');
-        if ($stream === false) {
+        if (!is_resource($stream)) {
+            $this->error("Konnte lokale Datei nicht öffnen: {$localFile}");
             return false;
         }
 
         try {
             return (bool)$disk->put($dstPath, $stream);
         } finally {
-            fclose($stream);
+            if (is_resource($stream)) {
+                @fclose($stream);
+            }
         }
     }
 
