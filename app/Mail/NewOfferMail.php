@@ -16,6 +16,7 @@ class NewOfferMail extends Mailable
         public Channel $channel,
         public string $offerUrl,
         public \Carbon\Carbon $expiresAt,
+        public string $unusedUrl,
     ) {
     }
 
