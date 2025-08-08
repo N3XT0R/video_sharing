@@ -1,102 +1,127 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Models\{Clip, Video};
 use Illuminate\Console\Command;
 
-
 class InfoImport extends Command
 {
-    protected $signature = 'info:import 
-    {--dir= : Upload-Ordner mit Clips + CSV} 
-    {--csv= : optionaler expliziter CSV-Pfad} 
-    {--infer-role=1} 
-    {--default-bundle=}';
-    protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role) aus CSV und verknüpft sie mit Videos.';
+    /**
+     * Erwartetes CSV-Format (Semikolon-getrennt, erste Zeile = Spaltenbeschreibung):
+     * filename;start;end;note;bundle;role;submitted_by
+     */
+    protected $signature = 'info:import
+        {--dir= : Upload-Ordner mit Clips + genau 1 CSV/TXT}
+        {--csv= : Optional: direkter Pfad zur CSV/TXT}
+        {--infer-role=1 : Rolle (F/R) aus Dateinamen _F/_R ableiten, wenn Spalte leer}
+        {--default-bundle= : Bundle-Fallback, wenn in CSV leer}
+        {--default-submitter= : submitted_by-Fallback, wenn in CSV leer}';
+
+    protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role/submitted_by) aus einer CSV in den angegebenen Upload-Ordner.';
 
     public function handle(): int
     {
-        $csvPath = $this->option('csv');
-        $dir = $this->option('dir');
+        $csvPath = (string)($this->option('csv') ?? '');
+        $dir = (string)($this->option('dir') ?? '');
 
-        if (!$csvPath && !$dir) {
+        if ($csvPath === '' && $dir === '') {
             $this->error('Gib entweder --dir=/pfad/zum/ordner ODER --csv=/pfad/zur/datei.csv an.');
             return 1;
         }
 
-        if ($dir) {
+        if ($dir !== '' && $csvPath === '') {
             if (!is_dir($dir)) {
-                $this->error("Ordner nicht gefunden: $dir");
+                $this->error("Ordner nicht gefunden: {$dir}");
                 return 1;
             }
-            // Finde genau **eine** CSV/TXT
+            // genau EINE CSV/TXT im Ordner finden
             $candidates = glob(rtrim($dir, '/').'/*.{csv,CSV,txt,TXT}', GLOB_BRACE) ?: [];
             if (count($candidates) === 0) {
-                $this->error("Keine CSV/TXT in $dir gefunden.");
+                $this->error("Keine CSV/TXT in {$dir} gefunden.");
                 return 1;
             }
             if (count($candidates) > 1) {
-                $this->error("Mehrere CSV/TXT gefunden. Bitte mit --csv=... eine auswählen:\n - ".implode("\n - ",
-                        $candidates));
+                $this->error("Mehrere CSV/TXT in {$dir} gefunden. Bitte eine mit --csv=... auswählen:");
+                foreach ($candidates as $c) {
+                    $this->line(' - '.$c);
+                }
                 return 1;
             }
             $csvPath = $candidates[0];
         }
 
         if (!is_file($csvPath)) {
-            $this->error("CSV nicht gefunden: $csvPath");
+            $this->error("CSV nicht gefunden: {$csvPath}");
             return 1;
         }
 
-        $fh = fopen($csvPath, 'r');
+        $fh = fopen($csvPath, 'rb');
         if (!$fh) {
-            $this->error("Kann CSV nicht öffnen: $csvPath");
+            $this->error("Kann CSV nicht öffnen: {$csvPath}");
             return 1;
         }
 
-        // Header-Zeile mit Spaltenbeschreibung überspringen
-        $header = fgets($fh);
-        if ($header === false) {
-            $this->warn('Leere CSV.');
+        // Erste Zeile ist die Spaltenbeschreibung – lesen & verwerfen
+        $headerLine = fgets($fh);
+        if ($headerLine === false) {
             fclose($fh);
+            $this->warn('Leere CSV.');
             return 0;
         }
 
+        // UTF-8 BOM am Anfang der ersten Datenzeile tolerieren
         $count = 0;
         $updated = 0;
         $warn = 0;
 
         while (($row = fgetcsv($fh, 0, ';')) !== false) {
-            $row = array_pad($row, 6, '');
-            [$filename, $start, $end, $note, $bundle, $role] = array_map('trim', $row);
+            // CSV kann weniger Spalten haben – auffüllen
+            $row = array_pad($row, 7, '');
+            [$filename, $start, $end, $note, $bundle, $role, $submittedBy] = array_map(
+                fn($v) => $this->trimUtf8Bom((string)$v),
+                $row
+            );
+
             if ($filename === '') {
-                continue;
+                continue; // komplett leere Zeile überspringen
             }
 
+            // Zeiten parsen (MM:SS oder H:MM:SS oder Sekunden)
             $startSec = $this->parseTimeToSec($start);
             $endSec = $this->parseTimeToSec($end);
 
-            if ($this->option('infer-role') && $role === '') {
+            // Rolle intelligent ableiten, wenn gewünscht und leer
+            if ($this->optionTruthy('infer-role') && $role === '') {
                 if (preg_match('/_F(\.[A-Za-z0-9]+)?$/u', $filename)) {
                     $role = 'F';
                 } elseif (preg_match('/_R(\.[A-Za-z0-9]+)?$/u', $filename)) {
                     $role = 'R';
                 }
             }
-            if ($bundle === '' && ($def = (string)$this->option('default-bundle')) !== '') {
-                $bundle = $def;
+
+            // Defaults einziehen
+            if ($bundle === '' && ($defB = (string)$this->option('default-bundle')) !== '') {
+                $bundle = $defB;
+            }
+            if ($submittedBy === '' && ($defS = (string)$this->option('default-submitter')) !== '') {
+                $submittedBy = $defS;
             }
 
-            // Match über original_name == **reinem Dateinamen** (Ordner egal)
-            $video = Video::query()->where('original_name', basename($filename))->first();
+            // Video-Matching nur über reinen Dateinamen (Ordner egal)
+            $base = basename($filename);
+            $video = Video::where('original_name', $base)->first();
+
             if (!$video) {
-                $this->warn("Kein Video gefunden für filename='".basename($filename)."'");
+                $this->warn("Kein Video gefunden für filename='{$base}'");
                 $warn++;
                 continue;
             }
 
-            $clip = Clip::query()->where('video_id', $video->id)
+            // Upsert-Logik: gleicher video_id + (start,end,role) → update; sonst create
+            $clip = Clip::where('video_id', $video->id)
                 ->when($startSec !== null, fn($q) => $q->where('start_sec', $startSec),
                     fn($q) => $q->whereNull('start_sec'))
                 ->when($endSec !== null, fn($q) => $q->where('end_sec', $endSec), fn($q) => $q->whereNull('end_sec'))
@@ -104,26 +129,89 @@ class InfoImport extends Command
                 ->first();
 
             if ($clip) {
-                $clip->note = $note !== '' ? $note : $clip->note;
-                $clip->bundle_key = $bundle !== '' ? $bundle : $clip->bundle_key;
-                $clip->save();
-                $updated++;
+                $dirty = false;
+                if ($note !== '' && $clip->note !== $note) {
+                    $clip->note = $note;
+                    $dirty = true;
+                }
+                if ($bundle !== '' && $clip->bundle_key !== $bundle) {
+                    $clip->bundle_key = $bundle;
+                    $dirty = true;
+                }
+                if ($submittedBy !== '' && $clip->submitted_by !== $submittedBy) {
+                    $clip->submitted_by = $submittedBy;
+                    $dirty = true;
+                }
+                if ($dirty) {
+                    $clip->save();
+                    $updated++;
+                }
             } else {
-                Clip::query()->create([
+                Clip::create([
                     'video_id' => $video->id,
                     'start_sec' => $startSec,
                     'end_sec' => $endSec,
                     'note' => $note !== '' ? $note : null,
                     'bundle_key' => $bundle !== '' ? $bundle : null,
                     'role' => $role !== '' ? $role : null,
+                    'submitted_by' => $submittedBy !== '' ? $submittedBy : null,
                 ]);
                 $count++;
             }
         }
+
         fclose($fh);
 
-        $this->info("Import fertig: neu=$count, aktualisiert=$updated, Warnungen=$warn");
-        $this->line("Reihenfolge im Cron: ingest:scan → info:import --dir=... → weekly:run");
+        $this->info("Import fertig: neu={$count}, aktualisiert={$updated}, Warnungen={$warn}");
+        $this->line("Reihenfolge im Cron: ingest:scan → info:import (--dir oder --csv) → weekly:run");
         return 0;
+    }
+
+    private function parseTimeToSec(?string $s): ?int
+    {
+        $s = trim((string)$s);
+        if ($s === '') {
+            return null;
+        }
+
+        // H:MM:SS
+        if (preg_match('/^(?:(\d+):)?([0-5]?\d):([0-5]\d)$/', $s, $m)) {
+            $h = (int)($m[1] ?? 0);
+            $mm = (int)$m[2];
+            $ss = (int)$m[3];
+            return $h * 3600 + $mm * 60 + $ss;
+        }
+
+        // MM:SS
+        if (preg_match('/^([0-5]?\d):([0-5]\d)$/', $s, $m)) {
+            return ((int)$m[1]) * 60 + (int)$m[2];
+        }
+
+        // Nur Sekunden
+        if (ctype_digit($s)) {
+            return (int)$s;
+        }
+
+        $this->warn("Ungültige Zeitangabe: '{$s}' (erwartet MM:SS oder H:MM:SS oder Sekunden)");
+        return null;
+    }
+
+    private function trimUtf8Bom(string $v): string
+    {
+        // BOM am Wortanfang killen
+        if (strncmp($v, "\xEF\xBB\xBF", 3) === 0) {
+            $v = substr($v, 3);
+        }
+        return trim($v);
+    }
+
+    private function optionTruthy(string $name): bool
+    {
+        $val = $this->option($name);
+        if ($val === null) {
+            return false;
+        }
+        $s = strtolower((string)$val);
+        return in_array($s, ['1', 'true', 'on', 'yes', 'y'], true);
     }
 }

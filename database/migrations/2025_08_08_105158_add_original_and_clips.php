@@ -20,6 +20,7 @@ return new class extends Migration {
             $t->string('note')->nullable();
             $t->string('bundle_key')->nullable();  // gruppiert F/R/Segmente
             $t->string('role', 16)->nullable();    // z.B. F, R, seg1, seg2
+            $t->string('submitted_by')->nullable();
             $t->timestamps();
             $t->index(['bundle_key', 'role']);
         });
