@@ -14,14 +14,14 @@ class InfoImport extends Command
      * filename;start;end;note;bundle;role;submitted_by
      */
     protected $signature = 'info:import
-        {--dir= : Upload-Ordner mit Clips + genau 1 CSV/TXT}
+        {--dir= : Upload-Ordner mit Clips (rekursiv nach CSV/TXT suchen)}
         {--csv= : Optional: direkter Pfad zur CSV/TXT}
         {--infer-role=1 : Rolle (F/R) aus Dateinamen _F/_R ableiten, wenn Spalte leer}
         {--default-bundle= : Bundle-Fallback, wenn in CSV leer}
         {--default-submitter= : submitted_by-Fallback, wenn in CSV leer}
         {--keep-csv=0 : CSV/TXT nach Import behalten (1 = nicht löschen)}';
 
-    protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role/submitted_by) aus einer CSV in den angegebenen Upload-Ordner.';
+    protected $description = 'Importiert Clip-Infos (start/end/note/bundle/role/submitted_by) aus einer CSV.';
 
     public function handle(InfoImporter $importer): int
     {
@@ -33,6 +33,7 @@ class InfoImport extends Command
             return self::FAILURE;
         }
 
+        // Wenn nur --dir angegeben ist: rekursiv nach genau 1 CSV/TXT suchen
         if ($dir !== '' && $csvPath === '') {
             if (!is_dir($dir)) {
                 $this->error("Ordner nicht gefunden: {$dir}");
@@ -43,7 +44,16 @@ class InfoImport extends Command
             $candidates = [];
 
             try {
-                $it = new \DirectoryIterator($base);
+                $it = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator(
+                        $base,
+                        \FilesystemIterator::SKIP_DOTS
+                        | \FilesystemIterator::FOLLOW_SYMLINKS
+                    ),
+                    \RecursiveIteratorIterator::SELF_FIRST
+                );
+
+                /** @var \SplFileInfo $file */
                 foreach ($it as $file) {
                     if ($file->isFile() && preg_match('/\.(csv|txt)$/i', $file->getFilename())) {
                         $candidates[] = $file->getPathname();
@@ -55,11 +65,11 @@ class InfoImport extends Command
             }
 
             if (count($candidates) === 0) {
-                $this->error("Keine CSV/TXT in {$dir} gefunden.");
+                $this->error("Keine CSV/TXT in {$dir} (rekursiv) gefunden.");
                 return self::FAILURE;
             }
             if (count($candidates) > 1) {
-                $this->error("Mehrere CSV/TXT in {$dir} gefunden. Bitte eine mit --csv=... auswählen:");
+                $this->error("Mehrere CSV/TXT gefunden. Bitte eine mit --csv=... auswählen:");
                 foreach ($candidates as $c) {
                     $this->line(' - '.$c);
                 }
@@ -95,15 +105,15 @@ class InfoImport extends Command
             } elseif ($this->optionTruthy('keep-csv')) {
                 $this->line("CSV/TXT behalten: {$csvPath}");
             }
+
+            $this->info("Import fertig: neu={$result['created']}, aktualisiert={$result['updated']}, Warnungen={$result['warnings']}");
+            $this->line('Reihenfolge im Cron: ingest:scan → info:import (--dir oder --csv) → weekly:run');
+
+            return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
         }
-
-        $this->info("Import fertig: neu={$result['created']}, aktualisiert={$result['updated']}, Warnungen={$result['warnings']}");
-        $this->line('Reihenfolge im Cron: ingest:scan → info:import (--dir oder --csv) → weekly:run');
-
-        return self::SUCCESS;
     }
 
     private function optionTruthy(string $name): bool
@@ -113,7 +123,6 @@ class InfoImport extends Command
             return false;
         }
         $s = strtolower((string)$val);
-
         return in_array($s, ['1', 'true', 'on', 'yes', 'y'], true);
     }
 }
