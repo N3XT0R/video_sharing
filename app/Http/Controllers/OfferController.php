@@ -31,13 +31,13 @@ class OfferController extends Controller
             $clip = $assignment->video->clips->first();
 
             if ($clip && $clip->start_sec !== null && $clip->end_sec !== null) {
-                $generated = $this->previews->generate(
+                $existing = $this->previews->url(
                     $assignment->video,
                     (int) $clip->start_sec,
                     (int) $clip->end_sec
                 );
-                if ($generated) {
-                    $previewUrl = $generated;
+                if ($existing) {
+                    $previewUrl = $existing;
                 }
             }
 

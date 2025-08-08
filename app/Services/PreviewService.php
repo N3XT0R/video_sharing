@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\Storage;
 
 class PreviewService
 {
+    private function buildPath(Video $video, int $start, int $end): string
+    {
+        $hash = md5($video->id . '_' . $start . '_' . $end);
+        return "previews/{$hash}.mp4";
+    }
+
     /**
      * Generate a preview clip for the given video and return its public URL.
      * If generation fails, null is returned.
@@ -25,10 +31,10 @@ class PreviewService
         $srcPath = $disk->path($video->path);
         $previewDisk = Storage::disk('public');
 
-        $hash = md5($video->id . '_' . $start . '_' . $end);
-        $previewPath = "previews/{$hash}.mp4";
+        $previewPath = $this->buildPath($video, $start, $end);
 
         if (! $previewDisk->exists($previewPath)) {
+            $hash = md5($video->id . '_' . $start . '_' . $end);
             $tmpFile = sys_get_temp_dir() . "/preview_{$hash}.mp4";
             $duration = $end - $start;
             $cmd = sprintf(
@@ -47,5 +53,19 @@ class PreviewService
         }
 
         return $previewDisk->url($previewPath);
+    }
+
+    public function url(Video $video, int $start, int $end): ?string
+    {
+        if ($start < 0 || $end <= $start) {
+            return null;
+        }
+
+        $previewDisk = Storage::disk('public');
+        $previewPath = $this->buildPath($video, $start, $end);
+
+        return $previewDisk->exists($previewPath)
+            ? $previewDisk->url($previewPath)
+            : null;
     }
 }
