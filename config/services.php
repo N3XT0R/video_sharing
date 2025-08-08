@@ -44,4 +44,11 @@ return [
         'client_secret' => env('DROPBOX_CLIENT_SECRET'),
         'scopes' => 'files.content.write files.content.read',
     ],
+    'ffmpeg' => [
+        'bin' => env('FFMPEG_BIN', '/usr/bin/ffmpeg'),
+        'crf' => env('FFMPEG_CRF', 28),
+        'preset' => env('FFMPEG_PRESET', 'veryfast'),
+        'timeout' => env('FFMPEG_TIMEOUT', null),      // z. B. 300
+        'idle_timeout' => env('FFMPEG_IDLE_TIMEOUT', null), // z. B. 60
+    ],
 ];
