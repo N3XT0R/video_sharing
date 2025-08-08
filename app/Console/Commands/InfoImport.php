@@ -74,11 +74,24 @@ class InfoImport extends Command
         }
 
         try {
-            $result = $importer->import($csvPath, [
-                'infer-role' => $this->optionTruthy('infer-role'),
-                'default-bundle' => (string)$this->option('default-bundle'),
-                'default-submitter' => (string)$this->option('default-submitter'),
-            ], fn($msg) => $this->warn($msg));
+            $result = $importer->import(
+                $csvPath,
+                [
+                    'infer-role' => $this->optionTruthy('infer-role'),
+                    'default-bundle' => (string)$this->option('default-bundle'),
+                    'default-submitter' => (string)$this->option('default-submitter'),
+                ],
+                fn($msg) => $this->warn($msg)
+            );
+
+            // ✅ Nur bei erfolgreichem Import löschen
+            if (is_file($csvPath)) {
+                if (@unlink($csvPath)) {
+                    $this->info("CSV/TXT gelöscht: {$csvPath}");
+                } else {
+                    $this->warn("CSV/TXT konnte nicht gelöscht werden: {$csvPath}");
+                }
+            }
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
