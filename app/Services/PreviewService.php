@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Video;
+use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Dropbox\Client as DropboxClient;
 use Symfony\Component\Process\Process;
 
 final class PreviewService
@@ -30,6 +32,7 @@ final class PreviewService
         }
 
         $duration = $end - $start;
+
         /** @var FilesystemContract $sourceDisk */
         $sourceDisk = Storage::disk($video->disk ?? 'local');
         $relPath = $this->normalizeRelative($video->path);
@@ -43,8 +46,8 @@ final class PreviewService
             return $previewDisk->url($previewPath);
         }
 
-        // Quelle → lokaler Pfad (lokal via path(); remote via readStream()/get() → Temp)
-        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
+        // Quelle → lokaler Pfad (mehrstufige Fallbacks)
+        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath, $video->disk ?? 'local');
         if ($srcPath === null) {
             $this->error("Quelldatei nicht lesbar: disk={$video->disk} path={$relPath}");
             return null;
@@ -133,11 +136,12 @@ final class PreviewService
      * Disk → lokaler Pfad:
      *  1) lokale Disks: path()
      *  2) remote: readStream() → Tempdatei
-     *  3) Fallback: get() → Tempdatei (RAM-intensiver, aber robust)
+     *  3) Fallback: get() → Tempdatei
+     *  4) Dropbox-Notausgang: getTemporaryLink() → HTTP stream → Tempdatei
      *
      * @return array{0:?string,1:bool} [localPath|null, isTemp]
      */
-    private function resolveLocalSourcePath(FilesystemContract $disk, string $relativePath): array
+    private function resolveLocalSourcePath(FilesystemContract $disk, string $relativePath, string $diskName): array
     {
         // 1) Lokale Disks: path()
         if (method_exists($disk, 'path')) {
@@ -186,34 +190,93 @@ final class PreviewService
             return [$tmp, true];
         }
 
-        // 3) Fallback: get() (lädt den kompletten Inhalt in den Speicher)
+        // 3) Fallback: get()
         try {
             $contents = $disk->get($relativePath);
         } catch (\Throwable $e) {
             $this->error("get() Exception: {$relativePath} :: {$e->getMessage()}");
-            return [null, false];
+            $contents = null;
         }
 
-        if (!is_string($contents) || $contents === '') {
-            $this->error("get() lieferte keinen Inhalt: {$relativePath} (type=".gettype($contents).')');
-            return [null, false];
+        if (is_string($contents) && $contents !== '') {
+            $tmp = $this->makeTempFile('.src');
+            if ($tmp === null) {
+                $this->error('Konnte Tempdatei für Source (get) nicht anlegen.');
+                return [null, false];
+            }
+            $bytes = @file_put_contents($tmp, $contents);
+            if ($bytes === false) {
+                @unlink($tmp);
+                $this->error('Konnte Tempdatei (get) nicht schreiben.');
+                return [null, false];
+            }
+            $this->info("Quelle über get() geladen: {$relativePath} (".$this->humanBytes($bytes).')');
+            return [$tmp, true];
         }
 
-        $tmp = $this->makeTempFile('.src');
-        if ($tmp === null) {
-            $this->error('Konnte Tempdatei für Source (get) nicht anlegen.');
-            return [null, false];
+        // 4) Dropbox-Notausgang: temporären Link holen und via HTTP streamen
+        if ($diskName === 'dropbox') {
+            $tmp = $this->downloadViaDropboxTemporaryLink($relativePath);
+            if ($tmp !== null) {
+                $this->info("Quelle über Dropbox Temporary Link geladen: {$relativePath}");
+                return [$tmp, true];
+            }
         }
 
-        $bytes = @file_put_contents($tmp, $contents);
-        if ($bytes === false) {
-            @unlink($tmp);
-            $this->error('Konnte Tempdatei (get) nicht schreiben.');
-            return [null, false];
-        }
+        return [null, false];
+    }
 
-        $this->info("Quelle über get() geladen: {$relativePath} (".$this->humanBytes($bytes).')');
-        return [$tmp, true];
+    /**
+     * Nutzt die Dropbox-API direkt, um einen Temporary Link zu holen, und streamt in eine Tempdatei.
+     */
+    private function downloadViaDropboxTemporaryLink(string $relativePath): ?string
+    {
+        try {
+            $root = trim((string)config('filesystems.disks.dropbox.root', ''), '/');
+            $full = '/'.trim($root.'/'.$relativePath, '/'); // -> /root/videos/..mp4
+
+            $client = new DropboxClient(app(AutoRefreshTokenProvider::class));
+            $resp = $client->getTemporaryLink($full); // ['metadata'=>..., 'link'=>...]
+            $url = $resp['link'] ?? null;
+            if (!is_string($url) || $url === '') {
+                $this->error("getTemporaryLink lieferte keine URL für: {$full}");
+                return null;
+            }
+
+            // HTTP streamen (keine speziellen Header nötig)
+            $in = @fopen($url, 'rb');
+            if (!is_resource($in)) {
+                $this->error("Konnte Temporary Link nicht öffnen.");
+                return null;
+            }
+
+            $tmp = $this->makeTempFile('.src');
+            if ($tmp === null) {
+                @fclose($in);
+                $this->error('Konnte Tempdatei (temp link) nicht anlegen.');
+                return null;
+            }
+
+            $out = @fopen($tmp, 'wb');
+            if ($out === false) {
+                @fclose($in);
+                @unlink($tmp);
+                $this->error('Konnte Tempdatei (temp link) nicht öffnen (write).');
+                return null;
+            }
+
+            try {
+                stream_copy_to_stream($in, $out);
+            } finally {
+                @fclose($in);
+                @fclose($out);
+            }
+
+            return $tmp;
+        } catch (\Throwable $e) {
+            $this->error('Temporary Link Download fehlgeschlagen: '.$e->getMessage());
+            return null;
+        }
     }
 
     /**
