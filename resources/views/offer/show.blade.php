@@ -51,7 +51,7 @@
                                         {{ $v->original_name ?: basename($v->path) }}
                                     </div>
                                     <video class="thumb"
-                                           src="{{ $v->preview_url}}"
+                                           src="{{ $v->preview_url ?: $a->temp_url }}"
                                            preload="metadata"
                                            style="width:100%;height:auto;border-radius:10px;background:#0e1116;"
                                            controls playsinline></video>
