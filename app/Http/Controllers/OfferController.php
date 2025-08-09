@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
@@ -37,8 +39,11 @@ class OfferController extends Controller
         return view('offer.show', compact('batch', 'channel', 'items', 'zipPostUrl'));
     }
 
-    public function zipSelected(Request $req, Batch $batch, Channel $channel)
-    {
+    public function zipSelected(
+        Request $req,
+        Batch $batch,
+        Channel $channel
+    ): StreamedResponse|RedirectResponse {
         $this->ensureValidSignature($req);
 
         $ids = collect($req->input('assignment_ids', []))
