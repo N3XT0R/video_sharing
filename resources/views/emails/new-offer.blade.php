@@ -1,5 +1,5 @@
 @include('emails.partials.header')
-@component('mail::message')
+<x-mail::message>
     # Neue Videos verfügbar
 
     Hallo {{ $channel->creator_name ?: 'Liebes Team' }} ({{ $channel->name }}),
@@ -15,9 +15,9 @@
     - Previews ohne Ton zu schauen (der vollständige Clip enthält das Original-Audio)
     - optional **eine ZIP-Datei mit ausgewählten Clips** herunterzuladen
 
-    @component('mail::button', ['url' => $offerUrl])
+    <x-mail::button :url="$offerUrl" color="success">
         Zu den Videos
-    @endcomponent
+    </x-mail::button>
 
     **Gültig bis:** {{ $expiresAt->timezone('Europe/Berlin')->format('d.m.Y, H:i') }}
     Danach werden die Dateien automatisch aus unserem System entfernt.
@@ -31,4 +31,4 @@
 
     Viele Grüße
     {{ config('app.name') }} / Ilya
-@endcomponent
+</x-mail::message>
