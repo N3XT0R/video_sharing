@@ -14,7 +14,7 @@ Route::get('/game', function () {
 })->name('game');
 
 Route::get('/changelog', function () {
-    return file_get_contents(base_path('CHANGELOG.md'));
+    return nl2br(file_get_contents(base_path('CHANGELOG.md')));
 })->name('changelog');
 
 

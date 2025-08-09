@@ -82,7 +82,6 @@
         <iframe src="{{ route('game') }}"></iframe>
     </div>
 </div>
-
 <script>
     const openBtn = document.getElementById('openGame');
     const closeBtn = document.getElementById('closeGame');
