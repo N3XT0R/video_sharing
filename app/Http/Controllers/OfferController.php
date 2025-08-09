@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
@@ -39,11 +37,8 @@ class OfferController extends Controller
         return view('offer.show', compact('batch', 'channel', 'items', 'zipPostUrl'));
     }
 
-    public function zipSelected(
-        Request $req,
-        Batch $batch,
-        Channel $channel
-    ): StreamedResponse|RedirectResponse {
+    public function zipSelected(Request $req, Batch $batch, Channel $channel)
+    {
         $this->ensureValidSignature($req);
 
         $ids = collect($req->input('assignment_ids', []))
@@ -62,32 +57,19 @@ class OfferController extends Controller
         }
 
         $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
-
-        // 🔧 Wichtig: Output-Buffer leeren, Kompression aus (sonst kaputte ZIPs / nur 1 File)
-        @ini_set('zlib.output_compression', '0');
-        if (function_exists('apache_setenv')) {
-            @apache_setenv('no-gzip', '1');
-        }
-        while (ob_get_level() > 0) {
-            @ob_end_clean();
-        }
-
         return response()->streamDownload(function () use ($items, $req, $filename) {
             $zip = new ZipStream(
-                sendHttpHeaders: true,
+                sendHttpHeaders: true, // sendet Content-Disposition & Co.
                 outputName: $filename
             );
 
-            // info.csv zuerst
+            // Info.csv
             $zip->addFile('info.csv', $this->buildInfoCsv($items));
 
-            // Videos hinzufügen (ohne Status-Update)
+            // Videos hinzufügen
             $this->addVideosToZip($zip, $items, $req);
 
-            // ZIP sauber schließen
-            $zip->finish();
-            
-            \App\Models\Assignment::whereIn('id', $items->pluck('id'))->update(['status' => 'picked_up']);
+            $zip->finish(); // ganz am Ende
         }, $filename);
     }
 
@@ -210,24 +192,22 @@ class OfferController extends Controller
             $disk = Storage::disk($v->disk ?? 'local');
 
             if (!$disk->exists($v->path)) {
-                \Log::warning("ZIP: Datei fehlt", ['assignment' => $a->id, 'path' => $v->path]);
                 continue;
             }
 
             $s = $disk->readStream($v->path);
             if (!is_resource($s)) {
-                \Log::warning("ZIP: Kein Stream", ['assignment' => $a->id, 'path' => $v->path]);
                 continue;
             }
 
             $nameInZip = $v->original_name ?: basename($v->path);
             $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
 
-            // Stream in die ZIP schreiben
             $zip->addFileFromStream($nameInZip, $s);
             fclose($s);
 
-            // Audit-Log ja, Status erst nach finish()
+            $a->update(['status' => 'picked_up']);
+
             Download::query()->create([
                 'assignment_id' => $a->id,
                 'downloaded_at' => now(),
