@@ -7,6 +7,7 @@
 
     für dich stehen neue Dashcam-Aufnahmen bereit (Batch #{{ $batch->id }}).
     **Du siehst diese Clips als Erster** – nur wenn du sie nicht brauchst, kann sie später ein anderer Kanal erhalten.
+    **Ab sofort bekommst du nur Clips, die noch kein anderer Kanal hatte – technisch garantiert.**
     So bleibt jede Vergabe fair und exklusiv.
 
     Klicke auf den Button, um:
