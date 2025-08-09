@@ -62,7 +62,7 @@
 
                                     {{-- Clip-Infos inkl. submitted_by --}}
                                     @foreach($v->clips as $clip)
-                                        <div class="muted" style="margin-top:4px;">
+                                        <div class="muted" style="margin-top:4px; word-break: break-word;">
                                             @if($clip->role)
                                                 <strong>{{ $clip->role }}:</strong>
                                             @endif
