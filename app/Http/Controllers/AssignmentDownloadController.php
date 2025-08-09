@@ -28,7 +28,7 @@ class AssignmentDownloadController extends Controller
         $video = $assignment->video;
         $diskName = $video->disk ?? 'local';
         $disk = Storage::disk($diskName);
-        $filePath = ltrim($video->path, '/');
+        $filePath = $video->path;
 
         // Existenz prüfen
         abort_unless($disk->exists($filePath), 404);
