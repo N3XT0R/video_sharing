@@ -47,7 +47,7 @@
                                 <input type="checkbox" name="assignment_ids[]" value="{{ $a->id }}" class="pickbox"
                                        style="margin-top:6px;">
                                 <div style="flex:1;">
-                                    <div style="font-weight:600; margin-bottom:6px;">
+                                    <div style="font-weight:600; margin-bottom:6px; word-break: break-word; overflow: hidden; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis;">
                                         {{ $v->original_name ?: basename($v->path) }}
                                     </div>
                                     <video class="thumb"
