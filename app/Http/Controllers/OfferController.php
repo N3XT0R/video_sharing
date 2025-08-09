@@ -62,19 +62,32 @@ class OfferController extends Controller
         }
 
         $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
+
+        // 🔧 Wichtig: Output-Buffer leeren, Kompression aus (sonst kaputte ZIPs / nur 1 File)
+        @ini_set('zlib.output_compression', '0');
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', '1');
+        }
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+
         return response()->streamDownload(function () use ($items, $req, $filename) {
             $zip = new ZipStream(
-                sendHttpHeaders: true, // sendet Content-Disposition & Co.
+                sendHttpHeaders: true,
                 outputName: $filename
             );
 
-            // Info.csv
+            // info.csv zuerst
             $zip->addFile('info.csv', $this->buildInfoCsv($items));
 
-            // Videos hinzufügen
+            // Videos hinzufügen (ohne Status-Update)
             $this->addVideosToZip($zip, $items, $req);
 
-            $zip->finish(); // ganz am Ende
+            // ZIP sauber schließen
+            $zip->finish();
+            
+            \App\Models\Assignment::whereIn('id', $items->pluck('id'))->update(['status' => 'picked_up']);
         }, $filename);
     }
 
@@ -197,22 +210,24 @@ class OfferController extends Controller
             $disk = Storage::disk($v->disk ?? 'local');
 
             if (!$disk->exists($v->path)) {
+                \Log::warning("ZIP: Datei fehlt", ['assignment' => $a->id, 'path' => $v->path]);
                 continue;
             }
 
             $s = $disk->readStream($v->path);
             if (!is_resource($s)) {
+                \Log::warning("ZIP: Kein Stream", ['assignment' => $a->id, 'path' => $v->path]);
                 continue;
             }
 
             $nameInZip = $v->original_name ?: basename($v->path);
             $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
 
+            // Stream in die ZIP schreiben
             $zip->addFileFromStream($nameInZip, $s);
             fclose($s);
 
-            $a->update(['status' => 'picked_up']);
-
+            // Audit-Log ja, Status erst nach finish()
             Download::query()->create([
                 'assignment_id' => $a->id,
                 'downloaded_at' => now(),
