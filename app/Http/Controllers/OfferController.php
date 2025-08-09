@@ -57,16 +57,20 @@ class OfferController extends Controller
         }
 
         $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
-        $zip = new ZipStream(outputName: $filename);
+        return response()->streamDownload(function () use ($items, $req, $filename) {
+            $zip = new ZipStream(
+                sendHttpHeaders: true, // sendet Content-Disposition & Co.
+                outputName: $filename
+            );
 
-        try {
+            // Info.csv
             $zip->addFile('info.csv', $this->buildInfoCsv($items));
-            $this->addVideosToZip($zip, $items, $req);
-        } finally {
-            $zip->finish();
-        }
 
-        return response()->noContent();
+            // Videos hinzufügen
+            $this->addVideosToZip($zip, $items, $req);
+
+            $zip->finish(); // ganz am Ende
+        }, $filename);
     }
 
     public function showUnused(Request $req, Batch $batch, Channel $channel)
