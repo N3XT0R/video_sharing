@@ -232,7 +232,8 @@
 </main>
 
 <footer>
-    &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: {{ config('app.version', '0.0.0-dev') }}
+    &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: <a
+            href="{{route('changelog')}}" target="_blank">{{ config('app.version', '0.0.0-dev') }}</a>
 </footer>
 
 @stack('scripts')

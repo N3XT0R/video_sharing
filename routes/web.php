@@ -13,6 +13,10 @@ Route::get('/game', function () {
     return view('game');
 })->name('game');
 
+Route::get('/changelog', function () {
+    return file_get_contents(base_path('CHANGELOG.md'));
+})->name('changelog');
+
 
 Route::get('/offer/{batch}/{channel}', [OfferController::class, 'show'])->name('offer.show');
 Route::post('/offer/{batch}/{channel}/zip', [OfferController::class, 'zipSelected'])->name('offer.zip.selected');
