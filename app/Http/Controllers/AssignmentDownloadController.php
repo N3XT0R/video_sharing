@@ -20,10 +20,8 @@ class AssignmentDownloadController extends Controller
         abort_if($assignment->status !== 'notified' || now()->gt($assignment->expires_at), 410);
 
         $token = (string)$req->query('t');
-        abort_unless(
-            hash_equals($assignment->download_token, hash('sha256', $token)),
-            403
-        );
+        $valid = hash_equals($assignment->download_token, hash('sha256', $token));
+        abort_unless($valid, 403);
 
         // 2) Datei bestimmen
         $video = $assignment->video;
