@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Assignment, Batch, Channel, Download};
+use App\Models\Assignment;
+use App\Models\Batch;
+use App\Models\Channel;
+use App\Models\Download;
 use App\Services\AssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\{Storage, URL};
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
 {
-    public function __construct(private AssignmentService $assignments)
-    {
-    }
+    public function __construct(private AssignmentService $assignments) {}
 
     public function show(Request $req, Batch $batch, Channel $channel)
     {
@@ -41,8 +43,14 @@ class OfferController extends Controller
     {
         $this->ensureValidSignature($req);
 
-        $ids = collect($req->input('assignment_ids', []))
-            ->filter(fn($v) => ctype_digit((string)$v))
+        $ids = $req->input('assignment_ids', []);
+
+        if (is_string($ids)) {
+            $ids = array_map('trim', explode(',', $ids));
+        }
+
+        $ids = collect($ids)
+            ->filter(fn ($v) => ctype_digit((string) $v))
             ->map('intval')
             ->values();
 
@@ -57,6 +65,7 @@ class OfferController extends Controller
         }
 
         $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
+
         return response()->streamDownload(function () use ($items, $req, $filename) {
             $zip = new ZipStream(
                 sendHttpHeaders: true, // sendet Content-Disposition & Co.
@@ -97,7 +106,7 @@ class OfferController extends Controller
         $this->ensureValidSignature($req);
 
         $ids = collect($req->input('assignment_ids', []))
-            ->filter(fn($v) => ctype_digit((string)$v))
+            ->filter(fn ($v) => ctype_digit((string) $v))
             ->map('intval')
             ->values();
 
@@ -162,8 +171,8 @@ class OfferController extends Controller
                         $v->original_name ?: basename($v->path),
                         $v->hash,
                         number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
-                        isset($c->start_sec) ? gmdate('i:s', (int)$c->start_sec) : null,
-                        isset($c->end_sec) ? gmdate('i:s', (int)$c->end_sec) : null,
+                        isset($c->start_sec) ? gmdate('i:s', (int) $c->start_sec) : null,
+                        isset($c->end_sec) ? gmdate('i:s', (int) $c->end_sec) : null,
                         $c->note,
                         $c->bundle_key,
                         $c->role,
@@ -191,12 +200,12 @@ class OfferController extends Controller
             $v = $a->video;
             $disk = Storage::disk($v->disk ?? 'local');
 
-            if (!$disk->exists($v->path)) {
+            if (! $disk->exists($v->path)) {
                 continue;
             }
 
             $s = $disk->readStream($v->path);
-            if (!is_resource($s)) {
+            if (! is_resource($s)) {
                 continue;
             }
 
