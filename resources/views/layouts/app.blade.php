@@ -67,7 +67,7 @@
         }
 
         .brand img.logo {
-            height: 32px;
+            height: 64px;
             width: auto;
             display: block;
             border-radius: 6px;
