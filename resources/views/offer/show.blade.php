@@ -50,24 +50,11 @@
                                     <div style="font-weight:600; margin-bottom:6px;">
                                         {{ $v->original_name ?: basename($v->path) }}
                                     </div>
-
-                                    {{-- Thumb (optional eigener Disk in meta) oder Inline-Preview --}}
-                                    @php
-                                        $thumbPath = data_get($v->meta,'thumb');
-                                        $thumbDisk = data_get($v->meta,'thumb_disk','local'); // falls du Thumbs lokal ablegst
-                                    @endphp
-                                    @if($thumbPath && Storage::disk($thumbDisk)->exists($thumbPath))
-                                        <img class="thumb"
-                                             src="{{ Storage::disk($thumbDisk)->url($thumbPath) }}"
-                                             alt="Vorschaubild"
-                                             style="width:100%;height:auto;border-radius:10px;background:#0e1116;">
-                                    @else
-                                        <video class="thumb"
-                                               src="{{ $v->preview_url ?: $a->temp_url }}"
-                                               preload="metadata"
-                                               style="width:100%;height:auto;border-radius:10px;background:#0e1116;"
-                                               controls playsinline></video>
-                                    @endif
+                                    <video class="thumb"
+                                           src="{{ $v->preview_url}}"
+                                           preload="metadata"
+                                           style="width:100%;height:auto;border-radius:10px;background:#0e1116;"
+                                           controls playsinline></video>
 
                                     <div class="muted" style="margin-top:6px;">
                                         {{ number_format(($v->bytes ?? 0)/1048576,1) }} MB
