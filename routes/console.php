@@ -12,7 +12,7 @@ Artisan::command('inspire', function () {
 
 
 Schedule::command('weekly:run')
-    ->fridays()
+    ->sundays()
     ->at('19:00');
 
 
@@ -33,8 +33,8 @@ Schedule::command('assign:distribute')
 
 // Kanäle benachrichtigen, wenn neue Inhalte da sind – freitags 19:00
 Schedule::command('notify:offers')
-    ->fridays()
-    ->at('19:00')
+    ->sundays()
+    ->at('20:00')
     ->emailOutputTo($email);
 
 // Dropbox Refresh Token regelmäßig aktualisieren
