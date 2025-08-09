@@ -20,6 +20,18 @@
             --border: #2a2f37;
         }
 
+        /* Light Mode Variablen */
+        body.light {
+            --bg: #f5f6fa;
+            --panel: #ffffff;
+            --text: #1b1f27;
+            --muted: #555;
+            --brand: #0057d9;
+            --border: #d0d4da;
+            background: var(--bg);
+            color: var(--text);
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -34,6 +46,7 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.45;
+            transition: background 0.25s, color 0.25s;
         }
 
         a {
@@ -56,6 +69,10 @@
             background: rgba(11, 12, 16, .8);
             backdrop-filter: saturate(120%) blur(6px);
             border-bottom: 1px solid var(--border);
+        }
+
+        body.light .topbar {
+            background: rgba(245, 246, 250, 0.8);
         }
 
         .brand {
@@ -106,11 +123,21 @@
             border-radius: 10px;
             background: #1b1f27;
             color: var(--text);
+            cursor: pointer;
+            transition: background 0.25s;
         }
 
         .btn:hover {
             background: #222735;
             text-decoration: none;
+        }
+
+        body.light .btn {
+            background: #f0f2f8;
+        }
+
+        body.light .btn:hover {
+            background: #e3e6ed;
         }
 
         .flash {
@@ -154,6 +181,7 @@
     </div>
     <nav>
         @yield('actions')
+        <button id="themeToggle" class="btn" type="button" style="margin-left:10px;">🌙</button>
     </nav>
 </header>
 
@@ -182,5 +210,26 @@
 </footer>
 
 @stack('scripts')
+
+{{-- Light/Dark Mode Script --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.getElementById('themeToggle');
+        const body = document.body;
+
+        // gespeichertes Theme laden
+        if (localStorage.getItem('theme') === 'light') {
+            body.classList.add('light');
+            toggleBtn.textContent = '☀️';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('light');
+            const isLight = body.classList.contains('light');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            toggleBtn.textContent = isLight ? '☀️' : '🌙';
+        });
+    });
+</script>
 </body>
 </html>
