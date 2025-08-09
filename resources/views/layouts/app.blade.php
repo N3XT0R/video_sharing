@@ -9,7 +9,6 @@
     {{-- Platz für zusätzliche Head-Inhalte (pro View) --}}
     @yield('head')
 
-    {{-- simple, eingebautes CSS – kannst du jederzeit ersetzen/erweitern --}}
     <style>
         :root {
             --bg: #0b0c10;
@@ -58,7 +57,6 @@
             text-decoration: underline;
         }
 
-        /* Dark Mode */
         .topbar {
             position: sticky;
             top: 0;
@@ -69,12 +67,12 @@
             padding: 14px 18px;
             background: linear-gradient(
                     to bottom,
-                    rgba(45, 51, 61, 0.95) 0%, /* heller */ rgba(27, 31, 39, 0.9) 100% /* dunkler */
+                    rgba(45, 51, 61, 0.95) 0%,
+                    rgba(27, 31, 39, 0.9) 100%
             );
             backdrop-filter: saturate(120%) blur(6px);
             border-bottom: 1px solid var(--border);
         }
-
 
         body.light .topbar {
             background: rgba(245, 246, 250, 0.8);
@@ -93,13 +91,15 @@
             width: auto;
             display: block;
             border-radius: 6px;
-            box-shadow: 0 0 4px rgba(255, 255, 255, 0.3); /* leichter Glow */
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
         }
 
-        body.dark .brand img.logo {
+        /* Darkmode Logo-Hintergrund */
+        body:not(.light) .brand img.logo {
             background: #fff;
-            padding: 4px; /* etwas Luft um das Logo */
-            border-radius: 6px; /* runde Ecken wie vorher */
+            padding: 4px;
+            border-radius: 6px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         .container {
@@ -198,7 +198,6 @@
 </header>
 
 <main class="container">
-    {{-- Flash-Messages --}}
     @if (session('status'))
         <div class="flash flash--ok panel">{{ session('status') }}</div>
     @endif
@@ -213,7 +212,6 @@
         </div>
     @endif
 
-    {{-- Seiteninhalt --}}
     @yield('content')
 </main>
 
@@ -223,13 +221,11 @@
 
 @stack('scripts')
 
-{{-- Light/Dark Mode Script --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
 
-        // gespeichertes Theme laden
         if (localStorage.getItem('theme') === 'light') {
             body.classList.add('light');
             toggleBtn.textContent = '☀️';
