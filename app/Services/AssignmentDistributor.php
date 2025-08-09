@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\{Assignment, Batch, Channel, ChannelVideoBlock, Clip, Video};
-use Illuminate\Support\Facades\DB;
+use App\Models\Assignment;
+use App\Models\Batch;
+use App\Models\Channel;
+use App\Models\ChannelVideoBlock;
+use App\Models\Clip;
+use App\Models\Video;
 use RuntimeException;
 
 class AssignmentDistributor
@@ -13,7 +17,7 @@ class AssignmentDistributor
     /**
      * Distribute new and expired videos across channels.
      *
-     * @param int|null $quotaOverride optional quota per channel
+     * @param  int|null  $quotaOverride  optional quota per channel
      * @return array{assigned:int, skipped:int}
      */
     public function distribute(?int $quotaOverride = null): array
@@ -21,7 +25,7 @@ class AssignmentDistributor
         $batch = Batch::query()->create(['type' => 'assign', 'started_at' => now()]);
 
         $last = Batch::query()->where('type', 'assign')->whereNotNull('finished_at')->latest()->first();
-        $newVideos = Video::query()->when($last, fn($q) => $q->where('created_at', '>', $last->finished_at))
+        $newVideos = Video::query()->when($last, fn ($q) => $q->where('created_at', '>', $last->finished_at))
             ->orderBy('id')
             ->get();
 
@@ -56,10 +60,10 @@ class AssignmentDistributor
         }
         $pool = collect();
         foreach ($channels as $c) {
-            $pool = $pool->merge(array_fill(0, max(1, (int)$c->weight), $c));
+            $pool = $pool->merge(array_fill(0, max(1, (int) $c->weight), $c));
         }
 
-        $quota = $channels->mapWithKeys(fn($c) => [$c->id => (int)($quotaOverride ?: $c->weekly_quota)]);
+        $quota = $channels->mapWithKeys(fn ($c) => [$c->id => (int) ($quotaOverride ?: $c->weekly_quota)]);
 
         $groups = collect();
         $handled = [];
@@ -68,13 +72,13 @@ class AssignmentDistributor
             ->whereNotNull('bundle_key')
             ->get()
             ->groupBy('bundle_key')
-            ->map(fn($g) => $g->pluck('video_id')->unique());
+            ->map(fn ($g) => $g->pluck('video_id')->unique());
 
         foreach ($poolVideos as $v) {
             if (in_array($v->id, $handled, true)) {
                 continue;
             }
-            $bundleIds = $bundleMap->first(fn($ids) => $ids->contains($v->id));
+            $bundleIds = $bundleMap->first(fn ($ids) => $ids->contains($v->id));
             if ($bundleIds) {
                 $group = $poolVideos->whereIn('id', $bundleIds)->values();
                 $handled = array_merge($handled, $bundleIds->all());
@@ -119,8 +123,9 @@ class AssignmentDistributor
                 break;
             }
 
-            if (!$target) {
+            if (! $target) {
                 $skipped += $group->count();
+
                 continue;
             }
 
@@ -135,13 +140,13 @@ class AssignmentDistributor
                 $assigned++;
             }
 
-            if (collect($quota->all())->every(fn($q) => $q <= 0)) {
+            if (collect($quota->all())->every(fn ($q) => $q <= 0)) {
                 break;
             }
         }
 
         $batch->update(['finished_at' => now(), 'stats' => ['assigned' => $assigned, 'skipped' => $skipped]]);
+
         return ['assigned' => $assigned, 'skipped' => $skipped];
     }
 }
-
