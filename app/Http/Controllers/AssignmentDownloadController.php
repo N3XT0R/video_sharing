@@ -24,14 +24,16 @@ class AssignmentDownloadController extends Controller
         $disk = Storage::disk($video->disk ?? 'local');
         $filePath = ltrim($video->path, '/');
         abort_unless($disk->exists($filePath), 404);
-        $abs = $disk->path($filePath);
+        $stream = $disk->readStream($filePath);
+        abort_unless($stream !== false, 404);
         $size = $disk->size($filePath);
 
         // Einfacher Stream (Hinweis: Für echtes 206-Range-Handling kannst du eine dedizierte Stream-Klasse nutzen)
-        $response = new StreamedResponse(function () use ($abs) {
-            $fh = fopen($abs, 'rb');
-            fpassthru($fh);
-            fclose($fh);
+        $response = new StreamedResponse(function () use ($stream) {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
         }, 200, [
             'Content-Type' => 'video/mp4',
             'Content-Length' => (string)$size,
