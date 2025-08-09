@@ -1,6 +1,5 @@
+@include('emails.partials.header')
 @component('mail::message')
-    @include('emails.partials.header')
-
     # Neue Videos verfügbar
 
     Hallo {{ $channel->creator_name ?: 'Liebes Team' }} ({{ $channel->name }}),
@@ -11,6 +10,7 @@
     So bleibt jede Vergabe fair und exklusiv.
 
     Klicke auf den Button, um:
+
     - **alle verfügbaren Videos** mit Vorschau zu sehen
     - Previews ohne Ton zu schauen (der vollständige Clip enthält das Original-Audio)
     - optional **eine ZIP-Datei mit ausgewählten Clips** herunterzuladen
@@ -25,7 +25,9 @@
     [Willst du diese Videos nicht verwenden? Sei so fair und gib sie zurück]({{ $unusedUrl }}) –
     so können andere Kanäle profitieren und das Material nutzen.
 
-    > P.S.: Falls dir mal langweilig ist, schau doch mal auf unsere Startseite. 😉
+    ---
+
+    _P.S.: Falls dir mal langweilig ist, schau doch mal auf unsere Startseite. 😉_
 
     Viele Grüße
     {{ config('app.name') }} / Ilya
