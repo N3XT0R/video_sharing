@@ -96,6 +96,12 @@
             box-shadow: 0 0 4px rgba(255, 255, 255, 0.3); /* leichter Glow */
         }
 
+        body.dark .brand img.logo {
+            background: #fff;
+            padding: 4px; /* etwas Luft um das Logo */
+            border-radius: 6px; /* runde Ecken wie vorher */
+        }
+
         .container {
             max-width: 1100px;
             margin: 24px auto;
