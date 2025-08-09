@@ -232,7 +232,7 @@
 </main>
 
 <footer>
-    &copy; {{ date('Y') }} {{ config('app.name', 'App') }}
+    &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: {{ config('app.version', '0.0.0-dev') }}
 </footer>
 
 @stack('scripts')
