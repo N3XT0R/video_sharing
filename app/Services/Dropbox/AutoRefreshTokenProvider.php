@@ -34,7 +34,6 @@ class AutoRefreshTokenProvider implements TokenProvider
             'refresh_token' => $this->refreshToken,
             'client_id' => $this->clientId,
             'client_secret' => $this->clientSecret,
-            'scope' => $scopes,
         ])->throw()->json();
 
         $token = $resp['access_token'] ?? null;
