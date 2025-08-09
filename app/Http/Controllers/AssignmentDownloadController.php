@@ -28,9 +28,13 @@ class AssignmentDownloadController extends Controller
         abort_unless($stream !== false, 404);
         $size = $disk->size($filePath);
 
-        // Einfacher Stream (Hinweis: Für echtes 206-Range-Handling kannst du eine dedizierte Stream-Klasse nutzen)
+        // Einfache Ausgabe als Stream ohne fpassthru (stream_copy_to_stream funktioniert auch mit Dropbox)
         $response = new StreamedResponse(function () use ($stream) {
-            fpassthru($stream);
+            $output = fopen('php://output', 'wb');
+            if ($output !== false) {
+                stream_copy_to_stream($stream, $output);
+                fclose($output);
+            }
             if (is_resource($stream)) {
                 fclose($stream);
             }
