@@ -20,9 +20,11 @@ class AssignmentDownloadController extends Controller
         $valid = hash_equals($assignment->download_token, hash('sha256', $token));
         abort_unless($valid, 403);
 
-        $filePath = $assignment->video->path;
-        abort_unless(Storage::exists($filePath), 404);
-        $abs = Storage::path($filePath);
+        $video = $assignment->video;
+        $disk = Storage::disk($video->disk ?? 'local');
+        $filePath = ltrim($video->path, '/');
+        abort_unless($disk->exists($filePath), 404);
+        $abs = $disk->path($filePath);
         $size = filesize($abs);
 
         // Einfacher Stream (Hinweis: Für echtes 206-Range-Handling kannst du eine dedizierte Stream-Klasse nutzen)
