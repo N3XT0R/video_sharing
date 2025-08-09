@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\{Assignment, Download};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Psr\Http\Message\StreamInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentDownloadController extends Controller
@@ -25,12 +26,28 @@ class AssignmentDownloadController extends Controller
         $filePath = ltrim($video->path, '/');
         abort_unless($disk->exists($filePath), 404);
         $stream = $disk->readStream($filePath);
-        abort_unless($stream !== false, 404);
+
+        if ($stream instanceof StreamInterface) {
+            $stream = $stream->detach();
+        }
+
+        if (is_string($stream)) {
+            $temp = fopen('php://temp', 'wb+');
+            fwrite($temp, $stream);
+            rewind($temp);
+            $stream = $temp;
+        }
+
+        abort_unless(is_resource($stream), 404);
         $size = $disk->size($filePath);
 
-        // Einfacher Stream (Hinweis: Für echtes 206-Range-Handling kannst du eine dedizierte Stream-Klasse nutzen)
+        // Einfache Ausgabe als Stream ohne fpassthru (stream_copy_to_stream funktioniert auch mit Dropbox)
         $response = new StreamedResponse(function () use ($stream) {
-            fpassthru($stream);
+            $output = fopen('php://output', 'wb');
+            if ($output !== false) {
+                stream_copy_to_stream($stream, $output);
+                fclose($output);
+            }
             if (is_resource($stream)) {
                 fclose($stream);
             }
