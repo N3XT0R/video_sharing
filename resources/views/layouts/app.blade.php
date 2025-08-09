@@ -58,6 +58,7 @@
             text-decoration: underline;
         }
 
+        /* Dark Mode */
         .topbar {
             position: sticky;
             top: 0;
@@ -66,10 +67,14 @@
             align-items: center;
             justify-content: space-between;
             padding: 14px 18px;
-            background: rgba(27, 31, 39, 0.85); /* etwas heller im Dark Mode */
+            background: linear-gradient(
+                    to bottom,
+                    rgba(45, 51, 61, 0.95) 0%, /* heller */ rgba(27, 31, 39, 0.9) 100% /* dunkler */
+            );
             backdrop-filter: saturate(120%) blur(6px);
             border-bottom: 1px solid var(--border);
         }
+
 
         body.light .topbar {
             background: rgba(245, 246, 250, 0.8);
@@ -88,6 +93,7 @@
             width: auto;
             display: block;
             border-radius: 6px;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.3); /* leichter Glow */
         }
 
         .container {
