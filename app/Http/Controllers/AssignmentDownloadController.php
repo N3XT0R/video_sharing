@@ -41,7 +41,7 @@ class AssignmentDownloadController extends Controller
 
         // Audit + Status (hier direkt auf picked_up setzen; alternativ erst nach vollständigem Transfer via Middleware/Hooks)
         $assignment->update(['status' => 'picked_up']);
-        Download::create([
+        Download::query()->create([
             'assignment_id' => $assignment->id,
             'downloaded_at' => now(),
             'ip' => $req->ip(),
