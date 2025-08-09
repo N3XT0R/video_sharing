@@ -66,7 +66,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 14px 18px;
-            background: rgba(11, 12, 16, .8);
+            background: rgba(27, 31, 39, 0.85); /* etwas heller im Dark Mode */
             backdrop-filter: saturate(120%) blur(6px);
             border-bottom: 1px solid var(--border);
         }
