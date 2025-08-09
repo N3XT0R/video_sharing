@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\{Assignment, Download};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Spatie\FlysystemDropbox\DropboxAdapter;
 use Psr\Http\Message\StreamInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -22,10 +23,16 @@ class AssignmentDownloadController extends Controller
         abort_unless($valid, 403);
 
         $video = $assignment->video;
-        $disk = Storage::disk($video->disk ?? 'local');
+        $diskName = $video->disk ?? 'local';
+        $disk = Storage::disk($diskName);
         $filePath = ltrim($video->path, '/');
         abort_unless($disk->exists($filePath), 404);
-        $stream = $disk->readStream($filePath);
+
+        if ($diskName === 'dropbox' && ($adapter = $disk->getAdapter()) instanceof DropboxAdapter) {
+            $stream = $adapter->readStream($filePath);
+        } else {
+            $stream = $disk->readStream($filePath);
+        }
 
         if ($stream instanceof StreamInterface) {
             $stream = $stream->detach();
