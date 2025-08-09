@@ -20,7 +20,7 @@ Schedule::command('weekly:run')
 Schedule::command('ingest:scan', [
     '--inbox' => '/srv/ingest/pending/',
 ])->everyThirtyMinutes()
-    ->emailOutputTo($email);
+    ->emailOutputOnFailure($email);
 
 // Abgelaufene Offers aufräumen – täglich 03:00
 Schedule::command('assign:expire')
