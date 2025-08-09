@@ -25,7 +25,7 @@ class AssignmentDownloadController extends Controller
         $filePath = ltrim($video->path, '/');
         abort_unless($disk->exists($filePath), 404);
         $abs = $disk->path($filePath);
-        $size = filesize($abs);
+        $size = $disk->size($filePath);
 
         // Einfacher Stream (Hinweis: Für echtes 206-Range-Handling kannst du eine dedizierte Stream-Klasse nutzen)
         $response = new StreamedResponse(function () use ($abs) {
