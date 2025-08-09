@@ -6,7 +6,7 @@
     <style>
         .error-stage {
             position: relative;
-            min-height: calc(100vh - 120px); /* abzüglich Topbar/Footer */
+            min-height: calc(100vh - 120px);
             display: grid;
             place-items: center;
             text-align: center;
@@ -22,7 +22,6 @@
             box-shadow: 0 6px 30px rgba(0, 0, 0, .25);
         }
 
-        /* Robot + Questions */
         .robot-wrap {
             position: relative;
             height: 140px;
@@ -68,7 +67,6 @@
             animation-delay: .6s;
         }
 
-        /* Dark-Mode: Logo besser abheben (weißer Hintergrund hinter Logo) */
         body:not(.light) .brand img.logo {
             background: #fff;
             padding: 4px;
@@ -101,7 +99,6 @@
             }
         }
 
-        /* Reduced motion accessibility */
         @media (prefers-reduced-motion: reduce) {
             .robot, .q {
                 animation: none;
@@ -116,6 +113,20 @@
         .error-sub {
             margin: 0 0 8px;
             color: var(--muted);
+        }
+
+        .debug-info {
+            text-align: left;
+            margin-top: 20px;
+            font-size: .85rem;
+            overflow-x: auto;
+            background: #2a2f37;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        body.light .debug-info {
+            background: #f3f4f7;
         }
     </style>
 @endpush
@@ -141,6 +152,15 @@
                     <a href="{{ url()->previous() }}" class="btn">Zurück</a>
                 @endif
             </div>
+
+            @if(config('app.debug') && isset($exception))
+                <div class="debug-info">
+                    <strong>Debug-Info:</strong><br>
+                    <em>{{ get_class($exception) }}</em><br>
+                    {{ $exception->getMessage() }}<br><br>
+                    <pre>{{ $exception->getTraceAsString() }}</pre>
+                </div>
+            @endif
         </div>
     </div>
 @endsection
