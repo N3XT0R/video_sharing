@@ -13,7 +13,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('weekly:run')
     ->sundays()
-    ->at('19:00');
+    ->at('18:00');
 
 
 // video-Import aus Upload-Ordner – alle 30 Minuten
@@ -29,7 +29,7 @@ Schedule::command('assign:expire')
 // Videos neu verteilen, falls nicht heruntergeladen – freitags 17:00
 Schedule::command('assign:distribute')
     ->fridays()
-    ->at('16:00');
+    ->at('19:00');
 
 // Kanäle benachrichtigen, wenn neue Inhalte da sind – freitags 19:00
 Schedule::command('notify:offers')
