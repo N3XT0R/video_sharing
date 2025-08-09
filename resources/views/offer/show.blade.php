@@ -77,7 +77,7 @@
                                                 · {{ $clip->note }}
                                             @endif
                                             @if($clip->submitted_by)
-                                                · <span style="background:#2a2f37;padding:2px 6px;border-radius:6px;">Einsender: {{ $clip->submitted_by }}</span>
+                                                · <span class="chip">Einsender: {{ $clip->submitted_by }}</span>
                                             @endif
                                         </div>
                                     @endforeach

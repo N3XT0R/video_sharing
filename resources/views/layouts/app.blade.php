@@ -180,6 +180,22 @@
             color: var(--muted);
             font-size: .9rem;
         }
+
+        .chip {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #2a2f37; /* Dark */
+            color: var(--text);
+            font-size: .9rem;
+        }
+
+        body.light .chip {
+            background: #e3e6ed; /* Light */
+            border-color: #d0d4da;
+            color: #1b1f27;
+        }
     </style>
 
     @stack('styles')
