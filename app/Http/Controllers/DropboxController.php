@@ -35,7 +35,7 @@ class DropboxController extends Controller
             'redirect_uri' => $redirect,
             'response_type' => 'code',
             'token_access_type' => 'offline', // liefert einen refresh_token
-            'scope' => $scopes,
+            'scope ' => $scopes,
             'state' => $state,
         ]);
 
