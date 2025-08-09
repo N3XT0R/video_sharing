@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\{Storage, URL};
 use Illuminate\Support\Str;
-use Illuminate\Support\Collection;
 use ZipStream\ZipStream;
 
 class OfferController extends Controller
@@ -42,7 +42,7 @@ class OfferController extends Controller
         $this->ensureValidSignature($req);
 
         $ids = collect($req->input('assignment_ids', []))
-            ->filter(fn ($v) => ctype_digit((string) $v))
+            ->filter(fn($v) => ctype_digit((string)$v))
             ->map('intval')
             ->values();
 
@@ -57,7 +57,7 @@ class OfferController extends Controller
         }
 
         $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
-        $zip = new ZipStream($filename);
+        $zip = new ZipStream(outputName: $filename);
 
         try {
             $zip->addFile('info.csv', $this->buildInfoCsv($items));
@@ -93,7 +93,7 @@ class OfferController extends Controller
         $this->ensureValidSignature($req);
 
         $ids = collect($req->input('assignment_ids', []))
-            ->filter(fn ($v) => ctype_digit((string) $v))
+            ->filter(fn($v) => ctype_digit((string)$v))
             ->map('intval')
             ->values();
 
@@ -158,8 +158,8 @@ class OfferController extends Controller
                         $v->original_name ?: basename($v->path),
                         $v->hash,
                         number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
-                        isset($c->start_sec) ? gmdate('i:s', (int) $c->start_sec) : null,
-                        isset($c->end_sec) ? gmdate('i:s', (int) $c->end_sec) : null,
+                        isset($c->start_sec) ? gmdate('i:s', (int)$c->start_sec) : null,
+                        isset($c->end_sec) ? gmdate('i:s', (int)$c->end_sec) : null,
                         $c->note,
                         $c->bundle_key,
                         $c->role,
