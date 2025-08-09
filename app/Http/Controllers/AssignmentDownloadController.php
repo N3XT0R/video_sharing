@@ -52,6 +52,7 @@ class AssignmentDownloadController extends Controller
             'Content-Length' => (string)$size,
             'Accept-Ranges' => 'bytes',
             'ETag' => $video->hash,
+            'Content-Disposition' => 'attachment; filename="'.basename($filePath).'"',
         ]);
 
         // Audit + Status aktualisieren
