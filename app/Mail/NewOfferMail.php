@@ -25,6 +25,6 @@ class NewOfferMail extends Mailable
     {
         return $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->id)
             ->replyTo(config('mail.log.email'))
-            ->markdown('emails.new-offer');
+            ->view('emails.new-offer');
     }
 }

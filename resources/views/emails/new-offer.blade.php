@@ -1,34 +1,47 @@
-<x-mail::message>
-    @include('emails.partials.header')
-    # Neue Videos verfügbar
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ $subject ?? config('app.name') }}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f8fafc; font-family:Arial, sans-serif;">
 
-    Hallo {{ $channel->creator_name ?: 'Liebes Team' }} ({{ $channel->name }}),
+{{-- Header --}}
+@include('emails.partials.header')
 
-    für dich stehen neue Dashcam-Aufnahmen bereit (Batch #{{ $batch->id }}).
-    **Du siehst diese Clips als Erster** – nur wenn du sie nicht brauchst, kann sie später ein anderer Kanal erhalten.
-    **Ab sofort bekommst du nur Clips, die noch kein anderer Kanal hatte – technisch garantiert.**
-    So bleibt jede Vergabe fair und exklusiv.
+{{-- Content --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="max-width: 600px; margin:0 auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px;">
+    <tr>
+        <td style="padding: 24px; font-size: 16px; line-height: 1.5; color: #0f172a;">
+            <h1 style="margin-top:0; font-size: 20px; font-weight: bold;">Hallo {{ $user->name ?? 'Nutzer' }},</h1>
 
-    Klicke auf den Button, um:
+            <p style="margin-bottom: 16px;">
+                Willkommen bei {{ config('app.name') }}!
+                Wir freuen uns, dass du dabei bist.
+            </p>
 
-    - **alle verfügbaren Videos** mit Vorschau zu sehen
-    - Previews ohne Ton zu schauen (der vollständige Clip enthält das Original-Audio)
-    - optional **eine ZIP-Datei mit ausgewählten Clips** herunterzuladen
+            <p style="margin-bottom: 16px;">
+                Klicke auf den folgenden Button, um loszulegen:
+            </p>
 
-    <x-mail::button :url="$offerUrl" color="success">
-        Zu den Videos
-    </x-mail::button>
+            <p style="margin: 24px 0;">
+                <a href="{{ $actionUrl ?? config('app.url') }}"
+                   style="background-color:#0ea5e9; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:4px; font-weight:bold;">
+                    Jetzt starten
+                </a>
+            </p>
 
-    **Gültig bis:** {{ $expiresAt->timezone('Europe/Berlin')->format('d.m.Y, H:i') }}
-    Danach werden die Dateien automatisch aus unserem System entfernt.
+            <p style="font-size: 14px; color: #475569;">
+                Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br>
+                <span style="word-break:break-all;">{{ $actionUrl ?? config('app.url') }}</span>
+            </p>
+        </td>
+    </tr>
+</table>
 
-    [Willst du diese Videos nicht verwenden? Sei so fair und gib sie zurück]({{ $unusedUrl }}) –
-    so können andere Kanäle profitieren und das Material nutzen.
+{{-- Footer --}}
+@include('emails.partials.footer')
 
-    ---
-
-    _P.S.: Falls dir mal langweilig ist, schau doch mal auf unsere Startseite. 😉_
-
-    Viele Grüße
-    {{ config('app.name') }} / Ilya
-</x-mail::message>
+</body>
+</html>
