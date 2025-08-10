@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
@@ -14,10 +15,10 @@ class AssignmentService
      */
     public function fetchPending(Batch $batch, Channel $channel): Collection
     {
-        return Assignment::with(['video.clips']) // wichtig für ZIP + Offer-View
-        ->where('batch_id', $batch->getKey())
+        return Assignment::with(['video.clips'])
+            ->where('batch_id', $batch->getKey())
             ->where('channel_id', $channel->getKey())
-            ->whereIn('status', ['queued', 'notified'])
+            ->whereIn('status', StatusEnum::getReadyStatus())
             ->orderBy('id')
             ->get();
     }
@@ -28,7 +29,7 @@ class AssignmentService
             ->where('batch_id', $batch->id)
             ->where('channel_id', $channel->id)
             ->whereIn('id', $ids)
-            ->whereIn('status', ['queued', 'notified'])
+            ->whereIn('status', StatusEnum::getReadyStatus())
             ->get();
     }
 
@@ -38,9 +39,9 @@ class AssignmentService
                 ->where('batch_id', $batch->getKey())
                 ->where('channel_id', $channel->getKey())
                 ->whereIn('id', $ids)
-                ->where('status', 'picked_up')
+                ->where('status', StatusEnum::PICKEDUP->value)
                 ->update([
-                    'status' => 'queued',
+                    'status' => StatusEnum::QUEUED->value,
                     'download_token' => null,
                     'expires_at' => null,
                     'last_notified_at' => null,
@@ -57,8 +58,8 @@ class AssignmentService
             ? min($assignment->expires_at, now()->addHours($ttlHours))
             : now()->addHours($ttlHours);
 
-        if ($assignment->status === 'queued') {
-            $assignment->status = 'notified';
+        if ($assignment->status === StatusEnum::QUEUED->value) {
+            $assignment->status = StatusEnum::NOTIFIED->value;
             $assignment->last_notified_at = now();
         }
 
