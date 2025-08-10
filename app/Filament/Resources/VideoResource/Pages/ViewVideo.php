@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\VideoResource\Pages;
 
 use App\Filament\Resources\VideoResource;
-use App\Models\Video;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Pages\ViewRecord;
@@ -23,36 +22,6 @@ class ViewVideo extends ViewRecord
                 ->url(fn() => (string)$this->record->getAttribute('preview_url'))
                 ->openUrlInNewTab()
                 ->visible(fn() => filled($this->record->getAttribute('preview_url'))),
-
-            // Optional: direct download using the model's disk
-            Actions\Action::make('download')
-                ->label('Download')
-                ->icon('heroicon-m-arrow-down-tray')
-                ->url(function () {
-                    /** @var Video $video */
-                    $video = $this->record;
-
-                    $disk = $video->getDisk();
-                    $path = (string)$video->getAttribute('path');
-                    $ext = (string)$video->getAttribute('ext');
-                    $hash = (string)$video->getAttribute('hash');
-                    $orig = (string)$video->getAttribute('original_name');
-                    $name = $orig !== '' ? $orig : ($hash.($ext !== '' ? '.'.$ext : ''));
-
-                    if (method_exists($disk, 'temporaryUrl')) {
-                        // Prefer presigned links on S3-like disks
-                        return $disk->temporaryUrl($path, now()->addMinutes(10), [
-                            'ResponseContentDisposition' => 'attachment; filename="'.$name.'"',
-                        ]);
-                    }
-
-                    // Fallback for local/public disks (requires ->url support)
-                    return method_exists($disk, 'url') ? $disk->url($path) : null;
-                })
-                ->openUrlInNewTab()
-                ->visible(fn() => filled($this->record->getAttribute('path')) &&
-                    filled($this->record->getAttribute('disk'))
-                ),
         ];
     }
 
