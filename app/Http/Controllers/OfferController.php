@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\{Storage, URL};
@@ -92,7 +93,7 @@ class OfferController extends Controller
         return view('offer.unused', compact('batch', 'channel', 'items', 'postUrl'));
     }
 
-    public function storeUnused(Request $req, Batch $batch, Channel $channel)
+    public function storeUnused(Request $req, Batch $batch, Channel $channel): RedirectResponse
     {
         $this->ensureValidSignature($req);
 
@@ -105,19 +106,11 @@ class OfferController extends Controller
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        Assignment::query()
-            ->where('batch_id', $batch->id)
-            ->where('channel_id', $channel->id)
-            ->whereIn('id', $ids)
-            ->where('status', 'picked_up')
-            ->update([
-                'status' => 'queued',
-                'download_token' => null,
-                'expires_at' => null,
-                'last_notified_at' => null,
-            ]);
+        if ($this->assignments->markUnused($batch, $channel, $ids)) {
+            return back()->with('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
+        }
 
-        return back()->with('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
+        return back()->with('error', 'Fehler: Die ausgewählten Videos konnten nicht freigegeben werden.');
     }
 
     private function ensureValidSignature(Request $req): void

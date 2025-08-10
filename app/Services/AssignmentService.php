@@ -22,6 +22,21 @@ class AssignmentService
             ->get();
     }
 
+    public function markUnused(Batch $batch, Channel $channel, array $ids): bool
+    {
+        return Assignment::query()
+                ->where('batch_id', $batch->getKey())
+                ->where('channel_id', $channel->getKey())
+                ->whereIn('id', $ids)
+                ->where('status', 'picked_up')
+                ->update([
+                    'status' => 'queued',
+                    'download_token' => null,
+                    'expires_at' => null,
+                    'last_notified_at' => null,
+                ]) > 0;
+    }
+
     /**
      * Prepare an assignment for download and return a temporary URL.
      */
