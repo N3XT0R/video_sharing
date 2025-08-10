@@ -35,6 +35,14 @@ class LinkService
             'offer.unused.store',
             $expireDate,
             ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
-        );;
+        );
+    }
+
+    public function getZipSelectedUrl(Batch $batch, Channel $channel, Carbon $expireDate): string
+    {
+        return URL::temporarySignedRoute(
+            'offer.zip.selected',
+            $expireDate,
+            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
     }
 }

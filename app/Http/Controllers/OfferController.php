@@ -9,7 +9,7 @@ use App\Services\LinkService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\{Storage, URL};
+use Illuminate\Support\Facades\{Storage};
 use Illuminate\Support\Str;
 use ZipStream\ZipStream;
 
@@ -31,11 +31,11 @@ class OfferController extends Controller
             $assignment->temp_url = $this->assignments->prepareDownload($assignment);
         }
 
-        $zipPostUrl = URL::temporarySignedRoute(
-            'offer.zip.selected',
-            now()->addHours(6),
-            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
-        );
+        /**
+         * @var LinkService $linkService
+         */
+        $linkService = app(LinkService::class);
+        $zipPostUrl = $linkService->getZipSelectedUrl($batch, $channel, now()->addHours(6));
 
         return view('offer.show', compact('batch', 'channel', 'items', 'zipPostUrl'));
     }
@@ -59,7 +59,7 @@ class OfferController extends Controller
             return back()->withErrors(['invalid' => 'Die Auswahl ist nicht mehr verfügbar.']);
         }
 
-        $filename = sprintf('videos_%s_%s_selected.zip', $batch->id, Str::slug($channel->name));
+        $filename = sprintf('videos_%s_%s_selected.zip', $batch->getKey(), Str::slug($channel->name));
         return response()->streamDownload(function () use ($items, $req, $filename) {
             $zip = new ZipStream(
                 sendHttpHeaders: true, // sendet Content-Disposition & Co.
