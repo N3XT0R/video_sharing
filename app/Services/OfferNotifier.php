@@ -23,6 +23,7 @@ class OfferNotifier
      */
     public function notify(int $ttlDays): array
     {
+        $expireDate = now()->addDays($ttlDays);
         $assignBatch = $this->batchService->getLatestAssignBatch();
         $channelIds = Assignment::query()->where('batch_id', $assignBatch->getKey())
             ->whereIn('status', StatusEnum::getReadyStatus())
@@ -34,11 +35,11 @@ class OfferNotifier
 
         $sent = 0;
         foreach (Channel::query()->whereIn('id', $channelIds)->get() as $channel) {
-            $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $ttlDays);
-            $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $ttlDays);
+            $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
+            $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
 
             Mail::to($channel->email)->queue(
-                new NewOfferMail($assignBatch, $channel, $offerUrl, now()->addDays($ttlDays), $unusedUrl)
+                new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
             );
             $sent++;
         }

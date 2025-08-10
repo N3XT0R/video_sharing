@@ -6,24 +6,25 @@ namespace App\Services;
 
 use App\Models\Batch;
 use App\Models\Channel;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\URL;
 
 class LinkService
 {
-    public function getOfferUrl(Batch $batch, Channel $channel, int $ttlDays = 6): string
+    public function getOfferUrl(Batch $batch, Channel $channel, Carbon $expireDate): string
     {
         return URL::temporarySignedRoute(
             'offer.show',
-            now()->addDays($ttlDays),
+            $expireDate,
             ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
         );
     }
 
-    public function getUnusedUrl(Batch $batch, Channel $channel, int $ttlDays = 6): string
+    public function getUnusedUrl(Batch $batch, Channel $channel, Carbon $expireDate): string
     {
         return URL::temporarySignedRoute(
             'offer.unused.show',
-            now()->addDays($ttlDays),
+            $expireDate,
             ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
         );
     }
