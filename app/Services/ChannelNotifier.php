@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\StatusEnum;
 use App\Mail\ChannelAssignmentMail;
 use App\Models\{Assignment, Batch};
 use Illuminate\Support\Facades\Mail;
@@ -21,7 +22,7 @@ class ChannelNotifier
     {
         $batch = Batch::query()->create(['type' => 'notify', 'started_at' => now()]);
 
-        $groups = Assignment::query()->where('status', 'queued')
+        $groups = Assignment::query()->where('status', StatusEnum::QUEUED->value)
             ->with(['channel', 'video'])
             ->get()
             ->groupBy('channel_id');

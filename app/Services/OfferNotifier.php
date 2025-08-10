@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\StatusEnum;
 use App\Mail\NewOfferMail;
 use App\Models\{Assignment, Batch, Channel};
-use Illuminate\Support\Facades\{Mail, URL};
-use RuntimeException;
+use Illuminate\Support\Facades\{Mail};
 
 class OfferNotifier
 {
+
+    public function __construct(private BatchService $batchService, private LinkService $linkService)
+    {
+    }
+
     /**
      * Notify channels about new offers and return stats.
      *
@@ -18,15 +23,9 @@ class OfferNotifier
      */
     public function notify(int $ttlDays): array
     {
-        $assignBatch = Batch::query()->where('type', 'assign')->whereNotNull('finished_at')
-            ->latest('id')->first();
-
-        if (!$assignBatch) {
-            throw new RuntimeException('Kein Assign-Batch gefunden.');
-        }
-
+        $assignBatch = $this->batchService->getLatestAssignBatch();
         $channelIds = Assignment::query()->where('batch_id', $assignBatch->getKey())
-            ->whereIn('status', ['queued', 'notified'])
+            ->whereIn('status', StatusEnum::getReadyStatus())
             ->pluck('channel_id')->unique()->values();
 
         if ($channelIds->isEmpty()) {
@@ -35,17 +34,8 @@ class OfferNotifier
 
         $sent = 0;
         foreach (Channel::query()->whereIn('id', $channelIds)->get() as $channel) {
-            $offerUrl = URL::temporarySignedRoute(
-                'offer.show',
-                now()->addDays($ttlDays),
-                ['batch' => $assignBatch->getKey(), 'channel' => $channel->getKey()]
-            );
-
-            $unusedUrl = URL::temporarySignedRoute(
-                'offer.unused.show',
-                now()->addDays($ttlDays),
-                ['batch' => $assignBatch->getKey(), 'channel' => $channel->getKey()]
-            );
+            $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $ttlDays);
+            $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $ttlDays);
 
             Mail::to($channel->email)->queue(
                 new NewOfferMail($assignBatch, $channel, $offerUrl, now()->addDays($ttlDays), $unusedUrl)
