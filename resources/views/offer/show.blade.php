@@ -107,7 +107,9 @@
             <div style="display:flex; gap:10px; margin-top:16px;">
                 <button type="button" class="btn" onclick="toggleAll(true)">Alle auswählen</button>
                 <button type="button" class="btn" onclick="toggleAll(false)">Alle abwählen</button>
-                <button type="submit" class="btn" id="zipSubmit">Auswahl als ZIP herunterladen</button>
+                <button type="submit" class="btn" id="zipSubmit" disabled
+                        title="Funktion derzeit aufgrund eines Fehlers deaktiviert">Auswahl als ZIP herunterladen
+                </button>
                 <span class="muted" id="selCount" style="align-self:center;">0 ausgewählt</span>
             </div>
         </form>
