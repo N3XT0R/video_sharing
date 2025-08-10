@@ -80,7 +80,7 @@ class InfoImporter
                 continue;
             }
 
-            $clip = Clip::query()->where('video_id', $video->id)
+            $clip = Clip::query()->where('video_id', $video->getKey())
                 ->when($startSec !== null, fn($q) => $q->where('start_sec', $startSec),
                     fn($q) => $q->whereNull('start_sec'))
                 ->when($endSec !== null, fn($q) => $q->where('end_sec', $endSec), fn($q) => $q->whereNull('end_sec'))
@@ -107,7 +107,7 @@ class InfoImporter
                 }
             } else {
                 Clip::query()->create([
-                    'video_id' => $video->id,
+                    'video_id' => $video->getKey(),
                     'start_sec' => $startSec,
                     'end_sec' => $endSec,
                     'note' => $note !== '' ? $note : null,
