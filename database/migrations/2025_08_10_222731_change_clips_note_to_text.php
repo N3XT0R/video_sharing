@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('clips', function (Blueprint $table) {
-            $table->text('note')->change();
+            $table->text('note')->nullable()->change();
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('clips', function (Blueprint $table) {
-            $table->string('note', 255)->change();
+            $table->string('note', 255)->nullable()->change();
         });
     }
 };
