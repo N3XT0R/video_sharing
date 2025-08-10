@@ -63,7 +63,7 @@ class AssignmentDistributor
         foreach ($groups as $group) {
             // Blockierte Kanäle für diese Gruppe ermitteln (union über alle Videos der Gruppe)
             $blockedChannelIds = $group
-                ->flatMap(fn(Video $v) => $blockedByVideo[$v->id] ?? collect())
+                ->flatMap(fn(Video $v) => $blockedByVideo[$v->getKey()] ?? collect())
                 ->unique()
                 ->all();
 
@@ -82,18 +82,18 @@ class AssignmentDistributor
 
             foreach ($group as $video) {
                 Assignment::query()->create([
-                    'video_id' => $video->id,
-                    'channel_id' => $target->id,
-                    'batch_id' => $batch->id,
+                    'video_id' => $video->getKey(),
+                    'channel_id' => $target->getKey(),
+                    'batch_id' => $batch->getKey(),
                     'status' => 'queued',
                 ]);
 
                 // Für Folgerunden merken, dass dieses Video diesem Kanal nun zugeordnet ist
-                $assignedChannelsByVideo[$video->id] = ($assignedChannelsByVideo[$video->id] ?? collect())
-                    ->push($target->id)
+                $assignedChannelsByVideo[$video->getKey()] = ($assignedChannelsByVideo[$video->getKey()] ?? collect())
+                    ->push($target->getKey())
                     ->unique();
 
-                $quota[$target->id] = $quota[$target->id] - 1;
+                $quota[$target->getKey()] = $quota[$target->getKey()] - 1;
                 $assigned++;
             }
 
@@ -212,7 +212,7 @@ class AssignmentDistributor
 
         /** @var array<int,int> $quota */
         $quota = $channels
-            ->mapWithKeys(fn(Channel $c) => [$c->id => (int)($quotaOverride ?: $c->weekly_quota)])
+            ->mapWithKeys(fn(Channel $c) => [$c->getKey() => (int)($quotaOverride ?: $c->weekly_quota)])
             ->all();
 
         return [$channels, $rotationPool, $quota];
@@ -236,7 +236,7 @@ class AssignmentDistributor
             ->map(fn(Collection $g) => $g->pluck('video_id')->unique());
 
         foreach ($poolVideos as $video) {
-            if (in_array($video->id, $handled, true)) {
+            if (in_array($video->getKey(), $handled, true)) {
                 continue;
             }
 
@@ -247,7 +247,7 @@ class AssignmentDistributor
                 $handled = array_merge($handled, $bundleIds->all());
             } else {
                 $group = collect([$video]);
-                $handled[] = $video->id;
+                $handled[] = $video->getKey();
             }
 
             $groups->push($group);
@@ -315,19 +315,19 @@ class AssignmentDistributor
             $rotations++;
 
             // Genügend Quota verfügbar?
-            if (($quota[$candidate->id] ?? 0) < $group->count()) {
+            if (($quota[$candidate->getKey()] ?? 0) < $group->count()) {
                 continue;
             }
 
             // Kandidat blockiert?
-            if (in_array($candidate->id, $blockedChannelIds, true)) {
+            if (in_array($candidate->getKey(), $blockedChannelIds, true)) {
                 continue;
             }
 
             // Bereits (irgendwann) an diesen Kanal vergeben?
             $alreadyAssignedToCandidate = $group->some(function (Video $v) use ($candidate, $assignedChannelsByVideo) {
-                $assigned = $assignedChannelsByVideo[$v->id] ?? collect();
-                return $assigned->contains($candidate->id);
+                $assigned = $assignedChannelsByVideo[$v->getKey()] ?? collect();
+                return $assigned->contains($candidate->getKey());
             });
             if ($alreadyAssignedToCandidate) {
                 continue;
