@@ -58,7 +58,7 @@ class AssignmentDownloadController extends Controller
         // Audit + Status aktualisieren
         $assignment->update(['status' => 'picked_up']);
         Download::query()->create([
-            'assignment_id' => $assignment->id,
+            'assignment_id' => $assignment->getKey(),
             'downloaded_at' => now(),
             'ip' => $req->ip(),
             'user_agent' => $req->userAgent(),
