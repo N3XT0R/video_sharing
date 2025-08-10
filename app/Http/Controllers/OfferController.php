@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
 use Illuminate\Http\RedirectResponse;
@@ -169,35 +170,35 @@ class OfferController extends Controller
 
     /**
      * @param  ZipStream  $zip
-     * @param  Collection  $items
+     * @param  Collection<Assignment>  $items
      * @param  Request  $req
      * @return void
      */
     private function addVideosToZip(ZipStream $zip, Collection $items, Request $req): void
     {
-        foreach ($items as $a) {
-            $v = $a->video;
+        foreach ($items as $assignment) {
+            $video = $assignment->video;
             $disk = Storage::disk($v->disk ?? 'local');
 
-            if (!$disk->exists($v->path)) {
+            if (!$disk->exists($video->path)) {
                 continue;
             }
 
-            $s = $disk->readStream($v->path);
-            if (!is_resource($s)) {
+            $stream = $disk->readStream($video->path);
+            if (!is_resource($stream)) {
                 continue;
             }
 
-            $nameInZip = $v->original_name ?: basename($v->path);
+            $nameInZip = $video->original_name ?: basename($video->path);
             $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
 
-            $zip->addFileFromStream($nameInZip, $s);
-            fclose($s);
+            $zip->addFileFromStream($nameInZip, $stream);
+            fclose($stream);
 
-            $a->update(['status' => 'picked_up']);
+            $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
 
             Download::query()->create([
-                'assignment_id' => $a->id,
+                'assignment_id' => $assignment->getKey(),
                 'downloaded_at' => now(),
                 'ip' => $req->ip(),
                 'user_agent' => $req->userAgent(),
