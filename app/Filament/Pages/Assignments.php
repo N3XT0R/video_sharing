@@ -8,6 +8,7 @@ use App\Enum\StatusEnum;
 use App\Filament\Resources\VideoResource;
 use App\Models\Assignment;
 use App\Services\LinkService;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -66,7 +67,7 @@ class Assignments extends Page implements HasTable
                             return app(LinkService::class)->getOfferUrl(
                                 $assignment->batch,
                                 $assignment->channel,
-                                $assignment->expires_at,
+                                Carbon::now()->addYears(10),
                             );
                         }
 
