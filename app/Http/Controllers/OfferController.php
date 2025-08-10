@@ -33,7 +33,7 @@ class OfferController extends Controller
         $zipPostUrl = URL::temporarySignedRoute(
             'offer.zip.selected',
             now()->addHours(6),
-            ['batch' => $batch->id, 'channel' => $channel->id]
+            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
         );
 
         return view('offer.show', compact('batch', 'channel', 'items', 'zipPostUrl'));
