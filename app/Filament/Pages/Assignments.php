@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Enum\StatusEnum;
 use App\Filament\Resources\VideoResource;
 use App\Models\Assignment;
 use App\Services\LinkService;
 use Filament\Pages\Page;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -37,10 +37,9 @@ class Assignments extends Page implements HasTable
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
-                        'success' => fn($state) => in_array($state, ['done', 'completed', 'finished'], true),
-                        'warning' => fn($state) => in_array($state, ['pending', 'queued'], true),
-                        'info' => fn($state) => in_array($state, ['processing', 'running'], true),
-                        'danger' => fn($state) => in_array($state, ['failed', 'error', 'expired'], true),
+                        'success' => fn($state) => $state === StatusEnum::PICKEDUP,
+                        'warning' => fn($state) => $state === StatusEnum::QUEUED,
+                        'info' => fn($state) => $state === StatusEnum::NOTIFIED,
                     ])
                     ->sortable()
                     ->searchable(),
