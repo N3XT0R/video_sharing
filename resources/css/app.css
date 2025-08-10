@@ -5,7 +5,165 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* Variant für dein body.light */
+@custom-variant light (&:where(.light &));
+
+/* Design-Tokens (Tailwind v4 @theme) */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu;
+
+    /* Dark (Default) */
+    --color-bg: #0b0c10;
+    --color-panel: #15171c;
+    --color-text: #e9eef3;
+    --color-muted: #a8b3bd;
+    --color-brand: #4ea1ff;
+    --color-border: #2a2f37;
+
+    /* Light-Pendants */
+    --color-bg-light: #f5f6fa;
+    --color-panel-light: #ffffff;
+    --color-text-light: #1b1f27;
+    --color-muted-light: #555555;
+    --color-brand-light: #0057d9;
+    --color-border-light: #d0d4da;
+
+    /* Buttons */
+    --color-btn: #1b1f27;
+    --color-btn-hover: #222735;
+    --color-btn-light: #f0f2f8;
+    --color-btn-light-hover: #e3e6ed;
+
+    /* Radii/Shadows */
+    --radius-card: 12px;
+    --radius-btn: 10px;
+}
+
+/* Light-Mode */
+@layer base {
+    .light {
+        --color-bg: var(--color-bg-light);
+        --color-panel: var(--color-panel-light);
+        --color-text: var(--color-text-light);
+        --color-muted: var(--color-muted-light);
+        --color-brand: var(--color-brand-light);
+        --color-border: var(--color-border-light);
+        --color-btn: var(--color-btn-light);
+        --color-btn-hover: var(--color-btn-light-hover);
+    }
+
+    html, body {
+        @apply h-full;
+    }
+
+    body {
+        @apply bg-bg text-text leading-[1.45] transition-colors duration-200;
+        font-family: var(--font-sans);
+    }
+
+    a {
+        @apply text-brand no-underline;
+    }
+
+    a:hover {
+        @apply underline;
+    }
+}
+
+/* components */
+@layer components {
+    .topbar {
+        @apply sticky top-0 z-50 flex items-center justify-between py-[14px] px-[18px] border-b border-border;
+        background-image: linear-gradient(
+                to bottom,
+                rgba(45, 51, 61, 0.95) 0%,
+                rgba(27, 31, 39, 0.9) 100%
+        );
+        backdrop-filter: saturate(120%) blur(6px);
+    }
+
+    .light .topbar {
+        background: rgba(245, 246, 250, 0.8);
+    }
+
+    .brand {
+        @apply flex items-center gap-3 font-bold tracking-[0.3px];
+    }
+
+    .brand .logo {
+        @apply h-16 w-auto block rounded-[6px];
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+    }
+
+    body:not(.light) .brand .logo {
+        background: #fff;
+        padding: 4px;
+        border-radius: 6px;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    .container {
+        @apply max-w-[1100px] mx-auto my-6 px-[18px];
+    }
+
+    .panel {
+        @apply bg-panel border border-border rounded-[var(--radius-card)] p-4;
+    }
+
+    .card {
+        @apply bg-panel border border-border rounded-[var(--radius-card)] p-3;
+    }
+
+    .grid {
+        @apply grid gap-4;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+
+    .btn {
+        @apply inline-block px-3 py-2 border border-border rounded-[var(--radius-btn)] text-text cursor-pointer transition-colors duration-200;
+        background: var(--color-btn);
+    }
+
+    .btn:hover {
+        background: var(--color-btn-hover);
+        text-decoration: none;
+    }
+
+    .flash {
+        @apply mt-2 p-3 rounded-[10px] text-[0.95rem];
+    }
+
+    .flash--ok {
+        @apply border;
+        background: #123c26;
+        border-color: #1f5b39;
+    }
+
+    .flash--err {
+        @apply border;
+        background: #3c1217;
+        border-color: #5b1f27;
+    }
+
+    .muted {
+        @apply text-muted text-[0.95rem];
+    }
+
+    footer {
+        @apply my-10 mb-4 text-center text-muted text-[0.9rem];
+    }
+
+    .chip {
+        @apply inline-block px-[6px] py-[2px] rounded-[6px] border border-border text-text text-[0.9rem];
+        background: #2a2f37;
+    }
+}
+
+/* Utility-helper */
+@layer utilities {
+    .content-container {
+        @apply container;
+    }
+
+    /* alias */
 }
