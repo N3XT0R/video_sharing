@@ -6,6 +6,7 @@ use App\Filament\Resources\VideoResource\Pages;
 use App\Filament\Resources\VideoResource\RelationManagers\AssignmentsRelationManager;
 use App\Filament\Resources\VideoResource\RelationManagers\ClipsRelationManager;
 use App\Models\Video;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -34,10 +35,12 @@ class VideoResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\ViewColumn::make('preview_url')
+                Tables\Columns\TextColumn::make('preview_url')
                     ->label('Preview')
-                    ->view('filament.tables.columns.video-preview')
-                    ->visible(fn($record) => filled($record->getAttribute('preview_url'))),
+                    // Show just "Open" as the link text (instead of the full URL)
+                    ->formatStateUsing(fn() => 'Open')
+                    ->url(fn(Video $video) => (string)$video->getAttribute('preview_url'))
+                    ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('original_name')
                     ->label('Dateiname')
                     ->searchable()
@@ -92,8 +95,8 @@ class VideoResource extends Resource
 
                 Tables\Filters\SelectFilter::make('created_at')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from')->label('von'),
-                        \Filament\Forms\Components\DatePicker::make('until')->label('bis'),
+                        DatePicker::make('from')->label('von'),
+                        DatePicker::make('until')->label('bis'),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -105,20 +108,12 @@ class VideoResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\Action::make('download')
                     ->label('Download')
-                    ->icon('heroicon-m-arrow-down-tray')
-                    ->url(function (Video $record) {
-                        // Einfacher Link; für S3 kann man auf temporaryUrl umstellen.
-                        try {
-                            $disk = Storage::disk($record->disk);
-                            if (method_exists($disk, 'temporaryUrl')) {
-                                return $disk->temporaryUrl($record->path, now()->addMinutes(10));
-                            }
-                            return $disk->url($record->path);
-                        } catch (\Throwable $e) {
-                            return null;
-                        }
-                    }, shouldOpenInNewTab: true)
-                    ->visible(fn(Video $record) => filled($record->path) && filled($record->disk)),
+                    ->icon('heroicon-m-arrow-down-tray'),
+                Tables\Actions\Action::make('preview')
+                    ->label('Preview')
+                    ->icon('heroicon-m-play')
+                    ->url(fn(Video $video) => (string)$video->getAttribute('preview_url'))
+                    ->openUrlInNewTab()
             ])
             ->bulkActions([]);
     }
@@ -136,8 +131,6 @@ class VideoResource extends Resource
         return [
             'index' => Pages\ListVideos::route('/'),
             'view' => Pages\ViewVideo::route('/{record}'),
-
-            // Falls du Create/Edit doch willst, einfach einkommentieren:
             // 'create' => Pages\CreateVideo::route('/create'),
             // 'edit'   => Pages\EditVideo::route('/{record}/edit'),
         ];
