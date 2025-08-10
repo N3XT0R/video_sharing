@@ -13,7 +13,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('weekly:run')
     ->mondays()
-    ->at('08:00');
+    ->at('08:00')
+    ->emailOutputTo($email);
 
 
 // video-Import aus Upload-Ordner – alle 30 Minuten
