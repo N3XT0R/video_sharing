@@ -107,9 +107,7 @@
             <div style="display:flex; gap:10px; margin-top:16px;">
                 <button type="button" class="btn" onclick="toggleAll(true)">Alle auswählen</button>
                 <button type="button" class="btn" onclick="toggleAll(false)">Alle abwählen</button>
-                <button type="submit" class="btn" id="zipSubmit" disabled
-                        title="Funktion derzeit aufgrund eines Fehlers deaktiviert">Auswahl als ZIP herunterladen
-                </button>
+                <button type="button" class="btn" id="zipSubmit">Auswahl als ZIP herunterladen</button>
                 <span class="muted" id="selCount" style="align-self:center;">0 ausgewählt</span>
             </div>
         </form>
@@ -137,11 +135,16 @@
             document.addEventListener('DOMContentLoaded', updateCount);
 
             document.getElementById('zipSubmit').addEventListener('click', async () => {
-                const files = @json($filePaths); // z.B. vom Controller in die View gegeben
-                const res = await fetch('/zips', {
+                const selected = Array.from(document.querySelectorAll('.pickbox:checked')).map(cb => cb.value);
+                if (selected.length === 0) {
+                    alert('Bitte wähle mindestens ein Video aus.');
+                    return;
+                }
+                const postUrl = @json($zipPostUrl);
+                const res = await fetch(postUrl, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                    body: JSON.stringify({files, name: 'auswahl.zip'})
+                    body: JSON.stringify({assignment_ids: selected})
                 });
                 const {id} = await res.json();
 

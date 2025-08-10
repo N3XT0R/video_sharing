@@ -41,7 +41,7 @@ class LinkService
     public function getZipSelectedUrl(Batch $batch, Channel $channel, Carbon $expireDate): string
     {
         return URL::temporarySignedRoute(
-            'offer.zip.selected',
+            'zips.start',
             $expireDate,
             ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
     }
