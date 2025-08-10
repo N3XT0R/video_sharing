@@ -21,10 +21,10 @@ class NewOfferMail extends Mailable
     ) {
     }
 
-    public function build()
+    public function build(): NewOfferMail
     {
         $mailTo = (string)config('mail.log.email');
-        return $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->id)
+        return $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
             ->replyTo($mailTo)
             ->bcc($mailTo)
             ->view('emails.new-offer');
