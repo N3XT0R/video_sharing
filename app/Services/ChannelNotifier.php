@@ -32,7 +32,7 @@ class ChannelNotifier
             foreach ($items as $a) {
                 $url = $this->assignmentService->prepareDownload($a, $ttlHours);
                 $links[] = [
-                    'id' => $a->id,
+                    'id' => $a->getKey(),
                     'hash' => $a->video->hash,
                     'bytes' => $a->video->bytes,
                     'ext' => $a->video->ext,
