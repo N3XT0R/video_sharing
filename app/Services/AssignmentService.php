@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel};
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -13,7 +14,7 @@ class AssignmentService
     /**
      * Retrieve assignments that are ready for offering to a channel.
      */
-    public function fetchPending(Batch $batch, Channel $channel): Collection
+    public function fetchPending(Batch $batch, Channel $channel): EloquentCollection
     {
         return Assignment::with(['video.clips'])
             ->where('batch_id', $batch->getKey())
@@ -27,9 +28,9 @@ class AssignmentService
      * @param  Batch  $batch
      * @param  Channel  $channel
      * @param  Collection  $ids
-     * @return Collection<Assignment>
+     * @return EloquentCollection<Assignment>
      */
-    public function fetchForZip(Batch $batch, Channel $channel, Collection $ids): Collection
+    public function fetchForZip(Batch $batch, Channel $channel, Collection $ids): EloquentCollection
     {
         return Assignment::with('video.clips')
             ->where('batch_id', $batch->getKey())
@@ -39,7 +40,7 @@ class AssignmentService
             ->get();
     }
 
-    public function fetchPickedUp(Batch $batch, Channel $channel): Collection
+    public function fetchPickedUp(Batch $batch, Channel $channel): EloquentCollection
     {
         return Assignment::with('video')
             ->where('batch_id', $batch->getKey())
@@ -85,7 +86,7 @@ class AssignmentService
         return URL::temporarySignedRoute(
             'assignments.download',
             $expiry,
-            ['assignment' => $assignment->id, 't' => $plain]
+            ['assignment' => $assignment->getKey(), 't' => $plain]
         );
     }
 }
