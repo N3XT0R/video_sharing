@@ -28,4 +28,13 @@ class LinkService
             ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
         );
     }
+
+    public function getStoreUnusedUrl(Batch $batch, Channel $channel, Carbon $expireDate): string
+    {
+        return URL::temporarySignedRoute(
+            'offer.unused.store',
+            $expireDate,
+            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
+        );;
+    }
 }

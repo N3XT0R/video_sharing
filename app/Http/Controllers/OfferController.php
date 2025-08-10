@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
+use App\Services\LinkService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -77,14 +78,13 @@ class OfferController extends Controller
 
     public function showUnused(Request $req, Batch $batch, Channel $channel)
     {
+        /**
+         * @var LinkService $linkService
+         */
+        $linkService = app(LinkService::class);
         $this->ensureValidSignature($req);
         $items = $this->assignments->fetchPickedUp($batch, $channel);
-
-        $postUrl = URL::temporarySignedRoute(
-            'offer.unused.store',
-            now()->addHours(6),
-            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
-        );
+        $postUrl = $linkService->getStoreUnusedUrl($batch, $channel, now()->addHours(6));
 
         return view('offer.unused', compact('batch', 'channel', 'items', 'postUrl'));
     }
