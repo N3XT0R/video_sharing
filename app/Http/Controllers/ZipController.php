@@ -67,7 +67,6 @@ class ZipController extends Controller
             abort(404);
         }
 
-        // Datei nach dem Senden löschen (optional)
-        return response()->download(Storage::path($path), $name)->deleteFileAfterSend(true);
+        return response()->download(Storage::path($path), $name)->deleteFileAfterSend();
     }
 }
