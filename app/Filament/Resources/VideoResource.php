@@ -35,12 +35,6 @@ class VideoResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('preview_url')
-                    ->label('Preview')
-                    // Show just "Open" as the link text (instead of the full URL)
-                    ->formatStateUsing(fn() => 'Open')
-                    ->url(fn(Video $video) => (string)$video->getAttribute('preview_url'))
-                    ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('original_name')
                     ->label('Dateiname')
                     ->searchable()
@@ -61,13 +55,6 @@ class VideoResource extends Resource
                     ->sortable()
                     ->toggleable()
                     ->label('Disk'),
-
-                Tables\Columns\TextColumn::make('path')
-                    ->label('Pfad')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable()
-                    ->limit(60),
-
                 Tables\Columns\TextColumn::make('assignments_count')
                     ->counts('assignments')
                     ->label('Assignments'),
@@ -106,9 +93,6 @@ class VideoResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('download')
-                    ->label('Download')
-                    ->icon('heroicon-m-arrow-down-tray'),
                 Tables\Actions\Action::make('preview')
                     ->label('Preview')
                     ->icon('heroicon-m-play')

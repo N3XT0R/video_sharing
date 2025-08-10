@@ -36,7 +36,6 @@ class ViewVideo extends ViewRecord
                         ->formatStateUsing(fn($state
                         ) => $state ? Number::fileSize((int)$state) : '–'),
                     Forms\Components\TextInput::make('disk')->disabled(),
-                    Forms\Components\TextInput::make('path')->disabled(),
                     Forms\Components\TextInput::make('hash')->disabled(),
                     Forms\Components\KeyValue::make('meta')->label('Meta')->disabled()->columnSpanFull(),
                 ]),
