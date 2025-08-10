@@ -13,6 +13,10 @@ RUN docker-php-ext-install pdo_mysql zip \
     && docker-php-ext-install intl \
     && docker-php-ext-install ftp \
     && docker-php-ext-enable redis \
+    && docker-php-ext-install opcache \
     && curl -sS https://getcomposer.org/installer \
-                 | php -- --install-dir=/usr/local/bin --filename=composer
+                 | php -- --install-dir=/usr/local/bin --filename=composer \
+COPY docker/php/conf.d/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/php/conf.d/php.ini     /usr/local/etc/php/conf.d/php.ini
+COPY docker/php-fpm/www.conf /usr/local/etc/php-fpm.d/www.conf
 

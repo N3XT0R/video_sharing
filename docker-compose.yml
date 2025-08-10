@@ -18,14 +18,22 @@ services:
       dockerfile: app.Dockerfile
     volumes:
       - .:/var/www/html/:consistent
+      - vendor:/var/www/html/vendor      # vendor as named volume (fast)
+      - node_modules:/var/www/html/node_modules
     networks:
       - default
+    environment:
+      XDEBUG_MODE: "off"                 # disable xdebug unless debugging
   web_sharing:
     image: nginx:latest
     volumes:
-      - .:/var/www/html:consistent
+      - .:/var/www/html:ro
       - ./docker/vhost.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "9300:80"
     depends_on:
       - sharing
+
+volumes:
+  vendor:
+  node_modules:
