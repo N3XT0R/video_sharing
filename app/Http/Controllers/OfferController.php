@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Batch, Channel, Download};
+use App\Models\{Assignment, Batch, Channel, Download};
 use App\Services\AssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -113,20 +113,24 @@ class OfferController extends Controller
         abort_unless($req->hasValidSignature(), 403);
     }
 
+    /**
+     * @param  Collection<Assignment>  $items
+     * @return string
+     */
     private function buildInfoCsv(Collection $items): string
     {
         $rows = [];
         $rows[] = ['filename', 'hash', 'size_mb', 'start', 'end', 'note', 'bundle', 'role', 'submitted_by'];
 
-        foreach ($items as $a) {
-            $v = $a->video;
-            $clips = $v->clips ?? collect();
+        foreach ($items as $assignment) {
+            $video = $assignment->video;
+            $clips = $video->clips ?? collect();
 
             if ($clips->isEmpty()) {
                 $rows[] = [
-                    $v->original_name ?: basename($v->path),
-                    $v->hash,
-                    number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
+                    $video->original_name ?: basename($video->path),
+                    $video->hash,
+                    number_format(($video->bytes ?? 0) / 1048576, 1, '.', ''),
                     null,
                     null,
                     null,
@@ -135,26 +139,26 @@ class OfferController extends Controller
                     null,
                 ];
             } else {
-                foreach ($clips as $c) {
+                foreach ($clips as $clip) {
                     $rows[] = [
-                        $v->original_name ?: basename($v->path),
-                        $v->hash,
-                        number_format(($v->bytes ?? 0) / 1048576, 1, '.', ''),
-                        isset($c->start_sec) ? gmdate('i:s', (int)$c->start_sec) : null,
-                        isset($c->end_sec) ? gmdate('i:s', (int)$c->end_sec) : null,
-                        $c->note,
-                        $c->bundle_key,
-                        $c->role,
-                        $c->submitted_by,
+                        $video->original_name ?: basename($video->path),
+                        $video->hash,
+                        number_format(($video->bytes ?? 0) / 1048576, 1, '.', ''),
+                        isset($clip->start_sec) ? gmdate('i:s', (int)$clip->start_sec) : null,
+                        isset($clip->end_sec) ? gmdate('i:s', (int)$clip->end_sec) : null,
+                        $clip->note,
+                        $clip->bundle_key,
+                        $clip->role,
+                        $clip->submitted_by,
                     ];
                 }
             }
         }
 
         $fp = fopen('php://temp', 'w+');
-        fwrite($fp, "\xEF\xBB\xBF");
-        foreach ($rows as $r) {
-            fputcsv($fp, $r, ';');
+        fwrite($fp, "\xEF\xBB\xBF"); // BOM
+        foreach ($rows as $row) {
+            fputcsv($fp, $row, ';');
         }
         rewind($fp);
         $csv = stream_get_contents($fp);
@@ -163,6 +167,12 @@ class OfferController extends Controller
         return $csv;
     }
 
+    /**
+     * @param  ZipStream  $zip
+     * @param  Collection  $items
+     * @param  Request  $req
+     * @return void
+     */
     private function addVideosToZip(ZipStream $zip, Collection $items, Request $req): void
     {
         foreach ($items as $a) {

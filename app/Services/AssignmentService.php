@@ -23,6 +23,12 @@ class AssignmentService
             ->get();
     }
 
+    /**
+     * @param  Batch  $batch
+     * @param  Channel  $channel
+     * @param  Collection  $ids
+     * @return Collection<Assignment>
+     */
     public function fetchForZip(Batch $batch, Channel $channel, Collection $ids): Collection
     {
         return Assignment::with('video.clips')
