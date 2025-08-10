@@ -3,7 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AssignmentResource\Pages;
+use App\Filament\Resources\VideoResource;
 use App\Models\Assignment;
+use App\Services\LinkService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -48,6 +50,11 @@ class AssignmentResource extends Resource
                 TextColumn::make('id')
                     ->sortable(),
 
+                TextColumn::make('channel.name')
+                    ->label('Channel')
+                    ->sortable()
+                    ->searchable(),
+
                 // Show related video name if you have it; fallback to ID if not.
                 TextColumn::make('video.original_name')
                     ->label('Video')
@@ -58,6 +65,17 @@ class AssignmentResource extends Resource
                         return $video ? VideoResource::getUrl('view', ['record' => $video]) : null;
                     })
                     ->openUrlInNewTab(),
+
+                TextColumn::make('video.preview_url')
+                    ->label('Preview')
+                    ->formatStateUsing(fn() => 'Open')
+                    ->url(fn(Assignment $assignment) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
+                    ->openUrlInNewTab(),
+
+                TextColumn::make('expires_at')
+                    ->dateTime()
+                    ->since()
+                    ->sortable(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -75,16 +93,25 @@ class AssignmentResource extends Resource
                     ->numeric()
                     ->sortable(),
 
-                TextColumn::make('expires_at')
-                    ->dateTime()
-                    ->since()
-                    ->sortable(),
-
                 TextColumn::make('last_notified_at')
                     ->dateTime()
                     ->since()
                     ->sortable()
                     ->toggleable(),
+
+                TextColumn::make('offer_url')
+                    ->label('Offer')
+                    ->formatStateUsing(fn() => 'Link')
+                    ->url(fn(Assignment $assignment): ?string => (
+                        $assignment->batch && $assignment->channel && $assignment->expires_at
+                    )
+                        ? app(LinkService::class)->getOfferUrl(
+                            $assignment->batch,
+                            $assignment->channel,
+                            $assignment->expires_at
+                        )
+                        : null)
+                    ->openUrlInNewTab(),
 
                 TextColumn::make('download_token')
                     ->label('Token')
