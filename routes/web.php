@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentDownloadController;
 use App\Http\Controllers\DropboxController;
 use App\Http\Controllers\OfferController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 Route::get('/', function () {
     return view('welcome');
@@ -14,7 +15,7 @@ Route::get('/game', function () {
 })->name('game');
 
 Route::get('/changelog', function () {
-    return nl2br(file_get_contents(base_path('CHANGELOG.md')));
+    return Str::markdown(file_get_contents(base_path('CHANGELOG.md')));
 })->name('changelog');
 
 
