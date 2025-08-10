@@ -21,7 +21,7 @@ Route::get('/changelog', function () {
 
 
 Route::get('/offer/{batch}/{channel}', [OfferController::class, 'show'])->name('offer.show');
-Route::post('/offer/{batch}/{channel}/zip', [OfferController::class, 'zipSelected'])->name('offer.zip.selected');
+// ZIP-Download via asynchronen Job
 Route::get('/offer/{batch}/{channel}/unused', [OfferController::class, 'showUnused'])->name('offer.unused.show');
 Route::post('/offer/{batch}/{channel}/unused', [OfferController::class, 'storeUnused'])->name('offer.unused.store');
 
@@ -31,6 +31,6 @@ Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])
 Route::get('/dropbox/connect', [DropboxController::class, 'connect'])->name('dropbox.connect');
 Route::get('/dropbox/callback', [DropboxController::class, 'callback'])->name('dropbox.callback');
 
-Route::post('/zips/{batch}/{channel}', [ZipController::class, 'start']);
-Route::get('/zips/{id}/progress', [ZipController::class, 'progress']);
-Route::get('/zips/{id}/download', [ZipController::class, 'download']);
+Route::post('/zips/{batch}/{channel}', [ZipController::class, 'start'])->name('zips.start');
+Route::get('/zips/{id}/progress', [ZipController::class, 'progress'])->name('zips.progress');
+Route::get('/zips/{id}/download', [ZipController::class, 'download'])->name('zips.download');

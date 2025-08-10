@@ -18,7 +18,7 @@ class ZipController extends Controller
     {
     }
 
-    // POST /zips  -> Startet Job
+    // POST /zips/{batch}/{channel} -> Startet Job
     public function start(Request $req, Batch $batch, Channel $channel)
     {
         $validated = $req->validate([
@@ -28,7 +28,7 @@ class ZipController extends Controller
         $batchId = $batch->getKey();
         $jobId = $batchId.'_'.$channel->getAttribute('name');
 
-        $ids = collect($req->input('assignment_ids', []))
+        $ids = collect($validated['assignment_ids'])
             ->filter(fn($v) => ctype_digit((string)$v))
             ->map('intval')
             ->values();
@@ -36,15 +36,14 @@ class ZipController extends Controller
         $items = $this->assignments->fetchForZip($batch, $channel, $ids);
 
         if ($items->isEmpty()) {
-            return back()->withErrors(['invalid' => 'Die Auswahl ist nicht mehr verfügbar.']);
+            return response()->json(['error' => 'Die Auswahl ist nicht mehr verfügbar.'], 422);
         }
 
         // initialer Status
         Cache::put("zipjob:{$jobId}:status", 'queued', 600);
         Cache::put("zipjob:{$jobId}:progress", 0, 600);
 
-        BuildZipJob::dispatch($batchId, $channel->getKey(), $validated['files']);
-
+        BuildZipJob::dispatch($batchId, $channel->getKey(), $ids->all(), $req->ip(), $req->userAgent());
 
         return response()->json(['id' => $jobId]);
     }
