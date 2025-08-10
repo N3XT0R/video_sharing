@@ -23,10 +23,19 @@ class AssignmentsRelationManager extends RelationManager
             ->recordTitleAttribute('id')
             ->columns([
                 TextColumn::make('id')->sortable(),
+                TextColumn::make('channel.name')
+                    ->label('Channel')
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('attempts')->numeric()->sortable(),
                 TextColumn::make('expires_at')->dateTime()->since()->sortable(),
                 TextColumn::make('last_notified_at')->dateTime()->since()->sortable()->toggleable(),
+                TextColumn::make('video.preview_url')
+                    ->label('Preview')
+                    ->formatStateUsing(fn() => 'Open')
+                    ->url(fn(Assignment $assignment) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
+                    ->openUrlInNewTab(),
                 TextColumn::make('created_at')->dateTime()->since()->sortable(),
             ])
             ->headerActions([]) // read-only
