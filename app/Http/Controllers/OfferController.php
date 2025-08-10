@@ -51,7 +51,7 @@ class OfferController extends Controller
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        $items = $this->fetchAssignmentsForZip($batch, $channel, $ids);
+        $items = $this->assignments->fetchAssignmentsForZip($batch, $channel, $ids);
 
         if ($items->isEmpty()) {
             return back()->withErrors(['invalid' => 'Die Auswahl ist nicht mehr verfügbar.']);
@@ -116,16 +116,6 @@ class OfferController extends Controller
     private function ensureValidSignature(Request $req): void
     {
         abort_unless($req->hasValidSignature(), 403);
-    }
-
-    private function fetchAssignmentsForZip(Batch $batch, Channel $channel, Collection $ids)
-    {
-        return Assignment::with('video.clips')
-            ->where('batch_id', $batch->id)
-            ->where('channel_id', $channel->id)
-            ->whereIn('id', $ids)
-            ->whereIn('status', ['queued', 'notified'])
-            ->get();
     }
 
     private function buildInfoCsv(Collection $items): string

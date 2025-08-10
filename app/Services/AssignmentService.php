@@ -22,6 +22,16 @@ class AssignmentService
             ->get();
     }
 
+    public function fetchAssignmentsForZip(Batch $batch, Channel $channel, Collection $ids): Collection
+    {
+        return Assignment::with('video.clips')
+            ->where('batch_id', $batch->id)
+            ->where('channel_id', $channel->id)
+            ->whereIn('id', $ids)
+            ->whereIn('status', ['queued', 'notified'])
+            ->get();
+    }
+
     public function markUnused(Batch $batch, Channel $channel, array $ids): bool
     {
         return Assignment::query()
