@@ -25,12 +25,12 @@ class OfferNotifier
             throw new RuntimeException('Kein Assign-Batch gefunden.');
         }
 
-        $channelIds = Assignment::query()->where('batch_id', $assignBatch->id)
+        $channelIds = Assignment::query()->where('batch_id', $assignBatch->getKey())
             ->whereIn('status', ['queued', 'notified'])
             ->pluck('channel_id')->unique()->values();
 
         if ($channelIds->isEmpty()) {
-            return ['sent' => 0, 'batchId' => $assignBatch->id];
+            return ['sent' => 0, 'batchId' => $assignBatch->getKey()];
         }
 
         $sent = 0;
@@ -38,13 +38,13 @@ class OfferNotifier
             $offerUrl = URL::temporarySignedRoute(
                 'offer.show',
                 now()->addDays($ttlDays),
-                ['batch' => $assignBatch->id, 'channel' => $channel->id]
+                ['batch' => $assignBatch->getKey(), 'channel' => $channel->getKey()]
             );
 
             $unusedUrl = URL::temporarySignedRoute(
                 'offer.unused.show',
                 now()->addDays($ttlDays),
-                ['batch' => $assignBatch->id, 'channel' => $channel->id]
+                ['batch' => $assignBatch->getKey(), 'channel' => $channel->getKey()]
             );
 
             Mail::to($channel->email)->queue(
@@ -60,7 +60,7 @@ class OfferNotifier
             'stats' => ['emails' => $sent]
         ]);
 
-        return ['sent' => $sent, 'batchId' => $assignBatch->id];
+        return ['sent' => $sent, 'batchId' => $assignBatch->getKey()];
     }
 }
 
