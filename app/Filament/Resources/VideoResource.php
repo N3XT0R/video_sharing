@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Number;
 
 class VideoResource extends Resource
 {
@@ -51,7 +52,7 @@ class VideoResource extends Resource
                 Tables\Columns\TextColumn::make('bytes')
                     ->label('Größe')
                     ->sortable()
-                    ->formatStateUsing(fn($state) => $state ? \Illuminate\Support\Number::fileSize((int)$state) : '–'),
+                    ->formatStateUsing(fn($state) => $state ? Number::fileSize((int)$state) : '–'),
 
                 Tables\Columns\TextColumn::make('disk')
                     ->sortable()
