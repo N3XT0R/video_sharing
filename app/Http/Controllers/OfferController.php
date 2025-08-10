@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Assignment, Batch, Channel, Download};
+use App\Models\{Batch, Channel, Download};
 use App\Services\AssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +51,7 @@ class OfferController extends Controller
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        $items = $this->assignments->fetchAssignmentsForZip($batch, $channel, $ids);
+        $items = $this->assignments->fetchForZip($batch, $channel, $ids);
 
         if ($items->isEmpty()) {
             return back()->withErrors(['invalid' => 'Die Auswahl ist nicht mehr verfügbar.']);
@@ -77,17 +77,12 @@ class OfferController extends Controller
     public function showUnused(Request $req, Batch $batch, Channel $channel)
     {
         $this->ensureValidSignature($req);
-
-        $items = Assignment::with('video')
-            ->where('batch_id', $batch->id)
-            ->where('channel_id', $channel->id)
-            ->where('status', 'picked_up')
-            ->get();
+        $items = $this->assignments->fetchPickedUp($batch, $channel);
 
         $postUrl = URL::temporarySignedRoute(
             'offer.unused.store',
             now()->addHours(6),
-            ['batch' => $batch->id, 'channel' => $channel->id]
+            ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]
         );
 
         return view('offer.unused', compact('batch', 'channel', 'items', 'postUrl'));

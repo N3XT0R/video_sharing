@@ -23,13 +23,22 @@ class AssignmentService
             ->get();
     }
 
-    public function fetchAssignmentsForZip(Batch $batch, Channel $channel, Collection $ids): Collection
+    public function fetchForZip(Batch $batch, Channel $channel, Collection $ids): Collection
     {
         return Assignment::with('video.clips')
-            ->where('batch_id', $batch->id)
-            ->where('channel_id', $channel->id)
+            ->where('batch_id', $batch->getKey())
+            ->where('channel_id', $channel->getKey())
             ->whereIn('id', $ids)
             ->whereIn('status', StatusEnum::getReadyStatus())
+            ->get();
+    }
+
+    public function fetchPickedUp(Batch $batch, Channel $channel): Collection
+    {
+        return Assignment::with('video')
+            ->where('batch_id', $batch->getKey())
+            ->where('channel_id', $channel->getKey())
+            ->where('status', StatusEnum::PICKEDUP->value)
             ->get();
     }
 
