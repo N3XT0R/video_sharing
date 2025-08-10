@@ -44,8 +44,9 @@ class AssignmentsRelationManager extends RelationManager
                         $video = $assignment->video;
                         return $video ? (string)$video->getAttribute('preview_url') : null;
                     })
-                    ->visible(fn(Assignment $assignment
-                    ) => $assignment->video && filled($assignment->video->getAttribute('preview_url'))
+                    ->visible(
+                        fn(Assignment $assignment
+                        ) => $assignment->video && filled($assignment->video->getAttribute('preview_url'))
                     )
                     ->openUrlInNewTab(),
             ])
