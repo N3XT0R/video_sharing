@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Video extends Model
 {
@@ -22,4 +24,8 @@ class Video extends Model
         return $this->hasMany(Clip::class);
     }
 
+    public function getDisk(): Filesystem
+    {
+        return Storage::disk($this->getAttribute('disk'));
+    }
 }

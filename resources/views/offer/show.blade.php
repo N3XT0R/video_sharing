@@ -114,6 +114,9 @@
             </div>
         </form>
     @endif
+    <div class="progress" style="height:8px;background:#eee;">
+        <div id="bar" style="height:8px;width:0%;background:#3b82f6;"></div>
+    </div>
 
     @push('scripts')
         <script>
@@ -132,6 +135,26 @@
                 if (e.target && e.target.classList.contains('pickbox')) updateCount();
             });
             document.addEventListener('DOMContentLoaded', updateCount);
+
+            document.getElementById('zipSubmit').addEventListener('click', async () => {
+                const files = @json($filePaths); // z.B. vom Controller in die View gegeben
+                const res = await fetch('/zips', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+                    body: JSON.stringify({files, name: 'auswahl.zip'})
+                });
+                const {id} = await res.json();
+
+                const bar = document.getElementById('bar');
+                const t = setInterval(async () => {
+                    const r = await (await fetch(`/zips/${id}/progress`)).json();
+                    bar.style.width = (r.progress || 0) + '%';
+                    if (r.status === 'ready') {
+                        clearInterval(t);
+                        window.location = `/zips/${id}/download`;
+                    }
+                }, 500);
+            });
         </script>
     @endpush
 @endsection

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssignmentDownloadController;
 use App\Http\Controllers\DropboxController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\ZipController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -29,3 +30,7 @@ Route::get('/d/{assignment}', [AssignmentDownloadController::class, 'download'])
 
 Route::get('/dropbox/connect', [DropboxController::class, 'connect'])->name('dropbox.connect');
 Route::get('/dropbox/callback', [DropboxController::class, 'callback'])->name('dropbox.callback');
+
+Route::post('/zips/{batch}/{channel}', [ZipController::class, 'start']);
+Route::get('/zips/{id}/progress', [ZipController::class, 'progress']);
+Route::get('/zips/{id}/download', [ZipController::class, 'download']);

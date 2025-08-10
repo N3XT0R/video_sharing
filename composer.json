@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "ext-zip": "*",,
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "maennchen/zipstream-php": "^3.2",
