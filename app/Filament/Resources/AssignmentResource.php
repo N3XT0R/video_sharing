@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class AssignmentResource extends Resource
 {
@@ -186,13 +187,14 @@ class AssignmentResource extends Resource
                         $origin = (string)$video->getAttribute('original_name');
                         $name = $origin !== '' ? $origin : ($hash.($ext !== '' ? '.'.$ext : ''));
 
-                        if ($video->getAttribute('disk') !== 'dropbox') {
+                        try {
                             return $disk->temporaryUrl($path, now()->addMinutes(10), [
                                 'ResponseContentDisposition' => 'attachment; filename="'.$name.'"',
                             ]);
+                        } catch (\Throwable $e) {
+                            Log::error($e->getMessage(), ['exception' => $e]);
+                            return $disk->url($path);
                         }
-
-                        return $disk->url($path);
                     })
                     ->visible(fn(Assignment $assignment) => $assignment->video &&
                         filled($assignment->video->getAttribute('path')) &&
