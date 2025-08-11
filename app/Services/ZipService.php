@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\DownloadStatusEnum;
 use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel, Download, Video};
 use Illuminate\Support\Collection;
@@ -35,7 +36,7 @@ class ZipService
 
         $zip = $this->createZipArchive($tmpPath, $items);
 
-        $this->cache->setStatus($jobId, 'preparing');
+        $this->cache->setStatus($jobId, DownloadStatusEnum::PREPARING->value);
         $this->cache->setProgress($jobId, 0);
 
         $tmpFiles = $this->addAssignmentsToZip($zip, $jobId, $items, $ip, $userAgent);
@@ -55,7 +56,7 @@ class ZipService
         return sprintf(
             'videos_%s_%s_selected.zip',
             $batch->getKey(),
-            Str::slug((string) $channel->getAttribute('name')),
+            Str::slug((string)$channel->getAttribute('name')),
         );
     }
 
@@ -86,8 +87,13 @@ class ZipService
      * @param  Collection<Assignment>  $items
      * @return array<int, string>  temporary files created during download
      */
-    private function addAssignmentsToZip(ZipArchive $zip, string $jobId, Collection $items, string $ip, ?string $userAgent): array
-    {
+    private function addAssignmentsToZip(
+        ZipArchive $zip,
+        string $jobId,
+        Collection $items,
+        string $ip,
+        ?string $userAgent
+    ): array {
         $tmpFiles = [];
         $total = max($items->count(), 1);
         $processed = 0;
@@ -105,14 +111,20 @@ class ZipService
     /**
      * @param  array<int, string>  $tmpFiles
      */
-    private function processAssignment(ZipArchive $zip, string $jobId, Assignment $assignment, string $ip, ?string $userAgent, array &$tmpFiles): void
-    {
+    private function processAssignment(
+        ZipArchive $zip,
+        string $jobId,
+        Assignment $assignment,
+        string $ip,
+        ?string $userAgent,
+        array &$tmpFiles
+    ): void {
         /** @var Video $video */
         $video = $assignment->video;
         $disk = $video->getDisk();
         $path = $video->getAttribute('path');
 
-        if (! $disk->exists($path)) {
+        if (!$disk->exists($path)) {
             return;
         }
 
@@ -123,7 +135,7 @@ class ZipService
             return;
         }
 
-        $this->cache->setStatus($jobId, 'adding');
+        $this->cache->setStatus($jobId, DownloadStatusEnum::ADDING->value);
         $zip->addFile($localPath, $nameInZip);
 
         $this->markDownloaded($assignment, $ip, $userAgent);
@@ -138,12 +150,12 @@ class ZipService
             return $localDiskPath;
         }
 
-        $this->cache->setStatus($jobId, 'downloading');
+        $this->cache->setStatus($jobId, DownloadStatusEnum::DOWNLOADING->value);
         $disk = $video->getDisk();
         $path = $video->getAttribute('path');
         $stream = $disk->readStream($path);
 
-        if (! is_resource($stream)) {
+        if (!is_resource($stream)) {
             return null;
         }
 
@@ -186,16 +198,21 @@ class ZipService
 
     private function updateProgress(string $jobId, int $processed, int $total): void
     {
-        $pct = (int) floor($processed * 100 / max($total, 1));
+        $pct = (int)floor($processed * 100 / max($total, 1));
         $this->cache->setProgress($jobId, $pct);
     }
 
     /**
      * @param  array<int, string>  $tmpFiles
      */
-    private function finalizeZip(ZipArchive $zip, array $tmpFiles, string $jobId, string $tmpPath, string $downloadName): void
-    {
-        $this->cache->setStatus($jobId, 'finalizing');
+    private function finalizeZip(
+        ZipArchive $zip,
+        array $tmpFiles,
+        string $jobId,
+        string $tmpPath,
+        string $downloadName
+    ): void {
+        $this->cache->setStatus($jobId, DownloadStatusEnum::FINALIZING->value);
         $zip->close();
 
         foreach ($tmpFiles as $file) {
@@ -237,8 +254,8 @@ class ZipService
                         $video->original_name ?: basename($video->path),
                         $video->hash,
                         number_format(($video->bytes ?? 0) / 1048576, 1, '.', ''),
-                        isset($clip->start_sec) ? gmdate('i:s', (int) $clip->start_sec) : null,
-                        isset($clip->end_sec) ? gmdate('i:s', (int) $clip->end_sec) : null,
+                        isset($clip->start_sec) ? gmdate('i:s', (int)$clip->start_sec) : null,
+                        isset($clip->end_sec) ? gmdate('i:s', (int)$clip->end_sec) : null,
                         $clip->note,
                         $clip->bundle_key,
                         $clip->role,

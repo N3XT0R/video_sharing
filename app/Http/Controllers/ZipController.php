@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enum\DownloadStatusEnum;
 use App\Jobs\BuildZipJob;
 use App\Models\Batch;
 use App\Models\Channel;
 use App\Services\AssignmentService;
-use Illuminate\Http\Request;
 use App\Services\DownloadCacheService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ZipController extends Controller
@@ -46,7 +47,7 @@ class ZipController extends Controller
 
         BuildZipJob::dispatch($batchId, $channel->getKey(), $ids->all(), $req->ip(), $req->userAgent());
 
-        return response()->json(['jobId' => $jobId, 'status' => 'queued']);
+        return response()->json(['jobId' => $jobId, 'status' => DownloadStatusEnum::QUEUED->value]);
     }
 
     // GET /zips/{id}/progress ->  Polling for Frontend

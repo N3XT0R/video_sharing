@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\DownloadStatusEnum;
 use Illuminate\Support\Facades\Cache;
 
 class DownloadCacheService
@@ -12,7 +13,7 @@ class DownloadCacheService
 
     public function init(string $jobId): void
     {
-        $this->setStatus($jobId, 'queued');
+        $this->setStatus($jobId, DownloadStatusEnum::QUEUED->value);
         $this->setProgress($jobId, 0);
     }
 
@@ -33,7 +34,7 @@ class DownloadCacheService
 
     public function getProgress(string $jobId): int
     {
-        return (int) Cache::get($this->key($jobId, 'progress'), 0);
+        return (int)Cache::get($this->key($jobId, 'progress'), 0);
     }
 
     public function setFile(string $jobId, string $path): void
