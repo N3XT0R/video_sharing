@@ -141,5 +141,5 @@ server {
 Crontab einrichten:
 
 ```bash
-* * * * * cd /var/www/mydomain.de/htdocs/current/ && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/dashclip/ && php artisan schedule:run >> /dev/null 2>&1
 ```
