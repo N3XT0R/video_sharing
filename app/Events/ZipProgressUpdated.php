@@ -6,17 +6,19 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ZipProgressUpdated implements ShouldBroadcast
+class ZipProgressUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         public string $jobId,
-        public array $state
+        public string $status,
+        public int $progress,
+        public ?string $name = null,
     ) {
     }
 
@@ -32,6 +34,10 @@ class ZipProgressUpdated implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
-        return $this->state;
+        return [
+            'status' => $this->status,
+            'progress' => $this->progress,
+            'name' => $this->name,
+        ];
     }
 }

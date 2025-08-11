@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enum\DownloadStatusEnum;
+use App\Events\ZipProgressUpdated;
 use Illuminate\Support\Facades\Cache;
 
 class DownloadCacheService
@@ -20,6 +21,7 @@ class DownloadCacheService
     public function setStatus(string $jobId, string $status): void
     {
         Cache::put($this->key($jobId, 'status'), $status, $this->ttl);
+        $this->broadcast($jobId);
     }
 
     public function getStatus(string $jobId): string
@@ -30,6 +32,7 @@ class DownloadCacheService
     public function setProgress(string $jobId, int $progress): void
     {
         Cache::put($this->key($jobId, 'progress'), $progress, $this->ttl);
+        $this->broadcast($jobId);
     }
 
     public function getProgress(string $jobId): int
@@ -50,6 +53,7 @@ class DownloadCacheService
     public function setName(string $jobId, string $name): void
     {
         Cache::put($this->key($jobId, 'name'), $name, $this->ttl);
+        $this->broadcast($jobId);
     }
 
     public function getName(string $jobId, ?string $default = null): ?string
@@ -60,5 +64,15 @@ class DownloadCacheService
     private function key(string $jobId, string $suffix): string
     {
         return "zipjob:{$jobId}:{$suffix}";
+    }
+
+    private function broadcast(string $jobId): void
+    {
+        event(new ZipProgressUpdated(
+            $jobId,
+            $this->getStatus($jobId),
+            $this->getProgress($jobId),
+            $this->getName($jobId),
+        ));
     }
 }

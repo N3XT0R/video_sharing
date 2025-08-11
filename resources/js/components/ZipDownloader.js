@@ -66,16 +66,16 @@ export default class ZipDownloader {
         );
 
         let downloading = false;
-        const poll = setInterval(async () => {
-            const { data: r } = await axios.get(`/zips/${jobId}/progress`);
+        const channelName = `zip.${jobId}`;
+        window.Echo.private(channelName).listen('.zip.progress', async r => {
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
-                clearInterval(poll);
                 await this.downloadZip(jobId, r.name);
+                window.Echo.leave(channelName);
             } else {
                 this.modal.update(r.progress || 0, r.status);
             }
-        }, 500);
+        });
     }
 
     async downloadZip(jobId, filename) {
