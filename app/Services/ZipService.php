@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enum\DownloadStatusEnum;
-use App\Enum\StatusEnum;
-use App\Models\{Assignment, Batch, Channel, Download, Video};
+use App\Models\{Assignment, Batch, Channel, Video};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -185,19 +184,6 @@ class ZipService
         $name = $video->getAttribute('original_name') ?: basename($video->getAttribute('path'));
 
         return preg_replace('/[\\\\\/:*?"<>|]+/', '_', $name);
-    }
-
-    private function markDownloaded(Assignment $assignment, string $ip, ?string $userAgent): void
-    {
-        $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
-
-        Download::query()->create([
-            'assignment_id' => $assignment->getKey(),
-            'downloaded_at' => now(),
-            'ip' => $ip,
-            'user_agent' => $userAgent,
-            'bytes_sent' => null,
-        ]);
     }
 
     private function updateProgress(string $jobId, int $processed, int $total): void
