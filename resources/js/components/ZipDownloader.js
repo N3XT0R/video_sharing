@@ -68,16 +68,18 @@ export default class ZipDownloader {
         let downloading = false;
         const poll = setInterval(async () => {
             const { data: r } = await axios.get(`/zips/${jobId}/progress`);
-            this.modal.update(r.progress || 0, r.status);
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
                 clearInterval(poll);
                 await this.downloadZip(jobId, r.name);
+            } else {
+                this.modal.update(r.progress || 0, r.status);
             }
         }, 500);
     }
 
     async downloadZip(jobId, filename) {
+        this.modal.update(100, 'ready');
         const response = await axios.get(`/zips/${jobId}/download`, {
             responseType: 'blob'
         });
