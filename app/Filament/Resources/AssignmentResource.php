@@ -102,21 +102,6 @@ class AssignmentResource extends Resource
                     ->since()
                     ->sortable()
                     ->toggleable(),
-
-                TextColumn::make('offer_url')
-                    ->label('Offer')
-                    ->formatStateUsing(fn() => 'Link')
-                    ->url(fn(Assignment $assignment): ?string => (
-                        $assignment->batch && $assignment->channel
-                    )
-                        ? app(LinkService::class)->getOfferUrl(
-                            $assignment->batch,
-                            $assignment->channel,
-                            Carbon::now()->addDay()
-                        )
-                        : null)
-                    ->openUrlInNewTab(),
-
                 TextColumn::make('download_token')
                     ->label('Token')
                     ->copyable()
@@ -168,7 +153,18 @@ class AssignmentResource extends Resource
                     ) => $assignment->video && filled($assignment->video->getAttribute('preview_url'))
                     )
                     ->openUrlInNewTab(),
-
+                Tables\Actions\Action::make('offer')
+                    ->label('Offer')
+                    ->url(fn(Assignment $assignment): ?string => (
+                        $assignment->batch && $assignment->channel
+                    )
+                        ? app(LinkService::class)->getOfferUrl(
+                            $assignment->batch,
+                            $assignment->channel,
+                            Carbon::now()->addDay()
+                        )
+                        : null)
+                    ->openUrlInNewTab(),
                 // Optional: Download via the video's disk/path using Video::getDisk()
                 Tables\Actions\Action::make('download')
                     ->label('Download')
