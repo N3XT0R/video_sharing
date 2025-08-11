@@ -80,10 +80,14 @@ export default class ZipDownloader {
     }
 
     async downloadZip(jobId, filename) {
-        this.modal.update(100, 'ready');
+
         const response = await axios.get(`/zips/${jobId}/download`, {
             responseType: 'blob'
         });
+        if (response.status === 200) {
+            this.modal.update(100, 'ready');
+            this.modal.showClose();
+        }
         const blob = new Blob([response.data], {type: 'application/zip'});
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -93,6 +97,6 @@ export default class ZipDownloader {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-        this.modal.showClose();
+
     }
 }
