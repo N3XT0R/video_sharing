@@ -112,8 +112,10 @@
             </div>
         </form>
     @endif
-    <div class="progress" style="height:8px;background:#eee;">
-        <div id="bar" style="height:8px;width:0%;background:#3b82f6;"></div>
+    <div class="panel">
+        <div class="progress" style="height:8px;background:#eee;">
+            <div id="bar" style="height:8px;width:0%;background:#3b82f6;"></div>
+        </div>
     </div>
 
     @push('scripts')
