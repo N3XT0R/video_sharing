@@ -14,7 +14,9 @@ class PageService
     {
         $page = Page::query()->where('slug', $slug)->first();
 
-        return $page ? Str::markdown($page->content) : null;
+        return $page ? Str::markdown($page->content, [
+            'renderer' => ['soft_break' => "<br />"],
+        ]) : null;
     }
 
     public function getPagesForSection(string $section): Collection
