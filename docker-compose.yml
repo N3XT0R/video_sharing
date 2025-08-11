@@ -11,7 +11,6 @@ services:
       - MYSQL_DATABASE=laravel
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
   sharing:
-    user: "1000:1000"
     depends_on:
       - db_sharing
     build:
