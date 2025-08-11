@@ -95,6 +95,7 @@ export default class ZipDownloader {
         if (response.status === 200) {
             this.modal.update(100, 'ready');
             this.modal.showClose();
+            window.location.reload();
         }
         const blob = new Blob([response.data], {type: 'application/zip'});
         const url = window.URL.createObjectURL(blob);
