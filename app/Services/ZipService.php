@@ -37,6 +37,9 @@ class ZipService
 
         $this->prepareDirectories();
 
+        // remember assignments for later download tracking
+        $this->cache->setAssignments($jobId, $items->pluck('id')->all());
+
         $zip = $this->createZipArchive($tmpPath, $items);
 
         $this->cache->setStatus($jobId, DownloadStatusEnum::PREPARING->value);

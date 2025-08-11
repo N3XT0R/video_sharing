@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enum\DownloadStatusEnum;
 use App\Jobs\BuildZipJob;
+use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
 use App\Services\AssignmentService;
@@ -62,7 +63,7 @@ class ZipController extends Controller
     }
 
     // GET /zips/{id}/download -> delivers zip
-    public function download(string $id)
+    public function download(Request $req, string $id)
     {
         $path = $this->cache->getFile($id);
         $name = $this->cache->getName($id, "{$id}.zip");
@@ -74,6 +75,17 @@ class ZipController extends Controller
         $fullPath = Storage::exists($path) ? Storage::path($path) : $path;
         if (!is_file($fullPath)) {
             abort(404);
+        }
+
+        $assignmentIds = $this->cache->getAssignments($id);
+        if ($assignmentIds !== []) {
+            Assignment::whereIn('id', $assignmentIds)->get()->each(
+                fn(Assignment $assignment) => $this->assignments->markDownloaded(
+                    $assignment,
+                    $req->ip(),
+                    $req->userAgent(),
+                )
+            );
         }
 
         return response()->download($fullPath, $name)->deleteFileAfterSend();
