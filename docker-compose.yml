@@ -23,9 +23,12 @@ services:
       - default
     environment:
       XDEBUG_MODE: "coverage"
+      BROADCAST_CONNECTION: reverb
+      REVERB_HOST: reverb
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
   reverb:
     depends_on:
-      - sharing
       - redis
     build:
       context: .
