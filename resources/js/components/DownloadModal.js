@@ -6,7 +6,15 @@ export default class DownloadModal {
         this.modal.innerHTML = `
             <div class="panel" style="max-width:400px;width:90%;">
                 <h3>Download läuft...</h3>
-                <ul id="downloadFileList" class="my-3 ml-4 list-disc"></ul>
+                <table class="w-full my-3 text-sm">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Video</th>
+                            <th class="text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="downloadFileList"></tbody>
+                </table>
                 <p id="statusText" class="text-sm mb-2"></p>
                 <div class="w-full h-2 bg-gray-200 rounded overflow-hidden">
                     <div id="zipProgressBar" class="h-full w-0 bg-blue-500 transition-all"></div>
@@ -25,9 +33,15 @@ export default class DownloadModal {
     open(files = []) {
         this.fileList.innerHTML = '';
         files.forEach(name => {
-            const li = document.createElement('li');
-            li.textContent = name;
-            this.fileList.appendChild(li);
+            const tr = document.createElement('tr');
+            const tdName = document.createElement('td');
+            tdName.textContent = name;
+            const tdStatus = document.createElement('td');
+            tdStatus.textContent = 'Wartet...';
+            tdStatus.classList.add('status');
+            tr.appendChild(tdName);
+            tr.appendChild(tdStatus);
+            this.fileList.appendChild(tr);
         });
         this.progressBar.style.width = '0%';
         this.progressText.textContent = '0%';
@@ -43,12 +57,16 @@ export default class DownloadModal {
             const messages = {
                 queued: 'Wartet...',
                 preparing: 'Bereite Dateien vor...',
-                downloading: 'Lade Dateien herunter...',
-                adding: 'Füge Dateien hinzu...',
-                finalizing: 'Finalisiere ZIP...',
+                downloading: 'Wird heruntergeladen...',
+                downloaded: 'Heruntergeladen',
+                packing: 'Wird gepackt...',
                 ready: 'Fertig'
             };
-            this.statusText.textContent = messages[status] || status;
+            const msg = messages[status] || status;
+            this.statusText.textContent = msg;
+            this.fileList.querySelectorAll('.status').forEach(td => {
+                td.textContent = msg;
+            });
         }
     }
 
