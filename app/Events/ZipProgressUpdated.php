@@ -19,6 +19,7 @@ class ZipProgressUpdated implements ShouldBroadcastNow
         public string $status,
         public int $progress,
         public ?string $name = null,
+        public array $files = [],
     ) {
     }
 
@@ -38,6 +39,7 @@ class ZipProgressUpdated implements ShouldBroadcastNow
             'status' => $this->status,
             'progress' => $this->progress,
             'name' => $this->name,
+            'files' => $this->files,
         ];
     }
 }

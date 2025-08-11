@@ -137,7 +137,8 @@ class ZipService
         }
 
         $nameInZip = $this->sanitizeName($video);
-        $localPath = $this->localVideoPath($video, $disk->path($path), $jobId, $tmpFiles);
+        $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::QUEUED->value);
+        $localPath = $this->localVideoPath($video, $disk->path($path), $jobId, $nameInZip, $tmpFiles);
 
         if ($localPath === null) {
             Log::channel('single')->warning('local path broken', [
@@ -149,7 +150,8 @@ class ZipService
             return;
         }
 
-        $this->cache->setStatus($jobId, DownloadStatusEnum::ADDING->value);
+        $this->cache->setStatus($jobId, DownloadStatusEnum::PACKING->value);
+        $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::PACKING->value);
         $isOk = $zip->addFile($localPath, $nameInZip);
         if (!$isOk) {
             Log::channel('single')->warning('ZIP add failed', [
@@ -166,18 +168,28 @@ class ZipService
          */
         $assigmentService = app(AssignmentService::class);
         //$assigmentService->markDownloaded($assignment, $ip, $userAgent);
+
+        $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::READY->value);
     }
 
     /**
      * @param  array<int, string>  $tmpFiles
      */
-    private function localVideoPath(Video $video, string $localDiskPath, string $jobId, array &$tmpFiles): ?string
-    {
+    private function localVideoPath(
+        Video $video,
+        string $localDiskPath,
+        string $jobId,
+        string $nameInZip,
+        array &$tmpFiles
+    ): ?string {
         if ($video->getAttribute('disk') !== 'dropbox') {
+            $this->cache->setStatus($jobId, DownloadStatusEnum::DOWNLOADED->value);
+            $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::DOWNLOADED->value);
             return $localDiskPath;
         }
 
         $this->cache->setStatus($jobId, DownloadStatusEnum::DOWNLOADING->value);
+        $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::DOWNLOADING->value);
         /**
          * @var DropboxAdapter $disk
          */
@@ -212,6 +224,9 @@ class ZipService
         fclose($localHandle);
         fclose($stream);
 
+        $this->cache->setStatus($jobId, DownloadStatusEnum::DOWNLOADED->value);
+        $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::DOWNLOADED->value);
+
         return $localPath;
     }
 
@@ -238,7 +253,7 @@ class ZipService
         string $tmpPath,
         string $downloadName
     ): void {
-        $this->cache->setStatus($jobId, DownloadStatusEnum::FINALIZING->value);
+        $this->cache->setStatus($jobId, DownloadStatusEnum::PACKING->value);
         $zip->close();
 
         foreach ($tmpFiles as $file) {
