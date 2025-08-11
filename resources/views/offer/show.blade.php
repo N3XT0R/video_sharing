@@ -83,8 +83,8 @@
                                     @endforeach
 
                                     <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-                                        <a class="btn" href="{{ $a->temp_url }}">Einzeln laden</a>
-                                        <button type="button" class="btn"
+                                        <a class="btn btn-sm" href="{{ $a->temp_url }}">Einzeln laden</a>
+                                        <button type="button" class="btn btn-sm"
                                                 onclick="this.closest('.card').querySelector('.inline-preview').style.display='block'">
                                             Vorschau öffnen
                                         </button>
