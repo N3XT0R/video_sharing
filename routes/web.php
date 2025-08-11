@@ -19,6 +19,8 @@ Route::get('/changelog', function () {
     return Str::markdown(file_get_contents(base_path('CHANGELOG.md')));
 })->name('changelog');
 
+Route::view('/impressum', 'impressum')->name('impressum');
+
 
 Route::get('/offer/{batch}/{channel}', [OfferController::class, 'show'])->name('offer.show');
 // ZIP-Download via asynchronen Job

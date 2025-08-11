@@ -43,6 +43,7 @@
 <footer>
     &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: <a
             href="{{route('changelog')}}" target="_blank">{{ config('app.version', '0.0.0-dev') }}</a>
+    - <a href="{{ route('impressum') }}">Impressum</a>
 </footer>
 
 @stack('scripts')
