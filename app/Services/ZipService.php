@@ -219,7 +219,7 @@ class ZipService
             Storage::delete($file);
         }
 
-        $this->cache->setStatus($jobId, 'ready');
+        $this->cache->setStatus($jobId, DownloadStatusEnum::READY->value);
         $this->cache->setFile($jobId, $tmpPath);
         $this->cache->setName($jobId, $downloadName);
     }

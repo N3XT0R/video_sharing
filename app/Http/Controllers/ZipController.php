@@ -55,7 +55,7 @@ class ZipController extends Controller
     {
         $status = $this->cache->getStatus($id);
         $progress = $this->cache->getProgress($id);
-        $name = $status === 'ready' ? $this->cache->getName($id) : null;
+        $name = $status === DownloadStatusEnum::READY->value ? $this->cache->getName($id) : null;
 
         return response()->json(compact('status', 'progress', 'name'));
     }
