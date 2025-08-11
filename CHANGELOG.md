@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-08-11
+
+### Added
+
+- Comprehensive setup guides and workflow documentation, including examples for queue worker and production Reverb server configuration.
+- GitHub links in the web and email footers for easy project access.
+- Legal pages for Imprint and Privacy Policy, linked directly in the footer.
+- Real‑time ZIP download modal with per‑file progress and WebSocket updates.
+- Filament-based administration interface for managing channels, assignments, and static pages.
+
+### Changed
+
+- ZIP downloads now automatically mark assignments as downloaded.
+- Improved download modal layout for clearer progress tracking.
+
 ## [1.0.1] - 2025-08-10
 
 ### Changed
