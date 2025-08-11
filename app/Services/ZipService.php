@@ -9,6 +9,7 @@ use App\Models\{Assignment, Batch, Channel, Video};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Log;
 use ZipArchive;
 
 class ZipService
@@ -137,7 +138,16 @@ class ZipService
         }
 
         $this->cache->setStatus($jobId, DownloadStatusEnum::ADDING->value);
-        $zip->addFile($localPath, $nameInZip);
+        $isOk = $zip->addFile($localPath, $nameInZip);
+        if (!$isOk) {
+            Log::warning('ZIP add failed', [
+                'localPath' => $localPath,
+                'nameInZip' => $nameInZip,
+                'video_id' => $video->getKey(),
+                'disk' => $video->getAttribute('disk'),
+                'exists' => file_exists($localPath),
+            ]);
+        }
 
         /**
          * @var AssignmentService $assigmentService
@@ -161,6 +171,9 @@ class ZipService
         $stream = $disk->readStream($path);
 
         if (!is_resource($stream)) {
+            Log::warning('Dropbox readStream failed', [
+                'path' => $relativePath ?? $video->getAttribute('path'),
+            ]);
             return null;
         }
 
