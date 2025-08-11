@@ -72,19 +72,20 @@ export default class ZipDownloader {
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
                 clearInterval(poll);
-                await this.downloadZip(jobId);
+                await this.downloadZip(jobId, r.name);
             }
         }, 500);
     }
 
-    async downloadZip(jobId) {
+    async downloadZip(jobId, filename) {
         const response = await axios.get(`/zips/${jobId}/download`, {
             responseType: 'blob'
         });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const blob = new Blob([response.data], { type: 'application/zip' });
+        const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', '');
+        link.setAttribute('download', filename || `download-${jobId}.zip`);
         document.body.appendChild(link);
         link.click();
         link.remove();
