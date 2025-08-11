@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources;
 
+use App\Enum\StatusEnum;
 use App\Filament\Resources\AssignmentResource\Pages;
 use App\Models\Assignment;
 use App\Models\Video;
 use App\Services\LinkService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -83,10 +85,9 @@ class AssignmentResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
-                        'success' => fn($state) => in_array($state, ['done', 'completed', 'finished'], true),
-                        'warning' => fn($state) => in_array($state, ['pending', 'queued'], true),
-                        'info' => fn($state) => in_array($state, ['processing', 'running'], true),
-                        'danger' => fn($state) => in_array($state, ['failed', 'error', 'expired'], true),
+                        'success' => fn($state) => $state === StatusEnum::PICKEDUP,
+                        'warning' => fn($state) => $state === StatusEnum::QUEUED,
+                        'info' => fn($state) => $state === StatusEnum::NOTIFIED,
                     ])
                     ->sortable()
                     ->searchable(),
@@ -106,12 +107,12 @@ class AssignmentResource extends Resource
                     ->label('Offer')
                     ->formatStateUsing(fn() => 'Link')
                     ->url(fn(Assignment $assignment): ?string => (
-                        $assignment->batch && $assignment->channel && $assignment->expires_at
+                        $assignment->batch && $assignment->channel
                     )
                         ? app(LinkService::class)->getOfferUrl(
                             $assignment->batch,
                             $assignment->channel,
-                            $assignment->expires_at
+                            Carbon::now()->addDay()
                         )
                         : null)
                     ->openUrlInNewTab(),
@@ -200,7 +201,7 @@ class AssignmentResource extends Resource
                     ->visible(fn(Assignment $assignment) => $assignment->video &&
                         filled($assignment->video->getAttribute('path')) &&
                         filled($assignment->video->getAttribute('disk')) &&
-                        App::environment('production')
+                        false === App::environment('local')
                     )
                     ->openUrlInNewTab(),
             ])
