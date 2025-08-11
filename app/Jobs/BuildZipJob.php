@@ -15,6 +15,11 @@ class BuildZipJob implements ShouldQueue
 {
     use Queueable, SerializesModels, Dispatchable, InteractsWithQueue;
 
+    /** Max attempts before the job is marked as failed */
+    public int $tries = 1;            // set to 1 if you don't want auto-retries
+
+    public int $timeout = 1200;       // 20 minutes for big ZIPs
+
     public function __construct(
         private int $batchId,
         private int $channelId,
