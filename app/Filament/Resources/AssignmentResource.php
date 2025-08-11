@@ -85,9 +85,9 @@ class AssignmentResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
-                        'success' => fn($state) => $state === StatusEnum::PICKEDUP,
-                        'warning' => fn($state) => $state === StatusEnum::QUEUED,
-                        'info' => fn($state) => $state === StatusEnum::NOTIFIED,
+                        'success' => fn($state) => $state === StatusEnum::PICKEDUP->value,
+                        'warning' => fn($state) => $state === StatusEnum::QUEUED->value,
+                        'info' => fn($state) => $state === StatusEnum::NOTIFIED->value,
                     ])
                     ->sortable()
                     ->searchable(),
