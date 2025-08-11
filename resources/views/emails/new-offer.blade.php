@@ -74,7 +74,7 @@
 
             <p style="margin:0 0 24px 0;">
                 Viele Grüße<br>
-                {{ config('app.name') }} / Ilya
+                {{ config('app.name') }} {{config('mail.log.name') ? '/'.config('mail.log.name') : ''}}
             </p>
         </td>
     </tr>
