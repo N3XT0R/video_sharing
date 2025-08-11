@@ -27,8 +27,8 @@ class AppServiceProvider extends ServiceProvider
                 // Table möglicherweise noch nicht migriert
             }
             return new AutoRefreshTokenProvider(
-                (string)($cfg['client_id'] ?? env('DROPBOX_CLIENT_ID') ?? ''),
-                (string)($cfg['client_secret'] ?? env('DROPBOX_CLIENT_SECRET') ?? ''),
+                (string)($cfg['client_id'] ?? \config('services.dropbox.client_id') ?? ''),
+                (string)($cfg['client_secret'] ?? \config('services.dropbox.client_secret') ?? ''),
                 $refresh
             );
         });
