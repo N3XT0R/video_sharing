@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Cache;
+
+class DownloadCacheService
+{
+    private int $ttl = 600;
+
+    public function init(string $jobId): void
+    {
+        $this->setStatus($jobId, 'queued');
+        $this->setProgress($jobId, 0);
+    }
+
+    public function setStatus(string $jobId, string $status): void
+    {
+        Cache::put($this->key($jobId, 'status'), $status, $this->ttl);
+    }
+
+    public function getStatus(string $jobId): string
+    {
+        return Cache::get($this->key($jobId, 'status'), 'unknown');
+    }
+
+    public function setProgress(string $jobId, int $progress): void
+    {
+        Cache::put($this->key($jobId, 'progress'), $progress, $this->ttl);
+    }
+
+    public function getProgress(string $jobId): int
+    {
+        return (int) Cache::get($this->key($jobId, 'progress'), 0);
+    }
+
+    public function setFile(string $jobId, string $path): void
+    {
+        Cache::put($this->key($jobId, 'file'), $path, $this->ttl);
+    }
+
+    public function getFile(string $jobId): ?string
+    {
+        return Cache::get($this->key($jobId, 'file'));
+    }
+
+    public function setName(string $jobId, string $name): void
+    {
+        Cache::put($this->key($jobId, 'name'), $name, $this->ttl);
+    }
+
+    public function getName(string $jobId, ?string $default = null): ?string
+    {
+        return Cache::get($this->key($jobId, 'name'), $default);
+    }
+
+    private function key(string $jobId, string $suffix): string
+    {
+        return "zipjob:{$jobId}:{$suffix}";
+    }
+}

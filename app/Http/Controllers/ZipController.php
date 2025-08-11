@@ -9,13 +9,15 @@ use App\Models\Batch;
 use App\Models\Channel;
 use App\Services\AssignmentService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use App\Services\DownloadCacheService;
 use Illuminate\Support\Facades\Storage;
 
 class ZipController extends Controller
 {
-    public function __construct(private AssignmentService $assignments)
-    {
+    public function __construct(
+        private AssignmentService $assignments,
+        private DownloadCacheService $cache
+    ) {
     }
 
     // POST /zips/{batch}/{channel} -> Starts Job
@@ -40,8 +42,7 @@ class ZipController extends Controller
         }
 
         // initialer Status
-        Cache::put("zipjob:{$jobId}:status", 'queued', 600);
-        Cache::put("zipjob:{$jobId}:progress", 0, 600);
+        $this->cache->init($jobId);
 
         BuildZipJob::dispatch($batchId, $channel->getKey(), $ids->all(), $req->ip(), $req->userAgent());
 
@@ -51,9 +52,9 @@ class ZipController extends Controller
     // GET /zips/{id}/progress ->  Polling for Frontend
     public function progress(string $id)
     {
-        $status = Cache::get("zipjob:{$id}:status", 'unknown');
-        $progress = (int)Cache::get("zipjob:{$id}:progress", 0);
-        $name = $status === 'ready' ? Cache::get("zipjob:{$id}:name") : null;
+        $status = $this->cache->getStatus($id);
+        $progress = $this->cache->getProgress($id);
+        $name = $status === 'ready' ? $this->cache->getName($id) : null;
 
         return response()->json(compact('status', 'progress', 'name'));
     }
@@ -61,8 +62,8 @@ class ZipController extends Controller
     // GET /zips/{id}/download -> delivers zip
     public function download(string $id)
     {
-        $path = Cache::get("zipjob:{$id}:file");
-        $name = Cache::get("zipjob:{$id}:name", "{$id}.zip");
+        $path = $this->cache->getFile($id);
+        $name = $this->cache->getName($id, "{$id}.zip");
         if (!$path || !Storage::exists($path)) {
             abort(404);
         }
