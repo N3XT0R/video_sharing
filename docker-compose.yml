@@ -13,6 +13,7 @@ services:
   sharing:
     depends_on:
       - db_sharing
+      - redis
     build:
       context: .
       dockerfile: app.Dockerfile
@@ -31,7 +32,10 @@ services:
       - "9300:80"
     depends_on:
       - sharing
-
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379:6379'
 volumes:
   vendor:
   node_modules:
