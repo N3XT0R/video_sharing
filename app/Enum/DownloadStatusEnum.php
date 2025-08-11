@@ -10,9 +10,9 @@ enum DownloadStatusEnum: string
 
     case DOWNLOADING = 'downloading';
 
-    case FINALIZING = 'finalizing';
+    case DOWNLOADED = 'downloaded';
 
-    case ADDING = 'adding';
+    case PACKING = 'packing';
 
     case QUEUED = 'queued';
 

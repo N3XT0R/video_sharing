@@ -16,6 +16,10 @@ export default class ZipDownloader {
         this.init();
     }
 
+    sanitizeName(name) {
+        return name.replace(/[\\/:*?"<>|]+/g, '_');
+    }
+
     init() {
         this.updateCount();
         this.selectAllBtn?.addEventListener('click', () => this.toggleAll(true));
@@ -46,7 +50,10 @@ export default class ZipDownloader {
             return;
         }
 
-        const files = boxes.map(cb => cb.closest('.card')?.querySelector('.file-name')?.textContent?.trim()).filter(Boolean);
+        const files = boxes
+            .map(cb => cb.closest('.card')?.querySelector('.file-name')?.textContent?.trim())
+            .filter(Boolean)
+            .map(name => this.sanitizeName(name));
         this.modal.open(files);
 
         const postUrl = this.form.dataset.zipPostUrl;
@@ -71,10 +78,11 @@ export default class ZipDownloader {
         window.Echo.channel(channelName).listen('.zip.progress', async r => {
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
+                this.modal.update(r.progress || 0, r.status, r.files || {});
                 await this.downloadZip(jobId, r.name);
                 window.Echo.leave(channelName);
             } else {
-                this.modal.update(r.progress || 0, r.status);
+                this.modal.update(r.progress || 0, r.status, r.files || {});
             }
         });
     }
