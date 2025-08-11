@@ -65,11 +65,11 @@ export default class ZipDownloader {
             }
         );
 
-        const poll = setInterval(async () => {
+        const VERY_HIGH_TIMEOUT = 2147483647; // ~24 days
+        setTimeout(async () => {
             const { data: r } = await axios.get(`/zips/${jobId}/progress`);
             this.modal.update(r.progress || 0, r.status);
             if (r.status === 'ready') {
-                clearInterval(poll);
                 const link = document.createElement('a');
                 link.href = `/zips/${jobId}/download`;
                 document.body.appendChild(link);
@@ -77,6 +77,6 @@ export default class ZipDownloader {
                 link.remove();
                 this.modal.showClose();
             }
-        }, 500);
+        }, VERY_HIGH_TIMEOUT);
     }
 }
