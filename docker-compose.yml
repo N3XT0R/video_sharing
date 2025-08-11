@@ -23,6 +23,19 @@ services:
       - default
     environment:
       XDEBUG_MODE: "coverage"
+  reverb:
+    depends_on:
+      - sharing
+      - redis
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    working_dir: /var/www/html
+    command: php artisan reverb:start --no-interaction --host=0.0.0.0 --port=8080
+    volumes:
+      - .:/var/www/html/
+    expose:
+      - "8080"
   web_sharing:
     image: nginx:latest
     volumes:
