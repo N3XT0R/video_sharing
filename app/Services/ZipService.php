@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Log;
+use Spatie\FlysystemDropbox\DropboxAdapter;
 use ZipArchive;
 
 class ZipService
@@ -177,6 +178,9 @@ class ZipService
         }
 
         $this->cache->setStatus($jobId, DownloadStatusEnum::DOWNLOADING->value);
+        /**
+         * @var DropboxAdapter $disk
+         */
         $disk = $video->getDisk();
         $path = $video->getAttribute('path');
         $stream = $disk->readStream($path);
@@ -194,6 +198,12 @@ class ZipService
         $localHandle = fopen($localPath, 'w+b');
 
         if ($localHandle === false) {
+            Log::warning('local handler failed', [
+                'localPath' => $localPath,
+                'video_id' => $video->getKey(),
+                'disk' => $video->getAttribute('disk'),
+                'exists' => file_exists($localPath),
+            ]);
             fclose($stream);
             return null;
         }
