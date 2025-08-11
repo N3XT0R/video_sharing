@@ -25,7 +25,8 @@ exclude_patterns = [
   "**/tests/**",
   "**/dist/**",
   "**/vendor/**",
-  "**/docs/**"
+  "**/docs/**",
+  "**/public/**"
 ]
 
 [files]
