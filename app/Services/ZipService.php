@@ -7,13 +7,15 @@ namespace App\Services;
 use App\Enum\StatusEnum;
 use App\Models\{Assignment, Batch, Channel, Download, Video};
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
 
 class ZipService
 {
+    public function __construct(private DownloadCacheService $cache)
+    {
+    }
     /**
      * @param  Batch  $batch
      * @param  Channel  $channel
@@ -47,8 +49,8 @@ class ZipService
         $i = 0;
         $tmpFiles = [];
 
-        Cache::put($this->key($jobId, 'status'), 'preparing', 600);
-        Cache::put($this->key($jobId, 'progress'), 0, 600);
+        $this->cache->setStatus($jobId, 'preparing');
+        $this->cache->setProgress($jobId, 0);
 
         foreach ($items as $assignment) {
             /**
@@ -64,7 +66,7 @@ class ZipService
 
                 if ($video->getAttribute('disk') === 'dropbox') {
                     // Stream file from Dropbox to temporary local storage
-                    Cache::put($this->key($jobId, 'status'), 'downloading', 600);
+                    $this->cache->setStatus($jobId, 'downloading');
                     $stream = $disk->readStream($path);
                     if (is_resource($stream)) {
                         $tmpFile = 'zips/tmp/'.Str::uuid()->toString();
@@ -77,11 +79,11 @@ class ZipService
                         }
                         fclose($stream);
 
-                        Cache::put($this->key($jobId, 'status'), 'adding', 600);
+                        $this->cache->setStatus($jobId, 'adding');
                         $zip->addFile($localPath, $nameInZip);
                     }
                 } else {
-                    Cache::put($this->key($jobId, 'status'), 'adding', 600);
+                    $this->cache->setStatus($jobId, 'adding');
                     $zip->addFile($disk->path($path), $nameInZip);
                 }
 
@@ -98,10 +100,10 @@ class ZipService
 
             $i++;
             $pct = (int)floor($i * 100 / $total);
-            Cache::put($this->key($jobId, 'progress'), $pct, 600);
+            $this->cache->setProgress($jobId, $pct);
         }
 
-        Cache::put($this->key($jobId, 'status'), 'finalizing', 600);
+        $this->cache->setStatus($jobId, 'finalizing');
         $zip->close();
 
         // Clean up temporary files after the ZIP is created
@@ -109,10 +111,9 @@ class ZipService
             Storage::delete($tmpFile);
         }
 
-        Cache::put($this->key($jobId, 'status'), 'ready', 600);
-        Cache::put($this->key($jobId, 'file'), $tmpPath, 600);
-        Cache::put($this->key($jobId, 'name'), $downloadName, 600);
-
+        $this->cache->setStatus($jobId, 'ready');
+        $this->cache->setFile($jobId, $tmpPath);
+        $this->cache->setName($jobId, $downloadName);
         return $tmpPath;
     }
 
@@ -169,8 +170,4 @@ class ZipService
         return $csv;
     }
 
-    public function key(string $jobId, string $suffix): string
-    {
-        return "zipjob:{$jobId}:{$suffix}";
-    }
 }
