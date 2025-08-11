@@ -1,3 +1,6 @@
+[![CI](https://github.com/N3XT0R/dashclip-delivery/actions/workflows/ci.yml/badge.svg)](https://github.com/N3XT0R/dashclip-delivery/actions/workflows/ci.yml)
+[![Maintainability](https://qlty.sh/gh/N3XT0R/projects/dashclip-delivery/maintainability.svg)](https://qlty.sh/gh/N3XT0R/projects/dashclip-delivery)
+
 # Video Sharing Plattform
 
 ## Projektbeschreibung
