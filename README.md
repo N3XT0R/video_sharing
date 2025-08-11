@@ -1,5 +1,7 @@
 # Video Sharing Plattform
 
+## Projektbeschreibung
+
 Dieses Projekt ist eine Laravel‑Anwendung zum Verteilen von Videomaterial an verschiedene Kanäle. Neue Videos werden aus einem Upload‑Verzeichnis oder aus Dropbox eingelesen, auf einem konfigurierten Storage gespeichert und anschließend fair auf Kanäle mit Quoten und Gewichtung verteilt. Die Kanäle erhalten per E‑Mail signierte Links zu einer Angebotsseite, auf der sie einzelne Videos oder eine ZIP‑Datei mit begleitender `info.csv` herunterladen können. Nicht benötigte Videos lassen sich zurückgeben, und alle Downloads werden protokolliert.
 
 ## Funktionen
@@ -41,6 +43,14 @@ php artisan migrate
 | `php artisan assign:expire` | Markiert abgelaufene Zuweisungen und blockiert Kanäle temporär. |
 | `php artisan previews:generate` | Erzeugt Vorschau‑Clips. |
 | `php artisan weekly:run` | Führt Expire → Distribute → Notify hintereinander aus. |
+
+## Dokumentation
+
+Ausführliche Erläuterungen zu Aufbau und Nutzung finden sich im Verzeichnis [`docs`](docs):
+
+- [Übersicht](docs/README.md)
+- [Werkzeuge](docs/tool.md)
+- [Workflow](docs/workflow.md)
 
 ## Tests
 
