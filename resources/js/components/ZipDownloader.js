@@ -1,3 +1,4 @@
+import axios from 'axios';
 import DownloadModal from './DownloadModal';
 
 export default class ZipDownloader {
@@ -48,18 +49,24 @@ export default class ZipDownloader {
         this.modal.open(files);
 
         const postUrl = this.form.dataset.zipPostUrl;
-        const res = await fetch(postUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ assignment_ids: selected })
-        });
-        const { id } = await res.json();
+        const token = document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute('content');
+        const {
+            data: { id }
+        } = await axios.post(
+            postUrl,
+            { assignment_ids: selected },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token
+                }
+            }
+        );
 
         const poll = setInterval(async () => {
-            const r = await (await fetch(`/zips/${id}/progress`)).json();
+            const { data: r } = await axios.get(`/zips/${id}/progress`);
             this.modal.update(r.progress || 0);
             if (r.status === 'ready') {
                 clearInterval(poll);
