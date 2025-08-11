@@ -16,6 +16,7 @@ class DownloadCacheService
     {
         $this->setStatus($jobId, DownloadStatusEnum::QUEUED->value);
         $this->setProgress($jobId, 0);
+        Cache::put($this->key($jobId, 'files'), [], $this->ttl);
     }
 
     public function setStatus(string $jobId, string $status): void
@@ -38,6 +39,25 @@ class DownloadCacheService
     public function getProgress(string $jobId): int
     {
         return (int)Cache::get($this->key($jobId, 'progress'), 0);
+    }
+
+    public function setFileStatus(string $jobId, string $name, string $status): void
+    {
+        $files = $this->getFiles($jobId);
+        $files[$name] = $status;
+        Cache::put($this->key($jobId, 'files'), $files, $this->ttl);
+        $this->broadcast($jobId);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getFiles(string $jobId): array
+    {
+        /** @var array<string, string> $files */
+        $files = Cache::get($this->key($jobId, 'files'), []);
+
+        return $files;
     }
 
     public function setFile(string $jobId, string $path): void
@@ -73,6 +93,7 @@ class DownloadCacheService
             $this->getStatus($jobId),
             $this->getProgress($jobId),
             $this->getName($jobId),
+            $this->getFiles($jobId),
         ));
     }
 }

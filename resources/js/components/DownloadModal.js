@@ -28,16 +28,26 @@ export default class DownloadModal {
         this.progressText = this.modal.querySelector('#progressText');
         this.statusText = this.modal.querySelector('#statusText');
         this.closeBtn = this.modal.querySelector('#closeModal');
+
+        this.messages = {
+            queued: 'Wartet...',
+            preparing: 'Bereite Dateien vor...',
+            downloading: 'Wird heruntergeladen...',
+            downloaded: 'Heruntergeladen',
+            packing: 'Wird gepackt...',
+            ready: 'Fertig'
+        };
     }
 
     open(files = []) {
         this.fileList.innerHTML = '';
         files.forEach(name => {
             const tr = document.createElement('tr');
+            tr.dataset.name = name;
             const tdName = document.createElement('td');
             tdName.textContent = name;
             const tdStatus = document.createElement('td');
-            tdStatus.textContent = 'Wartet...';
+            tdStatus.textContent = this.messages.queued;
             tdStatus.classList.add('status');
             tr.appendChild(tdName);
             tr.appendChild(tdStatus);
@@ -45,29 +55,34 @@ export default class DownloadModal {
         });
         this.progressBar.style.width = '0%';
         this.progressText.textContent = '0%';
-        this.statusText.textContent = 'Wartet...';
+        this.statusText.textContent = this.messages.queued;
         this.closeBtn.classList.add('hidden');
         this.modal.style.display = 'flex';
     }
 
-    update(progress, status) {
+    update(progress, status, files = {}) {
         this.progressBar.style.width = `${progress}%`;
         this.progressText.textContent = `${progress}%`;
         if (status) {
-            const messages = {
-                queued: 'Wartet...',
-                preparing: 'Bereite Dateien vor...',
-                downloading: 'Wird heruntergeladen...',
-                downloaded: 'Heruntergeladen',
-                packing: 'Wird gepackt...',
-                ready: 'Fertig'
-            };
-            const msg = messages[status] || status;
+            const msg = this.messages[status] || status;
             this.statusText.textContent = msg;
-            this.fileList.querySelectorAll('.status').forEach(td => {
-                td.textContent = msg;
-            });
         }
+        Object.entries(files).forEach(([name, st]) => {
+            let row = this.fileList.querySelector(`tr[data-name="${name}"]`);
+            if (!row) {
+                row = document.createElement('tr');
+                row.dataset.name = name;
+                const tdName = document.createElement('td');
+                tdName.textContent = name;
+                const tdStatus = document.createElement('td');
+                tdStatus.classList.add('status');
+                row.appendChild(tdName);
+                row.appendChild(tdStatus);
+                this.fileList.appendChild(row);
+            }
+            const tdStatus = row.querySelector('.status');
+            tdStatus.textContent = this.messages[st] || st;
+        });
     }
 
     showClose() {
