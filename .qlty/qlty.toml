@@ -3,7 +3,7 @@ exclude_patterns = [
   "**/dist/**",
   "**/node_modules/**",
   "**/cache/**",
-  "***/public/**"
+  "**/public/**"
 ]
 
 test_patterns = ["**/tests/**"]
