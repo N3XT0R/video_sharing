@@ -34,7 +34,7 @@
     @if($items->isEmpty())
         <div class="panel">Für diesen Batch sind keine Videos verfügbar.</div>
     @else
-        <form method="POST" action="{{ $zipPostUrl }}" id="zipForm">
+        <form method="POST" action="{{ $zipPostUrl }}" id="zipForm" data-zip-post-url="{{ $zipPostUrl }}">
             @csrf
 
             @foreach($byBundle as $bundle => $group)
@@ -105,61 +105,16 @@
             @endforeach
 
             <div style="display:flex; gap:10px; margin-top:16px;">
-                <button type="button" class="btn" onclick="toggleAll(true)">Alle auswählen</button>
-                <button type="button" class="btn" onclick="toggleAll(false)">Alle abwählen</button>
+                <button type="button" class="btn" id="selectAll">Alle auswählen</button>
+                <button type="button" class="btn" id="selectNone">Alle abwählen</button>
                 <button type="button" class="btn" id="zipSubmit">Auswahl als ZIP herunterladen</button>
                 <span class="muted" id="selCount" style="align-self:center;">0 ausgewählt</span>
             </div>
         </form>
     @endif
     <div class="panel">
-        <div class="progress" style="height:8px;background:#eee;">
-            <div id="bar" style="height:8px;width:0%;background:#3b82f6;"></div>
+        <div class="w-full h-2 bg-gray-200 rounded overflow-hidden">
+            <div id="zipProgressBar" class="h-full w-0 bg-blue-500 transition-all"></div>
         </div>
     </div>
-
-    @push('scripts')
-        <script>
-            function toggleAll(state) {
-                document.querySelectorAll('.pickbox').forEach(cb => cb.checked = state);
-                updateCount();
-            }
-
-            function updateCount() {
-                const n = document.querySelectorAll('.pickbox:checked').length;
-                const el = document.getElementById('selCount');
-                if (el) el.textContent = n + ' ausgewählt';
-            }
-
-            document.addEventListener('change', function (e) {
-                if (e.target && e.target.classList.contains('pickbox')) updateCount();
-            });
-            document.addEventListener('DOMContentLoaded', updateCount);
-
-            document.getElementById('zipSubmit').addEventListener('click', async () => {
-                const selected = Array.from(document.querySelectorAll('.pickbox:checked')).map(cb => cb.value);
-                if (selected.length === 0) {
-                    alert('Bitte wähle mindestens ein Video aus.');
-                    return;
-                }
-                const postUrl = @json($zipPostUrl);
-                const res = await fetch(postUrl, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
-                    body: JSON.stringify({assignment_ids: selected})
-                });
-                const {id} = await res.json();
-
-                const bar = document.getElementById('bar');
-                const t = setInterval(async () => {
-                    const r = await (await fetch(`/zips/${id}/progress`)).json();
-                    bar.style.width = (r.progress || 0) + '%';
-                    if (r.status === 'ready') {
-                        clearInterval(t);
-                        window.location = `/zips/${id}/download`;
-                    }
-                }, 500);
-            });
-        </script>
-    @endpush
 @endsection
