@@ -29,7 +29,10 @@ class ZipService
         $jobId = $batchId.'_'.$channel->getKey();
         $downloadName = sprintf('videos_%s_%s_selected.zip', $batchId, Str::slug($name));
         $tmpPath = "zips/{$jobId}.zip";
+
+        // Ensure working directories exist
         Storage::makeDirectory('zips');
+        Storage::makeDirectory('zips/tmp');
 
         $zip = new ZipArchive();
         $absPath = Storage::path($tmpPath);
@@ -38,8 +41,9 @@ class ZipService
 
         $total = max($items->count(), 1);
         $i = 0;
+        $tmpFiles = [];
 
-        Cache::put($this->key($jobId, 'status'), 'working', 600);
+        Cache::put($this->key($jobId, 'status'), 'preparing', 600);
         Cache::put($this->key($jobId, 'progress'), 0, 600);
 
         foreach ($items as $assignment) {
@@ -55,11 +59,27 @@ class ZipService
                 $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
 
                 if ($video->getAttribute('disk') === 'dropbox') {
-                    $zip->addFromString($nameInZip, $disk->get($path));
+                    // Stream file from Dropbox to temporary local storage
+                    Cache::put($this->key($jobId, 'status'), 'downloading', 600);
+                    $stream = $disk->readStream($path);
+                    if (is_resource($stream)) {
+                        $tmpFile = 'zips/tmp/'.Str::uuid()->toString();
+                        $tmpFiles[] = $tmpFile;
+                        $localPath = Storage::path($tmpFile);
+                        $localHandle = fopen($localPath, 'w+b');
+                        if ($localHandle !== false) {
+                            stream_copy_to_stream($stream, $localHandle);
+                            fclose($localHandle);
+                        }
+                        fclose($stream);
+
+                        Cache::put($this->key($jobId, 'status'), 'adding', 600);
+                        $zip->addFile($localPath, $nameInZip);
+                    }
                 } else {
+                    Cache::put($this->key($jobId, 'status'), 'adding', 600);
                     $zip->addFile($disk->path($path), $nameInZip);
                 }
-
 
                 $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
 
@@ -77,7 +97,13 @@ class ZipService
             Cache::put($this->key($jobId, 'progress'), $pct, 600);
         }
 
+        Cache::put($this->key($jobId, 'status'), 'finalizing', 600);
         $zip->close();
+
+        // Clean up temporary files after the ZIP is created
+        foreach ($tmpFiles as $tmpFile) {
+            Storage::delete($tmpFile);
+        }
 
         Cache::put($this->key($jobId, 'status'), 'ready', 600);
         Cache::put($this->key($jobId, 'file'), $tmpPath, 600);
