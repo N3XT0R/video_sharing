@@ -18,7 +18,7 @@ class ZipController extends Controller
     {
     }
 
-    // POST /zips/{batch}/{channel} -> Startet Job
+    // POST /zips/{batch}/{channel} -> Starts Job
     public function start(Request $req, Batch $batch, Channel $channel)
     {
         $validated = $req->validate([
@@ -26,7 +26,7 @@ class ZipController extends Controller
         ]);
 
         $batchId = $batch->getKey();
-        $jobId = $batchId.'_'.$channel->getAttribute('name');
+        $jobId = $batchId.'_'.$channel->getKey();
 
         $ids = collect($validated['assignment_ids'])
             ->filter(fn($v) => ctype_digit((string)$v))
@@ -48,7 +48,7 @@ class ZipController extends Controller
         return response()->json(['jobId' => $jobId, 'status' => 'queued']);
     }
 
-    // GET /zips/{id}/progress ->  Polling fürs Frontend
+    // GET /zips/{id}/progress ->  Polling for Frontend
     public function progress(string $id)
     {
         $status = Cache::get("zipjob:{$id}:status", 'unknown');
@@ -58,7 +58,7 @@ class ZipController extends Controller
         return response()->json(compact('status', 'progress', 'name'));
     }
 
-    // GET /zips/{id}/download -> liefert die ZIP
+    // GET /zips/{id}/download -> delivers zip
     public function download(string $id)
     {
         $path = Cache::get("zipjob:{$id}:file");
