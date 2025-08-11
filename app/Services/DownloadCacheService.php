@@ -24,7 +24,7 @@ class DownloadCacheService
 
     public function getStatus(string $jobId): string
     {
-        return Cache::get($this->key($jobId, 'status'), 'unknown');
+        return Cache::get($this->key($jobId, 'status'), DownloadStatusEnum::UNKNOWN->value);
     }
 
     public function setProgress(string $jobId, int $progress): void

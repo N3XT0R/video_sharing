@@ -17,4 +17,6 @@ enum DownloadStatusEnum: string
     case QUEUED = 'queued';
 
     case READY = 'ready';
+
+    case UNKNOWN = 'unknown';
 }
