@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Events;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -22,9 +22,9 @@ class ZipProgressUpdated implements ShouldBroadcastNow
     ) {
     }
 
-    public function broadcastOn(): PrivateChannel
+    public function broadcastOn(): Channel
     {
-        return new PrivateChannel("zip.{$this->jobId}");
+        return new Channel("zip.{$this->jobId}");
     }
 
     public function broadcastAs(): string
