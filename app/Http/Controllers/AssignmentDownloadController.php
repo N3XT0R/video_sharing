@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\{Assignment, Download};
+use App\Models\{Assignment};
+use App\Services\AssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssignmentDownloadController extends Controller
 {
+
+    public function __construct(private AssignmentService $service)
+    {
+    }
+
     public function download(Request $req, Assignment $assignment)
     {
         // Link-Signatur prüfen
@@ -54,17 +60,8 @@ class AssignmentDownloadController extends Controller
             'ETag' => $video->hash,
             'Content-Disposition' => 'attachment; filename="'.basename($filePath).'"',
         ]);
-
-        // Audit + Status aktualisieren
-        $assignment->update(['status' => 'picked_up']);
-        Download::query()->create([
-            'assignment_id' => $assignment->getKey(),
-            'downloaded_at' => now(),
-            'ip' => $req->ip(),
-            'user_agent' => $req->userAgent(),
-            'bytes_sent' => $size,
-        ]);
-
+        
+        $this->service->markDownloaded($assignment, $req->ip(), $req->userAgent());
         return $response;
     }
 }
