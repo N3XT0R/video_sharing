@@ -30,7 +30,7 @@ exclude_patterns = [
 ]
 
 [files]
-include = ["src/"]
+include = ["app/"]
 exclude = [
   "vendor/**",
   "tests/**",
