@@ -65,10 +65,16 @@ class ZipController extends Controller
     {
         $path = $this->cache->getFile($id);
         $name = $this->cache->getName($id, "{$id}.zip");
-        if (!$path || !Storage::exists($path)) {
+
+        if (!$path) {
             abort(404);
         }
 
-        return response()->download(Storage::path($path), $name)->deleteFileAfterSend();
+        $fullPath = Storage::exists($path) ? Storage::path($path) : $path;
+        if (!is_file($fullPath)) {
+            abort(404);
+        }
+
+        return response()->download($fullPath, $name)->deleteFileAfterSend();
     }
 }
