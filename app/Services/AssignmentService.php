@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enum\StatusEnum;
-use App\Models\{Assignment, Batch, Channel};
+use App\Models\{Assignment, Batch, Channel, Download};
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\URL;
@@ -62,6 +62,19 @@ class AssignmentService
                     'expires_at' => null,
                     'last_notified_at' => null,
                 ]) > 0;
+    }
+
+    public function markDownloaded(Assignment $assignment, string $ip, ?string $userAgent): void
+    {
+        $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
+
+        Download::query()->create([
+            'assignment_id' => $assignment->getKey(),
+            'downloaded_at' => now(),
+            'ip' => $ip,
+            'user_agent' => $userAgent,
+            'bytes_sent' => null,
+        ]);
     }
 
     /**

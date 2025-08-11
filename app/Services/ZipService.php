@@ -138,7 +138,11 @@ class ZipService
         $this->cache->setStatus($jobId, DownloadStatusEnum::ADDING->value);
         $zip->addFile($localPath, $nameInZip);
 
-        $this->markDownloaded($assignment, $ip, $userAgent);
+        /**
+         * @var AssignmentService $assigmentService
+         */
+        $assigmentService = app(AssignmentService::class);
+        $assigmentService->markDownloaded($assignment, $ip, $userAgent);
     }
 
     /**
