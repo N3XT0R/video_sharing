@@ -47,7 +47,7 @@
                                 <input type="checkbox" name="assignment_ids[]" value="{{ $a->id }}" class="pickbox"
                                        style="margin-top:6px;">
                                 <div style="flex:1;">
-                                    <div style="font-weight:600; margin-bottom:6px; word-break: break-word; overflow: hidden; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis;">
+                                    <div class="file-name" style="font-weight:600; margin-bottom:6px; word-break: break-word; overflow: hidden; display:-webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis;">
                                         {{ $v->original_name ?: basename($v->path) }}
                                     </div>
                                     <video class="thumb"
@@ -112,9 +112,4 @@
             </div>
         </form>
     @endif
-    <div class="panel">
-        <div class="w-full h-2 bg-gray-200 rounded overflow-hidden">
-            <div id="zipProgressBar" class="h-full w-0 bg-blue-500 transition-all"></div>
-        </div>
-    </div>
 @endsection
