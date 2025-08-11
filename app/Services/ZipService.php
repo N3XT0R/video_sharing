@@ -100,7 +100,7 @@ class ZipService
         $tmpFiles = [];
         $total = max($items->count(), 1);
         $processed = 0;
-
+        
         foreach ($items as $assignment) {
             $this->processAssignment($zip, $jobId, $assignment, $ip, $userAgent, $tmpFiles);
 
@@ -128,7 +128,7 @@ class ZipService
         $path = $video->getAttribute('path');
 
         if (!$disk->exists($path)) {
-            Log::warning('remote path not exists', [
+            Log::channel('single')->warning('remote path not exists', [
                 'path' => $path,
                 'video_id' => $video->getKey(),
                 'disk' => $video->getAttribute('disk'),
@@ -140,7 +140,7 @@ class ZipService
         $localPath = $this->localVideoPath($video, $disk->path($path), $jobId, $tmpFiles);
 
         if ($localPath === null) {
-            Log::warning('local path broken', [
+            Log::channel('single')->warning('local path broken', [
                 'localPath' => $localPath,
                 'nameInZip' => $nameInZip,
                 'video_id' => $video->getKey(),
@@ -152,7 +152,7 @@ class ZipService
         $this->cache->setStatus($jobId, DownloadStatusEnum::ADDING->value);
         $isOk = $zip->addFile($localPath, $nameInZip);
         if (!$isOk) {
-            Log::warning('ZIP add failed', [
+            Log::channel('single')->warning('ZIP add failed', [
                 'localPath' => $localPath,
                 'nameInZip' => $nameInZip,
                 'video_id' => $video->getKey(),
@@ -186,7 +186,7 @@ class ZipService
         $stream = $disk->readStream($path);
 
         if (!is_resource($stream)) {
-            Log::warning('Dropbox readStream failed', [
+            Log::channel('single')->warning('Dropbox readStream failed', [
                 'path' => $relativePath ?? $video->getAttribute('path'),
             ]);
             return null;
@@ -198,7 +198,7 @@ class ZipService
         $localHandle = fopen($localPath, 'w+b');
 
         if ($localHandle === false) {
-            Log::warning('local handler failed', [
+            Log::channel('single')->warning('local handler failed', [
                 'localPath' => $localPath,
                 'video_id' => $video->getKey(),
                 'disk' => $video->getAttribute('disk'),

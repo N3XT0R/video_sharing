@@ -32,9 +32,10 @@ class ZipController extends Controller
         $jobId = $batchId.'_'.$channel->getKey();
 
         $ids = collect($validated['assignment_ids'])
-            ->filter(fn($v) => ctype_digit((string)$v))
-            ->map('intval')
+            ->filter(static fn($v) => ctype_digit((string)$v))
+            ->map(static fn($v) => (int)$v)
             ->values();
+
 
         $items = $this->assignments->fetchForZip($batch, $channel, $ids);
 
