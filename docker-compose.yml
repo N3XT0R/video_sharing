@@ -22,7 +22,7 @@ services:
     networks:
       - default
     environment:
-      XDEBUG_MODE: "coverage"                 # disable xdebug unless debugging
+      XDEBUG_MODE: "coverage"
   web_sharing:
     image: nginx:latest
     volumes:
