@@ -6,15 +6,17 @@ export default class DownloadModal {
         this.modal.innerHTML = `
             <div class="panel" style="max-width:400px;width:90%;">
                 <h3>Download läuft...</h3>
-                <ul id="downloadFileList" style="margin:12px 0 16px 18px; list-style:disc;"></ul>
+                <ul id="downloadFileList" class="my-3 ml-4 list-disc"></ul>
                 <div class="w-full h-2 bg-gray-200 rounded overflow-hidden">
                     <div id="zipProgressBar" class="h-full w-0 bg-blue-500 transition-all"></div>
                 </div>
-                <button type="button" id="closeModal" class="btn" style="margin-top:16px; display:none;">Schließen</button>
+                <p id="progressText" class="text-right text-sm mt-1">0%</p>
+                <button type="button" id="closeModal" class="btn mt-4 hidden">Schließen</button>
             </div>`;
         document.body.appendChild(this.modal);
         this.fileList = this.modal.querySelector('#downloadFileList');
         this.progressBar = this.modal.querySelector('#zipProgressBar');
+        this.progressText = this.modal.querySelector('#progressText');
         this.closeBtn = this.modal.querySelector('#closeModal');
     }
 
@@ -26,16 +28,19 @@ export default class DownloadModal {
             this.fileList.appendChild(li);
         });
         this.progressBar.style.width = '0%';
-        this.closeBtn.style.display = 'none';
+        this.progressText.textContent = '0%';
+        this.closeBtn.classList.add('hidden');
         this.modal.style.display = 'flex';
     }
 
     update(progress) {
         this.progressBar.style.width = `${progress}%`;
+        this.progressText.textContent = `${progress}%`;
     }
 
     showClose() {
-        this.closeBtn.style.display = 'block';
+        this.progressText.textContent = 'Fertig';
+        this.closeBtn.classList.remove('hidden');
     }
 
     onClose(cb) {
