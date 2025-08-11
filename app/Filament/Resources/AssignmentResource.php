@@ -3,8 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AssignmentResource\Pages;
-use App\Filament\Resources\VideoResource;
 use App\Models\Assignment;
+use App\Models\Video;
 use App\Services\LinkService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -69,7 +69,8 @@ class AssignmentResource extends Resource
                 TextColumn::make('video.preview_url')
                     ->label('Preview')
                     ->formatStateUsing(fn() => 'Open')
-                    ->url(fn(Assignment $assignment) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
+                    ->url(fn(Assignment $assignment
+                    ) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
                     ->openUrlInNewTab(),
 
                 TextColumn::make('expires_at')
@@ -170,6 +171,9 @@ class AssignmentResource extends Resource
                     ->label('Download')
                     ->icon('heroicon-m-arrow-down-tray')
                     ->url(function (Assignment $assignment) {
+                        /**
+                         * @var Video $video
+                         */
                         $video = $assignment->video;
                         if (!$video) {
                             return null;
@@ -182,7 +186,7 @@ class AssignmentResource extends Resource
                         $origin = (string)$video->getAttribute('original_name');
                         $name = $origin !== '' ? $origin : ($hash.($ext !== '' ? '.'.$ext : ''));
 
-                        if (method_exists($disk, 'temporaryUrl')) {
+                        if ($video->getAttribute('disk') !== 'dropbox') {
                             return $disk->temporaryUrl($path, now()->addMinutes(10), [
                                 'ResponseContentDisposition' => 'attachment; filename="'.$name.'"',
                             ]);
