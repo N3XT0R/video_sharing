@@ -14,7 +14,7 @@ class ChannelResource extends Resource
 {
     protected static ?string $model = Channel::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-collection';
+    protected static ?string $navigationIcon = 'heroicon-o-envelope';
     protected static ?string $navigationGroup = 'Media';
     protected static ?string $modelLabel = 'Channel';
     protected static ?string $pluralModelLabel = 'Channels';
