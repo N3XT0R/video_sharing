@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 
 class AssignmentResource extends Resource
@@ -198,7 +199,8 @@ class AssignmentResource extends Resource
                     })
                     ->visible(fn(Assignment $assignment) => $assignment->video &&
                         filled($assignment->video->getAttribute('path')) &&
-                        filled($assignment->video->getAttribute('disk'))
+                        filled($assignment->video->getAttribute('disk')) &&
+                        App::environment('production')
                     )
                     ->openUrlInNewTab(),
             ])
