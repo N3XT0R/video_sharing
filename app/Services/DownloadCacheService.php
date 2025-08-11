@@ -70,6 +70,27 @@ class DownloadCacheService
         return Cache::get($this->key($jobId, 'file'));
     }
 
+    /**
+     * Store assignment ids used for a zip job.
+     *
+     * @param  array<int, int>  $assignmentIds
+     */
+    public function setAssignments(string $jobId, array $assignmentIds): void
+    {
+        Cache::put($this->key($jobId, 'assignments'), $assignmentIds, $this->ttl);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function getAssignments(string $jobId): array
+    {
+        /** @var array<int, int> $ids */
+        $ids = Cache::get($this->key($jobId, 'assignments'), []);
+
+        return $ids;
+    }
+
     public function setName(string $jobId, string $name): void
     {
         Cache::put($this->key($jobId, 'name'), $name, $this->ttl);
