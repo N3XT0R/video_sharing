@@ -26,7 +26,7 @@ class Assignments extends Page implements HasTable
     protected static ?string $navigationLabel = 'Assignments';
     protected static string $view = 'filament.pages.assignments';
 
-    protected static ?string $slug = 'assignments';
+    protected static ?string $slug = 'assignments-tab';
 
     public function table(Table $table): Table
     {
