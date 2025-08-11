@@ -27,7 +27,11 @@ class ZipService
         $batchId = $batch->getKey();
         $name = $channel->getAttribute('name');
         $jobId = $batchId.'_'.$channel->getKey();
-        $downloadName = sprintf('videos_%s_%s_selected.zip', $batchId, Str::slug($name));
+        $downloadName = sprintf(
+            'videos_%s_%s_selected.zip',
+            $batchId,
+            Str::slug($name)
+        );
         $tmpPath = "zips/{$jobId}.zip";
 
         // Ensure working directories exist
