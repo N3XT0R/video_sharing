@@ -4,7 +4,7 @@ Diese Anleitung beschreibt die Installation der Anwendung und die Einrichtung de
 
 ## Voraussetzungen
 
-- PHP ≥ 8.4 und Composer
+- PHP-fpm ≥ 8.4 und Composer
 - Node.js & npm
 - Datenbank (z. B. MySQL oder SQLite)
 - Git
@@ -92,7 +92,7 @@ server {
     }
 
     location /reverb/ {
-        proxy_pass         http://reverb:8080/;
+        proxy_pass         http://localhost:80/;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade $http_upgrade;
         proxy_set_header   Connection "upgrade";
@@ -128,8 +128,8 @@ server {
         SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost/"
     </FilesMatch>
 
-    ProxyPass "/reverb/" "ws://reverb:8080/"
-    ProxyPassReverse "/reverb/" "ws://reverb:8080/"
+    ProxyPass "/reverb/" "ws://localhost:80/"
+    ProxyPassReverse "/reverb/" "ws://localhost:80/"
 
     ErrorLog ${APACHE_LOG_DIR}/dashclip-error.log
     CustomLog ${APACHE_LOG_DIR}/dashclip-access.log combined
