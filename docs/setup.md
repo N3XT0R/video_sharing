@@ -135,3 +135,11 @@ server {
     CustomLog ${APACHE_LOG_DIR}/dashclip-access.log combined
 </VirtualHost>
 ```
+
+## Crontab
+
+Crontab einrichten:
+
+```bash
+* * * * * cd /var/www/mydomain.de/htdocs/current/ && php artisan schedule:run >> /dev/null 2>&1
+```
