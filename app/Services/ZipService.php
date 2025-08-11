@@ -16,6 +16,7 @@ class ZipService
     public function __construct(private DownloadCacheService $cache)
     {
     }
+
     /**
      * @param  Batch  $batch
      * @param  Channel  $channel
@@ -26,95 +27,184 @@ class ZipService
      */
     public function build(Batch $batch, Channel $channel, Collection $items, string $ip, ?string $userAgent): string
     {
-        $batchId = $batch->getKey();
-        $name = $channel->getAttribute('name');
-        $jobId = $batchId.'_'.$channel->getKey();
-        $downloadName = sprintf(
-            'videos_%s_%s_selected.zip',
-            $batchId,
-            Str::slug($name)
-        );
-        $tmpPath = "zips/{$jobId}.zip";
+        $jobId = $this->jobId($batch, $channel);
+        $downloadName = $this->downloadName($batch, $channel);
+        $tmpPath = $this->zipPath($jobId);
 
-        // Ensure working directories exist
-        Storage::makeDirectory('zips');
-        Storage::makeDirectory('zips/tmp');
+        $this->prepareDirectories();
 
-        $zip = new ZipArchive();
-        $absPath = Storage::path($tmpPath);
-        $zip->open($absPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('info.csv', $this->buildInfoCsv($items));
-
-        $total = max($items->count(), 1);
-        $i = 0;
-        $tmpFiles = [];
+        $zip = $this->createZipArchive($tmpPath, $items);
 
         $this->cache->setStatus($jobId, 'preparing');
         $this->cache->setProgress($jobId, 0);
 
+        $tmpFiles = $this->addAssignmentsToZip($zip, $jobId, $items, $ip, $userAgent);
+
+        $this->finalizeZip($zip, $tmpFiles, $jobId, $tmpPath, $downloadName);
+
+        return $tmpPath;
+    }
+
+    private function jobId(Batch $batch, Channel $channel): string
+    {
+        return $batch->getKey().'_'.$channel->getKey();
+    }
+
+    private function downloadName(Batch $batch, Channel $channel): string
+    {
+        return sprintf(
+            'videos_%s_%s_selected.zip',
+            $batch->getKey(),
+            Str::slug((string) $channel->getAttribute('name')),
+        );
+    }
+
+    private function zipPath(string $jobId): string
+    {
+        return "zips/{$jobId}.zip";
+    }
+
+    private function prepareDirectories(): void
+    {
+        Storage::makeDirectory('zips');
+        Storage::makeDirectory('zips/tmp');
+    }
+
+    /**
+     * @param  Collection<Assignment>  $items
+     */
+    private function createZipArchive(string $tmpPath, Collection $items): ZipArchive
+    {
+        $zip = new ZipArchive();
+        $zip->open(Storage::path($tmpPath), ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->addFromString('info.csv', $this->buildInfoCsv($items));
+
+        return $zip;
+    }
+
+    /**
+     * @param  Collection<Assignment>  $items
+     * @return array<int, string>  temporary files created during download
+     */
+    private function addAssignmentsToZip(ZipArchive $zip, string $jobId, Collection $items, string $ip, ?string $userAgent): array
+    {
+        $tmpFiles = [];
+        $total = max($items->count(), 1);
+        $processed = 0;
+
         foreach ($items as $assignment) {
-            /**
-             * @var Video $video
-             */
-            $video = $assignment->video;
-            $disk = $video->getDisk();
-            $path = $video->getAttribute('path');
+            $this->processAssignment($zip, $jobId, $assignment, $ip, $userAgent, $tmpFiles);
 
-            if ($disk->exists($path)) {
-                $nameInZip = $video->getAttribute('original_name') ?: basename($path);
-                $nameInZip = preg_replace('/[\\\\\/:*?"<>|]+/', '_', $nameInZip);
-
-                if ($video->getAttribute('disk') === 'dropbox') {
-                    // Stream file from Dropbox to temporary local storage
-                    $this->cache->setStatus($jobId, 'downloading');
-                    $stream = $disk->readStream($path);
-                    if (is_resource($stream)) {
-                        $tmpFile = 'zips/tmp/'.Str::uuid()->toString();
-                        $tmpFiles[] = $tmpFile;
-                        $localPath = Storage::path($tmpFile);
-                        $localHandle = fopen($localPath, 'w+b');
-                        if ($localHandle !== false) {
-                            stream_copy_to_stream($stream, $localHandle);
-                            fclose($localHandle);
-                        }
-                        fclose($stream);
-
-                        $this->cache->setStatus($jobId, 'adding');
-                        $zip->addFile($localPath, $nameInZip);
-                    }
-                } else {
-                    $this->cache->setStatus($jobId, 'adding');
-                    $zip->addFile($disk->path($path), $nameInZip);
-                }
-
-                $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
-
-                Download::query()->create([
-                    'assignment_id' => $assignment->getKey(),
-                    'downloaded_at' => now(),
-                    'ip' => $ip,
-                    'user_agent' => $userAgent,
-                    'bytes_sent' => null,
-                ]);
-            }
-
-            $i++;
-            $pct = (int)floor($i * 100 / $total);
-            $this->cache->setProgress($jobId, $pct);
+            $processed++;
+            $this->updateProgress($jobId, $processed, $total);
         }
 
+        return $tmpFiles;
+    }
+
+    /**
+     * @param  array<int, string>  $tmpFiles
+     */
+    private function processAssignment(ZipArchive $zip, string $jobId, Assignment $assignment, string $ip, ?string $userAgent, array &$tmpFiles): void
+    {
+        /** @var Video $video */
+        $video = $assignment->video;
+        $disk = $video->getDisk();
+        $path = $video->getAttribute('path');
+
+        if (! $disk->exists($path)) {
+            return;
+        }
+
+        $nameInZip = $this->sanitizeName($video);
+        $localPath = $this->localVideoPath($video, $disk->path($path), $jobId, $tmpFiles);
+
+        if ($localPath === null) {
+            return;
+        }
+
+        $this->cache->setStatus($jobId, 'adding');
+        $zip->addFile($localPath, $nameInZip);
+
+        $this->markDownloaded($assignment, $ip, $userAgent);
+    }
+
+    /**
+     * @param  array<int, string>  $tmpFiles
+     */
+    private function localVideoPath(Video $video, string $localDiskPath, string $jobId, array &$tmpFiles): ?string
+    {
+        if ($video->getAttribute('disk') !== 'dropbox') {
+            return $localDiskPath;
+        }
+
+        $this->cache->setStatus($jobId, 'downloading');
+        $disk = $video->getDisk();
+        $path = $video->getAttribute('path');
+        $stream = $disk->readStream($path);
+
+        if (! is_resource($stream)) {
+            return null;
+        }
+
+        $tmpFile = 'zips/tmp/'.Str::uuid()->toString();
+        $tmpFiles[] = $tmpFile;
+        $localPath = Storage::path($tmpFile);
+        $localHandle = fopen($localPath, 'w+b');
+
+        if ($localHandle === false) {
+            fclose($stream);
+            return null;
+        }
+
+        stream_copy_to_stream($stream, $localHandle);
+        fclose($localHandle);
+        fclose($stream);
+
+        return $localPath;
+    }
+
+    private function sanitizeName(Video $video): string
+    {
+        $name = $video->getAttribute('original_name') ?: basename($video->getAttribute('path'));
+
+        return preg_replace('/[\\\\\/:*?"<>|]+/', '_', $name);
+    }
+
+    private function markDownloaded(Assignment $assignment, string $ip, ?string $userAgent): void
+    {
+        $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
+
+        Download::query()->create([
+            'assignment_id' => $assignment->getKey(),
+            'downloaded_at' => now(),
+            'ip' => $ip,
+            'user_agent' => $userAgent,
+            'bytes_sent' => null,
+        ]);
+    }
+
+    private function updateProgress(string $jobId, int $processed, int $total): void
+    {
+        $pct = (int) floor($processed * 100 / max($total, 1));
+        $this->cache->setProgress($jobId, $pct);
+    }
+
+    /**
+     * @param  array<int, string>  $tmpFiles
+     */
+    private function finalizeZip(ZipArchive $zip, array $tmpFiles, string $jobId, string $tmpPath, string $downloadName): void
+    {
         $this->cache->setStatus($jobId, 'finalizing');
         $zip->close();
 
-        // Clean up temporary files after the ZIP is created
-        foreach ($tmpFiles as $tmpFile) {
-            Storage::delete($tmpFile);
+        foreach ($tmpFiles as $file) {
+            Storage::delete($file);
         }
 
         $this->cache->setStatus($jobId, 'ready');
         $this->cache->setFile($jobId, $tmpPath);
         $this->cache->setName($jobId, $downloadName);
-        return $tmpPath;
     }
 
     /**
@@ -147,8 +237,8 @@ class ZipService
                         $video->original_name ?: basename($video->path),
                         $video->hash,
                         number_format(($video->bytes ?? 0) / 1048576, 1, '.', ''),
-                        isset($clip->start_sec) ? gmdate('i:s', (int)$clip->start_sec) : null,
-                        isset($clip->end_sec) ? gmdate('i:s', (int)$clip->end_sec) : null,
+                        isset($clip->start_sec) ? gmdate('i:s', (int) $clip->start_sec) : null,
+                        isset($clip->end_sec) ? gmdate('i:s', (int) $clip->end_sec) : null,
                         $clip->note,
                         $clip->bundle_key,
                         $clip->role,
@@ -169,5 +259,5 @@ class ZipService
 
         return $csv;
     }
-
 }
+
