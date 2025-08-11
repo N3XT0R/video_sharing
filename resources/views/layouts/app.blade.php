@@ -46,8 +46,7 @@
     - <a href="{{ route('impressum') }}" target="_blank">Impressum</a>
     - <a href="{{ route('datenschutz') }}" target="_blank">Datenschutz</a>
     <br/>
-    <a href="https://github.com/N3XT0R/dashclip-delivery" style="color: #64748b; text-decoration: none;">Developed with
-        love</a>
+    <a href="https://github.com/N3XT0R/dashclip-delivery" target="_blank">❤️ GitHub</a>
 </footer>
 
 @stack('scripts')
