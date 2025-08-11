@@ -10,7 +10,8 @@ export default class ZipDownloader {
         this.selCountEl = document.getElementById('selCount');
 
         this.modal = new DownloadModal();
-        this.modal.onClose(() => {});
+        this.modal.onClose(() => {
+        });
 
         this.init();
     }
@@ -53,10 +54,10 @@ export default class ZipDownloader {
             .querySelector('meta[name="csrf-token"]')
             .getAttribute('content');
         const {
-            data: { jobId }
+            data: {jobId}
         } = await axios.post(
             postUrl,
-            { assignment_ids: selected },
+            {assignment_ids: selected},
             {
                 headers: {
                     'Content-Type': 'application/json',
@@ -67,7 +68,7 @@ export default class ZipDownloader {
 
         let downloading = false;
         const channelName = `zip.${jobId}`;
-        window.Echo.private(channelName).listen('.zip.progress', async r => {
+        window.Echo.channel(channelName).listen('.zip.progress', async r => {
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
                 await this.downloadZip(jobId, r.name);
@@ -83,7 +84,7 @@ export default class ZipDownloader {
         const response = await axios.get(`/zips/${jobId}/download`, {
             responseType: 'blob'
         });
-        const blob = new Blob([response.data], { type: 'application/zip' });
+        const blob = new Blob([response.data], {type: 'application/zip'});
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
