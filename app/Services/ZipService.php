@@ -127,6 +127,11 @@ class ZipService
         $path = $video->getAttribute('path');
 
         if (!$disk->exists($path)) {
+            Log::warning('remote path not exists', [
+                'path' => $path,
+                'video_id' => $video->getKey(),
+                'disk' => $video->getAttribute('disk'),
+            ]);
             return;
         }
 
@@ -134,6 +139,12 @@ class ZipService
         $localPath = $this->localVideoPath($video, $disk->path($path), $jobId, $tmpFiles);
 
         if ($localPath === null) {
+            Log::warning('local path broken', [
+                'localPath' => $localPath,
+                'nameInZip' => $nameInZip,
+                'video_id' => $video->getKey(),
+                'disk' => $video->getAttribute('disk'),
+            ]);
             return;
         }
 
