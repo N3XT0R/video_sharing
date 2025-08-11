@@ -11,6 +11,7 @@ services:
       - MYSQL_DATABASE=laravel
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
   sharing:
+    user: "1000:1000"
     depends_on:
       - db_sharing
     build:
@@ -18,8 +19,6 @@ services:
       dockerfile: app.Dockerfile
     volumes:
       - .:/var/www/html/:consistent
-      - vendor:/var/www/html/vendor      # vendor as named volume (fast)
-      - node_modules:/var/www/html/node_modules
     networks:
       - default
     environment:
