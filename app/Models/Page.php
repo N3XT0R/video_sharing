@@ -8,5 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Page extends Model
 {
-    protected $fillable = ['title', 'section', 'content'];
+    protected $fillable = ['slug', 'title', 'section', 'content'];
 }
