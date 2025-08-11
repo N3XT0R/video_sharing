@@ -192,7 +192,7 @@ class AssignmentResource extends Resource
                             ]);
                         }
 
-                        return method_exists($disk, 'url') ? $disk->url($path) : null;
+                        return $disk->url($path);
                     })
                     ->visible(fn(Assignment $assignment) => $assignment->video &&
                         filled($assignment->video->getAttribute('path')) &&
