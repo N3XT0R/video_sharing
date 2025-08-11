@@ -124,6 +124,10 @@
         background: var(--color-btn);
     }
 
+    .btn-sm {
+        @apply px-2 py-1 text-[0.9rem];
+    }
+
     .btn:hover {
         background: var(--color-btn-hover);
         text-decoration: none;
@@ -156,6 +160,10 @@
     .chip {
         @apply inline-block px-[6px] py-[2px] rounded-[6px] border border-border text-text text-[0.9rem];
         background: #2a2f37;
+    }
+
+    .light .chip {
+        background: var(--color-btn-light);
     }
 }
 
