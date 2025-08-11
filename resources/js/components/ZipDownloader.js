@@ -65,18 +65,30 @@ export default class ZipDownloader {
             }
         );
 
+        let downloading = false;
         const poll = setInterval(async () => {
             const { data: r } = await axios.get(`/zips/${jobId}/progress`);
             this.modal.update(r.progress || 0, r.status);
-            if (r.status === 'ready') {
+            if (r.status === 'ready' && !downloading) {
+                downloading = true;
                 clearInterval(poll);
-                const link = document.createElement('a');
-                link.href = `/zips/${jobId}/download`;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                this.modal.showClose();
+                await this.downloadZip(jobId);
             }
         }, 500);
+    }
+
+    async downloadZip(jobId) {
+        const response = await axios.get(`/zips/${jobId}/download`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', '');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        this.modal.showClose();
     }
 }
