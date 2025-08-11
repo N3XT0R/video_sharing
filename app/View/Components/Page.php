@@ -12,9 +12,9 @@ class Page extends Component
 {
     public string $html;
 
-    public function __construct(PageService $service, public string $section)
+    public function __construct(PageService $service, public string $slug)
     {
-        $this->html = $service->getHtml($section) ?? '';
+        $this->html = $service->getHtml($slug) ?? '';
     }
 
     public function render(): View
