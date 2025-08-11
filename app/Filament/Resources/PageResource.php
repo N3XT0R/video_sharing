@@ -29,7 +29,8 @@ class PageResource extends Resource
             Forms\Components\TextInput::make('section')
                 ->label('Section')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->disabled(),
             MarkdownEditor::make('content')
                 ->label('Content')
                 ->required()
