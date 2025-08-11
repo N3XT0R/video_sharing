@@ -151,15 +151,15 @@ Beispielkonfiguration in `/etc/supervisor/conf.d/laravel-worker.conf`:
 
 ```ini
 [program:laravel-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/dashclip/artisan queue:work --sleep=3 --tries=3
-autostart=true
-autorestart=true
-user=www-data
-numprocs=1
-redirect_stderr=true
-stdout_logfile=/var/log/supervisor/laravel-worker.log
-stopwaitsecs=3600
+process_name = %(program_name)s_%(process_num)02d
+command = php /var/www/dashclip/artisan queue:work --sleep=3 --tries=3
+autostart = true
+autorestart = true
+user = www-data
+numprocs = 4
+redirect_stderr = true
+stdout_logfile = /var/log/supervisor/laravel-worker.log
+stopwaitsecs = 3600
 ```
 
 Supervisor neu laden und den Worker starten:
