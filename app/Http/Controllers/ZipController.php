@@ -45,7 +45,7 @@ class ZipController extends Controller
 
         BuildZipJob::dispatch($batchId, $channel->getKey(), $ids->all(), $req->ip(), $req->userAgent());
 
-        return response()->json(['id' => $jobId]);
+        return response()->json(['jobId' => $jobId, 'status' => 'queued']);
     }
 
     // GET /zips/{id}/progress ->  Polling fürs Frontend
@@ -53,8 +53,9 @@ class ZipController extends Controller
     {
         $status = Cache::get("zipjob:{$id}:status", 'unknown');
         $progress = (int)Cache::get("zipjob:{$id}:progress", 0);
+        $name = $status === 'ready' ? Cache::get("zipjob:{$id}:name") : null;
 
-        return response()->json(compact('status', 'progress'));
+        return response()->json(compact('status', 'progress', 'name'));
     }
 
     // GET /zips/{id}/download -> liefert die ZIP

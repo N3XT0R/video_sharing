@@ -67,7 +67,7 @@ export default class ZipDownloader {
 
         const poll = setInterval(async () => {
             const { data: r } = await axios.get(`/zips/${jobId}/progress`);
-            this.modal.update(r.progress || 0);
+            this.modal.update(r.progress || 0, r.status);
             if (r.status === 'ready') {
                 clearInterval(poll);
                 const link = document.createElement('a');

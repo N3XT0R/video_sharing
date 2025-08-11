@@ -7,6 +7,7 @@ export default class DownloadModal {
             <div class="panel" style="max-width:400px;width:90%;">
                 <h3>Download läuft...</h3>
                 <ul id="downloadFileList" class="my-3 ml-4 list-disc"></ul>
+                <p id="statusText" class="text-sm mb-2"></p>
                 <div class="w-full h-2 bg-gray-200 rounded overflow-hidden">
                     <div id="zipProgressBar" class="h-full w-0 bg-blue-500 transition-all"></div>
                 </div>
@@ -17,6 +18,7 @@ export default class DownloadModal {
         this.fileList = this.modal.querySelector('#downloadFileList');
         this.progressBar = this.modal.querySelector('#zipProgressBar');
         this.progressText = this.modal.querySelector('#progressText');
+        this.statusText = this.modal.querySelector('#statusText');
         this.closeBtn = this.modal.querySelector('#closeModal');
     }
 
@@ -29,17 +31,29 @@ export default class DownloadModal {
         });
         this.progressBar.style.width = '0%';
         this.progressText.textContent = '0%';
+        this.statusText.textContent = 'Wartet...';
         this.closeBtn.classList.add('hidden');
         this.modal.style.display = 'flex';
     }
 
-    update(progress) {
+    update(progress, status) {
         this.progressBar.style.width = `${progress}%`;
         this.progressText.textContent = `${progress}%`;
+        if (status) {
+            const messages = {
+                queued: 'Wartet...',
+                preparing: 'Bereite Dateien vor...',
+                downloading: 'Lade Dateien herunter...',
+                adding: 'Füge Dateien hinzu...',
+                finalizing: 'Finalisiere ZIP...',
+                ready: 'Fertig'
+            };
+            this.statusText.textContent = messages[status] || status;
+        }
     }
 
     showClose() {
-        this.progressText.textContent = 'Fertig';
+        this.statusText.textContent = 'Fertig';
         this.closeBtn.classList.remove('hidden');
     }
 
