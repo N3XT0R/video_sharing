@@ -53,7 +53,7 @@ export default class ZipDownloader {
             .querySelector('meta[name="csrf-token"]')
             .getAttribute('content');
         const {
-            data: { id }
+            data: { jobId }
         } = await axios.post(
             postUrl,
             { assignment_ids: selected },
@@ -66,12 +66,12 @@ export default class ZipDownloader {
         );
 
         const poll = setInterval(async () => {
-            const { data: r } = await axios.get(`/zips/${id}/progress`);
+            const { data: r } = await axios.get(`/zips/${jobId}/progress`);
             this.modal.update(r.progress || 0);
             if (r.status === 'ready') {
                 clearInterval(poll);
                 const link = document.createElement('a');
-                link.href = `/zips/${id}/download`;
+                link.href = `/zips/${jobId}/download`;
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
