@@ -4,7 +4,7 @@ export default class DownloadModal {
         this.modal.id = 'downloadModal';
         this.modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;';
         this.modal.innerHTML = `
-            <div class="panel" style="max-width:400px;width:90%;">
+            <div class="panel" style="max-width:600px;width:90%;">
                 <h3>Download läuft...</h3>
                 <table class="w-full my-3 text-sm">
                     <thead>
