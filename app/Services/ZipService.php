@@ -10,7 +10,6 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
-use App\Services\CsvService;
 
 class ZipService
 {
@@ -144,7 +143,7 @@ class ZipService
          * @var AssignmentService $assigmentService
          */
         $assigmentService = app(AssignmentService::class);
-        $assigmentService->markDownloaded($assignment, $ip, $userAgent);
+        //$assigmentService->markDownloaded($assignment, $ip, $userAgent);
     }
 
     /**

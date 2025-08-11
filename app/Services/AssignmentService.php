@@ -67,7 +67,7 @@ class AssignmentService
     public function markDownloaded(Assignment $assignment, string $ip, ?string $userAgent): void
     {
         $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
-
+        
         Download::query()->create([
             'assignment_id' => $assignment->getKey(),
             'downloaded_at' => now(),
