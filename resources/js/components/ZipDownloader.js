@@ -78,7 +78,7 @@ export default class ZipDownloader {
         window.Echo.channel(channelName).listen('.zip.progress', async r => {
             if (r.status === 'ready' && !downloading) {
                 downloading = true;
-                this.modal.update(r.progress || 0, r.status, r.files || {});
+                this.modal.update(r.progress || 0, null, r.files || {});
                 await this.downloadZip(jobId, r.name);
                 window.Echo.leave(channelName);
             } else {
