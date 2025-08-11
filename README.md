@@ -54,6 +54,7 @@ php artisan migrate
 Ausführliche Erläuterungen zu Aufbau und Nutzung finden sich im Verzeichnis [`docs`](docs):
 
 - [Übersicht](docs/README.md)
+- [Setup](docs/setup.md)
 - [Werkzeuge](docs/tool.md)
 - [Workflow](docs/workflow.md)
 
