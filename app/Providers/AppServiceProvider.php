@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        /**
+         * @todo refactor this
+         */
         $this->app->singleton(AutoRefreshTokenProvider::class, function ($app) {
             $cfg = config('filesystems.disks.dropbox');
             $refresh = null;
