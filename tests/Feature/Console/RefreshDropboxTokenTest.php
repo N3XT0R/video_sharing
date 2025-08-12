@@ -21,9 +21,11 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
     public function testRefreshesTokenCachesItAndPersistsRotatedRefreshToken(): void
     {
         // Seed DB with an existing refresh token (what your app expects)
-        Config::query()->updateOrCreate(
-            ['key' => 'dropbox_refresh_token'],
-            ['value' => 'OLD_REFRESH_000']
+        $config = Config::factory()->create(
+            [
+                'key' => 'dropbox_refresh_token',
+                'value' => 'OLD_REFRESH_000'
+            ],
         );
 
         // Make cache predictable and use the same store for provider + assertions
@@ -52,7 +54,7 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
         $provider = new AutoRefreshTokenProvider(
             clientId: (string)config('services.dropbox.client_id'),
             clientSecret: (string)config('services.dropbox.client_secret'),
-            refreshToken: 'OLD_REFRESH_000',   // same as in DB
+            refreshToken: $config->getAttribute('value'),   // same as in DB
             cache: $cache,
             cacheKey: 'dropbox.access_token'
         );
