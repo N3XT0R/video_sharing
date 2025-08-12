@@ -29,8 +29,8 @@ class AppServiceProvider extends ServiceProvider
             return new AutoRefreshTokenProvider(
                 (string)($cfg['client_id'] ?: ''),
                 (string)($cfg['client_secret'] ?: ''),
-                Cache::store(),
-                $refresh
+                $refresh,
+                Cache::store()
             );
         });
     }
