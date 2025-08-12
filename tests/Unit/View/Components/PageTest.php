@@ -7,7 +7,6 @@ namespace Tests\Unit\View\Components;
 use App\Services\PageService;
 use App\View\Components\Page as PageComponent;
 use Illuminate\Contracts\View\View as ViewContract;
-use Illuminate\Support\Facades\View;
 use Mockery;
 use Tests\TestCase;
 
@@ -47,22 +46,16 @@ class PageTest extends TestCase
 
     public function testRenderReturnsComponentsPageView(): void
     {
-        // Arrange: spy on the View factory to assert which view is made
-        View::spy();
-
         $service = Mockery::mock(PageService::class);
         $service->shouldReceive('getHtml')->once()->with('help')->andReturn('<h1>Help</h1>');
 
         $component = new PageComponent($service, 'help');
 
-        // Act
         $result = $component->render();
 
-        // Assert: render() returns a View contract and the expected view was requested
         $this->assertInstanceOf(ViewContract::class, $result);
-
-        View::shouldReceive('make')
-            ->once()
-            ->with('components.page', Mockery::type('array'), Mockery::type('array'));
+        $name = method_exists($result, 'name') ? $result->name() : (method_exists($result,
+            'getName') ? $result->getName() : null);
+        $this->assertSame('components.page', $name);
     }
 }
