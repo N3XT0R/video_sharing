@@ -61,7 +61,7 @@ class PageComponentTest extends TestCase
         // Assert: render() returns a View contract and the expected view was requested
         $this->assertInstanceOf(ViewContract::class, $result);
 
-        View::shouldHaveReceived('make')
+        View::shouldReceive('make')
             ->once()
             ->with('components.page', Mockery::type('array'), Mockery::type('array'));
     }
