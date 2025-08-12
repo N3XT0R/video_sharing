@@ -20,13 +20,15 @@ class AssignDistribute extends Command
 
     public function handle(): int
     {
+        $exitCode = self::SUCCESS;
         try {
             $quota = $this->option('quota');
-            $stats = $this->distributor->distribute($quota !== null ? (int) $quota : null);
+            $stats = $this->distributor->distribute($quota !== null ? (int)$quota : null);
             $this->info("Assigned={$stats['assigned']}, skipped={$stats['skipped']}");
         } catch (RuntimeException $e) {
             $this->warn($e->getMessage());
+            $exitCode = self::FAILURE;
         }
-        return self::SUCCESS;
+        return $exitCode;
     }
 }
