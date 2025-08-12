@@ -7,6 +7,7 @@ use App\Services\AssignmentService;
 use App\Services\LinkService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class OfferController extends Controller
 {
@@ -52,16 +53,20 @@ class OfferController extends Controller
     {
         $this->ensureValidSignature($req);
 
-        $ids = collect($req->input('assignment_ids', []))
+        /**
+         * @var Collection $collection
+         */
+        $collection = collect($req->input('assignment_ids', []))
             ->filter(fn($v) => ctype_digit((string)$v))
-            ->map('intval')
-            ->values();
+            ->map('intval');
+
+        $ids = $collection->values();
 
         if ($ids->isEmpty()) {
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        if ($this->assignments->markUnused($batch, $channel, $ids)) {
+        if ($this->assignments->markUnused($batch, $channel, $ids->all())) {
             return back()->with('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
         }
 
