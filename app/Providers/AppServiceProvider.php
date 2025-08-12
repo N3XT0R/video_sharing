@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Config;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem;
@@ -19,17 +20,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AutoRefreshTokenProvider::class, function ($app) {
-            $cfg = config('filesystems.disks.dropbox');
-            $refresh = null;
-            try {
-                $refresh = Config::query()->firstWhere('key', 'dropbox_refresh_token')?->value;
-            } catch (\Throwable $e) {
-                // Table möglicherweise noch nicht migriert
-            }
             return new AutoRefreshTokenProvider(
-                (string)($cfg['client_id'] ?? \config('services.dropbox.client_id') ?? ''),
-                (string)($cfg['client_secret'] ?? \config('services.dropbox.client_secret') ?? ''),
-                $refresh
+                config('services.dropbox.client_id'),
+                config('services.dropbox.client_secret'),
+                optional(Config::query()->where('key', 'dropbox_refresh_token')->first())->value,
+                Cache::store(), // default cache
+                config('services.dropbox.token_url', 'https://api.dropboxapi.com/oauth2/token'),
+                'dropbox.access_token',
+                fn(string $rt) => Config::query()->updateOrCreate(['key' => 'dropbox_refresh_token'],
+                    ['value' => $rt])
             );
         });
     }
