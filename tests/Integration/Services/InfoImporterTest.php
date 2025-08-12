@@ -4,209 +4,196 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Services;
 
-use App\Models\Batch;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\InfoImporter;
-use App\Services\IngestScanner;
-use App\Services\PreviewService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
-use Tests\Helper\FfmpegBinaryFaker;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class IngestScannerTest extends TestCase
+class InfoImporterTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
-    /** Build destination path like IngestScanner does (videos/aa/bb/hash.ext). */
-    private function expectedDest(string $sha256, string $ext): string
+    /** Write a small CSV file with given rows; returns absolute path. */
+    private function writeCsv(array $rows): string
     {
-        $sub = substr($sha256, 0, 2).'/'.substr($sha256, 2, 2);
-        return sprintf('videos/%s/%s.%s', $sub, $sha256, $ext);
-    }
-
-    /** Create an inbox folder under storage/app so makeStorageRelative() resolves correctly. */
-    private function makeInbox(): string
-    {
-        $inbox = storage_path('app/_inbox_test_'.bin2hex(random_bytes(3)));
-        if (!is_dir($inbox)) {
-            mkdir($inbox, 0777, true);
+        $path = sys_get_temp_dir().'/info_import_'.bin2hex(random_bytes(4)).'.csv';
+        $fh = fopen($path, 'wb');
+        // Header line (ignored by importer except to advance the file pointer)
+        fwrite($fh, "filename;start;end;note;bundle;role;submitted_by\n");
+        foreach ($rows as $row) {
+            // Ensure 7 columns as expected by the importer
+            $line = implode(';', array_pad($row, 7, ''))."\n";
+            fwrite($fh, $line);
         }
-        return $inbox;
+        fclose($fh);
+        return $path;
     }
 
-    protected function setUp(): void
+    public function testImportCreatesClipsForExistingVideos(): void
     {
-        parent::setUp();
+        // Arrange: two videos; importer matches by original_name == basename(filename)
+        $v1 = Video::factory()->create(['original_name' => 'dashcam_A.mp4']);
+        $v2 = Video::factory()->create(['original_name' => 'dashcam_B.mov']);
 
-        // Use real local filesystem so Storage::path() works with streams/Zip etc.
-        config()->set('filesystems.default', 'local');
-
-        // Public disk with URL support for PreviewService::url()
-        config()->set('filesystems.disks.public', [
-            'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => '/storage',
-            'visibility' => 'public',
+        $csv = $this->writeCsv([
+            // filename, start,  end,   note,        bundle,   role,    submitted_by
+            ['dashcam_A.mp4', '00:05', '01:05', 'clip A', 'bundle-1', 'editor', 'alice'],
+            ['dashcam_B.mov', '75', '130', 'clip B', 'bundle-2', 'review', 'bob'],
         ]);
 
-        // Ensure public root + previews/ directory exist (PreviewService writes there)
-        Storage::makeDirectory('public');
-        Storage::disk('public')->makeDirectory('previews');
+        // Act
+        $result = app(InfoImporter::class)->import($csv);
+
+        // Assert counters
+        $this->assertSame(['created' => 2, 'updated' => 0, 'warnings' => 0], $result);
+
+        // Assert DB rows for A
+        $this->assertDatabaseHas('clips', [
+            'video_id' => $v1->id,
+            'start_sec' => 5,
+            'end_sec' => 65,
+            'note' => 'clip A',
+            'bundle_key' => 'bundle-1',
+            'role' => 'editor',
+            'submitted_by' => 'alice',
+        ]);
+
+        // Assert DB rows for B (seconds parsing)
+        $this->assertDatabaseHas('clips', [
+            'video_id' => $v2->id,
+            'start_sec' => 75,
+            'end_sec' => 130,
+            'note' => 'clip B',
+            'bundle_key' => 'bundle-2',
+            'role' => 'review',
+            'submitted_by' => 'bob',
+        ]);
+
+        @unlink($csv);
     }
 
-    protected function tearDown(): void
+    public function testImportUpdatesExistingClipAndAppliesDefaults(): void
     {
-        // Cleanup any test inboxes created
-        foreach (glob(storage_path('app/_inbox_test_*')) ?: [] as $dir) {
-            foreach (glob($dir.'/*') ?: [] as $f) {
-                @unlink($f);
-            }
-            @rmdir($dir);
-        }
-        parent::tearDown();
-    }
+        // Existing video & clip (role/start/end all NULL to match empty role/start/end)
+        $video = Video::factory()->create(['original_name' => 'update_me.mp4']);
+        $clip = Clip::factory()->for($video)->create([
+            'start_sec' => 60,
+            'end_sec' => 120,
+            'note' => 'old note',
+            'bundle_key' => null,
+            'role' => null,
+            'submitted_by' => null,
+        ]);
 
-    private function makePreviewService(): PreviewService
-    {
-        // Use a fake ffmpeg that creates a tiny output file and exits 0
-        $faker = new FfmpegBinaryFaker();
-        config()->set('services.ffmpeg.bin', $faker->success()); // fake binary
-        config()->set('services.ffmpeg.video_args', []);          // no extra flags
-        config()->set('services.ffmpeg.timeout', 5);
-
-        return app(PreviewService::class);
-    }
-
-    public function testScanIngestsNewVideo_generatesPreview_importsCsv_andDeletesSourceAndCsv(): void
-    {
-        $inbox = $this->makeInbox();
-
-        // Source video inside inbox
-        $filename = 'cam1.mp4';
-        $absFile = $inbox.'/'.$filename;
-        file_put_contents($absFile, str_repeat('A', 2048));
-        $hash = hash_file('sha256', $absFile);
-        $destRel = $this->expectedDest($hash, 'mp4');
-
-        // CSV in same folder (imported twice: before/after video → 2nd time deletes CSV)
-        $csvPath = $inbox.'/clips.csv';
-        file_put_contents($csvPath, implode("\n", [
-            'filename;start;end;note;bundle;role;submitted_by',
-            'cam1.mp4;00:00;00:10;intro;B;F;tester',
-            '',
-        ]));
-
-        $preview = $this->makePreviewService();
-        $scanner = new IngestScanner($preview, app(InfoImporter::class));
+        $csv = $this->writeCsv([
+            // Same start/end; empty bundle/submitter in CSV → defaults should be applied
+            ['update_me.mp4', '01:00', '02:00', 'new note', '', '', ''],
+        ]);
 
         // Act
-        $stats = $scanner->scan($inbox, 'local');
+        $result = app(InfoImporter::class)->import($csv, [
+            'default-bundle' => 'DEF-BUNDLE',
+            'default-submitter' => 'system',
+        ]);
 
-        // Assert stats
-        $this->assertSame(['new' => 1, 'dups' => 0, 'err' => 0], $stats);
+        // Assert: one row updated, none created, no warnings
+        $this->assertSame(['created' => 0, 'updated' => 1, 'warnings' => 0], $result);
 
-        // Batch written
-        $batch = Batch::query()->latest('id')->first();
-        $this->assertNotNull($batch);
-        $this->assertSame('ingest', $batch->type);
-        $this->assertNotNull($batch->started_at);
-        $this->assertNotNull($batch->finished_at);
-        $this->assertEquals(['new' => 1, 'dups' => 0, 'err' => 0, 'disk' => 'local'], $batch->stats);
+        $this->assertDatabaseHas('clips', [
+            'id' => $clip->id,
+            'video_id' => $video->id,
+            'start_sec' => 60,
+            'end_sec' => 120,
+            'note' => 'new note',
+            'bundle_key' => 'DEF-BUNDLE',
+            'role' => null,         // still null (CSV empty + no infer-role)
+            'submitted_by' => 'system',
+        ]);
 
-        // Video created & moved to final dest
-        $video = Video::query()->where('hash', $hash)->first();
-        $this->assertNotNull($video);
-        $this->assertSame('local', $video->disk);
-        $this->assertSame($destRel, $video->path);
-        $this->assertSame('cam1.mp4', $video->original_name);
-
-        // Preview URL may be null in some environments; if so, ensure preview exists via service url()
-        $previewUrl = $video->preview_url;
-        if ($previewUrl === null) {
-            // Try standard 0..10s range (used by IngestScanner when no valid clip found)
-            $altUrl = app(PreviewService::class)->url($video, 0, 10);
-            $this->assertNotNull($altUrl,
-                'Preview was expected to exist, but neither preview_url nor url() returned a value.');
-            $previewUrl = $altUrl;
-        }
-
-        $this->assertIsString($previewUrl);
-        $this->assertNotSame('', $previewUrl);
-        $this->assertStringContainsString('/previews/', $previewUrl);
-
-        // Verify the preview file exists on the public disk
-        $urlPath = ltrim(parse_url($previewUrl, PHP_URL_PATH) ?? '', '/'); // e.g. storage/previews/abcd.mp4
-        $publicRel = preg_replace('#^storage/#', '', $urlPath);              // -> previews/abcd.mp4
-        $this->assertTrue(Storage::disk('public')->exists($publicRel));
-
-        // Destination file exists, source removed
-        $this->assertTrue(Storage::exists($destRel));
-        $this->assertFileDoesNotExist($absFile);
-
-        // Clip created by importer
-        $clip = Clip::query()->where('video_id', $video->id)->first();
-        $this->assertNotNull($clip);
-        $this->assertSame(0, $clip->start_sec);
-        $this->assertSame(10, $clip->end_sec);
-        $this->assertSame('intro', $clip->note);
-        $this->assertSame('B', $clip->bundle_key);
-        $this->assertSame('F', $clip->role);
-        $this->assertSame('tester', $clip->submitted_by);
-
-        // CSV removed on the second import pass (warnings == 0)
-        $this->assertFileDoesNotExist($csvPath);
+        @unlink($csv);
     }
 
-    public function testScanSkipsDuplicate_andDeletesDuplicateSource(): void
+    public function testImportInfersRoleFromFilenameWhenEnabled(): void
     {
-        $inbox = $this->makeInbox();
+        // Videos that encode role in filename suffix _F / _R
+        $vF = Video::factory()->create(['original_name' => 'road_F.mp4']);
+        $vR = Video::factory()->create(['original_name' => 'rear_R.mov']);
 
-        // First run: ingest one
-        $abs1 = $inbox.'/d1.mp4';
-        file_put_contents($abs1, str_repeat('X', 100));
-        $hash = hash_file('sha256', $abs1);
-        $destRel = $this->expectedDest($hash, 'mp4');
+        $csv = $this->writeCsv([
+            ["\xEF\xBB\xBFroad_F.mp4", '00:10', '00:20', 'front', '', '', ''],
+            // filename contains BOM; should be trimmed
+            ['rear_R.mov', '15', '45', 'rear', '', '', ''],
+        ]);
 
-        $scanner = new IngestScanner($this->makePreviewService(), app(InfoImporter::class));
-        $stats1 = $scanner->scan($inbox, 'local');
-        $this->assertSame(['new' => 1, 'dups' => 0, 'err' => 0], $stats1);
-        $this->assertTrue(Storage::exists($destRel));
+        // Act
+        $result = app(InfoImporter::class)->import($csv, ['infer-role' => true]);
 
-        // Second run: same content, different name
-        $abs2 = $inbox.'/duplicate_same_content.mp4';
-        file_put_contents($abs2, str_repeat('X', 100));
+        $this->assertSame(['created' => 2, 'updated' => 0, 'warnings' => 0], $result);
 
-        $stats2 = $scanner->scan($inbox, 'local');
-        $this->assertSame(['new' => 0, 'dups' => 1, 'err' => 0], $stats2);
+        $this->assertDatabaseHas('clips', [
+            'video_id' => $vF->id,
+            'start_sec' => 10,
+            'end_sec' => 20,
+            'role' => 'F',
+            'note' => 'front',
+        ]);
+        $this->assertDatabaseHas('clips', [
+            'video_id' => $vR->id,
+            'start_sec' => 15,
+            'end_sec' => 45,
+            'role' => 'R',
+            'note' => 'rear',
+        ]);
 
-        // Duplicate source deleted, only one DB row with this hash
-        $this->assertFileDoesNotExist($abs2);
-        $this->assertSame(1, Video::query()->where('hash', $hash)->count());
+        @unlink($csv);
     }
 
-    public function testScanCountsErrorWhenDestinationNotWritable_andKeepsSourceAndVideo(): void
+    public function testImportWarnsOnUnknownVideoAndInvalidTime(): void
     {
-        $inbox = $this->makeInbox();
+        $warnings = [];
+        $csv = $this->writeCsv([
+            // Unknown video + two invalid times -> 3 warnings total
+            ['not_found.mp4', 'xx:yy', 'aa', 'note', '', '', ''],
+        ]);
 
-        $abs = $inbox.'/broken.mp4';
-        file_put_contents($abs, 'content');
-        $hash = hash_file('sha256', $abs);
+        $result = app(InfoImporter::class)->import($csv, [], function (string $msg) use (&$warnings) {
+            $warnings[] = $msg;
+        });
 
-        // Create a directory at the final file path to force fopen() failure
-        $destRel = $this->expectedDest($hash, 'mp4');
-        $destAbs = Storage::path($destRel);
-        @mkdir(dirname($destAbs), 0777, true);
-        @mkdir($destAbs, 0777, true);
+        $this->assertSame(['created' => 0, 'updated' => 0, 'warnings' => 3], $result);
+        $this->assertCount(3, $warnings);
 
-        $scanner = new IngestScanner($this->makePreviewService(), app(InfoImporter::class));
-        $stats = $scanner->scan($inbox, 'local');
+        $invalidTimeCount = count(array_filter($warnings, fn($m) => str_contains($m, 'Ungültige Zeitangabe')));
+        $notFoundCount = count(array_filter($warnings, fn($m) => str_contains($m, 'Kein Video gefunden')));
 
-        $this->assertSame(['new' => 0, 'dups' => 0, 'err' => 1], $stats);
+        $this->assertSame(2, $invalidTimeCount, 'Expected two invalid time warnings (start and end).');
+        $this->assertSame(1, $notFoundCount, 'Expected one "video not found" warning.');
 
-        // Source still there; video row exists (created before upload)
-        $this->assertFileExists($abs);
-        $this->assertTrue(Video::query()->where('hash', $hash)->exists());
+        @unlink($csv);
+    }
+
+
+    public function testImportParsesHmsAndSecondsCorrectly(): void
+    {
+        $video = Video::factory()->create(['original_name' => 'hms.mp4']);
+
+        $csv = $this->writeCsv([
+            // 1:02:03 -> 3723 seconds; end "75" -> 75 seconds
+            ['hms.mp4', '1:02:03', '75', 'timed', 'B', '', 'tester'],
+        ]);
+
+        $result = app(InfoImporter::class)->import($csv);
+
+        $this->assertSame(['created' => 1, 'updated' => 0, 'warnings' => 0], $result);
+
+        $this->assertDatabaseHas('clips', [
+            'video_id' => $video->id,
+            'start_sec' => 3723,
+            'end_sec' => 75,
+            'note' => 'timed',
+            'bundle_key' => 'B',
+            'submitted_by' => 'tester',
+        ]);
+
+        @unlink($csv);
     }
 }
