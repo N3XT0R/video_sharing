@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Enum\StatusEnum;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -30,7 +31,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
             ->for($channel, 'channel')
             ->for($video, 'video')
             ->create([
-                'status' => 'notified',
+                'status' => StatusEnum::NOTIFIED->value,
                 'expires_at' => now()->addHour(),
                 'download_token' => hash('sha256', 'secret'),
             ]);
@@ -55,7 +56,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
             ->for($channel, 'channel')
             ->for($video, 'video')
             ->create([
-                'status' => 'queued', // not 'notified'
+                'status' => StatusEnum::QUEUED->value, // not 'notified'
                 'expires_at' => now()->addHour(),
                 'download_token' => hash('sha256', 't-ok'),
             ]);
@@ -83,7 +84,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
             ->for($channel, 'channel')
             ->for($video, 'video')
             ->create([
-                'status' => 'notified',
+                'status' => StatusEnum::NOTIFIED->value,
                 'expires_at' => now()->subMinute(), // already expired
                 'download_token' => hash('sha256', 't-ok'),
             ]);
@@ -111,7 +112,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
             ->for($channel, 'channel')
             ->for($video, 'video')
             ->create([
-                'status' => 'notified',
+                'status' => StatusEnum::NOTIFIED->value,
                 'expires_at' => now()->addHour(),
                 'download_token' => hash('sha256', 'GOOD'),
             ]);
@@ -142,7 +143,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
             ->for($channel, 'channel')
             ->for($video, 'video')
             ->create([
-                'status' => 'notified',
+                'status' => StatusEnum::NOTIFIED->value,
                 'expires_at' => now()->addHour(),
                 'download_token' => hash('sha256', 't-ok'),
             ]);
@@ -201,7 +202,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
         // Assert DB side-effects: assignment marked as picked up, and a download row created
         $this->assertDatabaseHas('assignments', [
             'id' => $assignment->getKey(),
-            'status' => 'pickedup',
+            'status' => StatusEnum::PICKEDUP->value,
         ]);
 
         $this->assertDatabaseHas('downloads', [
