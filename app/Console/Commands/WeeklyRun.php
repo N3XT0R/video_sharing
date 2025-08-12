@@ -13,9 +13,21 @@ class WeeklyRun extends Command
 
     public function handle(): int
     {
-        $this->call('assign:expire');
-        $this->call('assign:distribute');
-        $this->call('notify:offers');
-        return self::SUCCESS;
+        $exitCode = self::SUCCESS;
+        $commands = [
+            'assign:expire',
+            'assign:distribute',
+            'notify:offers'
+        ];
+
+        foreach ($commands as $command) {
+            $tmpCode = $this->call($command);
+            if (self::FAILURE === $tmpCode) {
+                $exitCode = $tmpCode;
+                break;
+            }
+        }
+
+        return $exitCode;
     }
 }
