@@ -134,7 +134,7 @@ class AssignmentServiceTest extends DatabaseTestCase
                 'last_notified_at' => now()->subHour(),
             ]);
 
-        $updated = app(AssignmentService::class)->markUnused($batch, $channel, [$picked1->id, $notPicked->id]);
+        $updated = app(AssignmentService::class)->markUnused($batch, $channel, collect([$picked1->id, $notPicked->id]));
 
         $this->assertTrue($updated);
 
@@ -156,7 +156,7 @@ class AssignmentServiceTest extends DatabaseTestCase
         $a = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for(Video::factory(), 'video')
             ->create(['status' => StatusEnum::NOTIFIED->value]);
 
-        $this->assertFalse(app(AssignmentService::class)->markUnused($batch, $channel, [$a->id]));
+        $this->assertFalse(app(AssignmentService::class)->markUnused($batch, $channel, collect([$a->id])));
     }
 
     public function testMarkDownloadedSetsPickedUpAndCreatesDownloadRow(): void

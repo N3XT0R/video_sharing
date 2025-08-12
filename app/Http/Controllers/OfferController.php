@@ -52,13 +52,16 @@ class OfferController extends Controller
     public function storeUnused(Request $req, Batch $batch, Channel $channel): RedirectResponse
     {
         $this->ensureValidSignature($req);
+        $validated = $req->validate([
+            'assignment_ids' => ['required', 'array', 'min:1'],
+        ]);
 
         /**
          * @var Collection $collection
          */
-        $collection = collect($req->input('assignment_ids', []))
-            ->filter(fn($v) => ctype_digit((string)$v))
-            ->map('intval');
+        $collection = collect($validated['assignment_ids'])
+            ->filter(static fn($v) => ctype_digit((string)$v))
+            ->map(static fn($v) => (int)$v);
 
         $ids = $collection->values();
 
@@ -66,7 +69,7 @@ class OfferController extends Controller
             return back()->withErrors(['nothing' => 'Bitte wähle mindestens ein Video aus.']);
         }
 
-        if ($this->assignments->markUnused($batch, $channel, $ids->all())) {
+        if ($this->assignments->markUnused($batch, $channel, $ids)) {
             return back()->with('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
         }
 
