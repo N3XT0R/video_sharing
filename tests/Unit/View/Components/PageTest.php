@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\View;
 use Mockery;
 use Tests\TestCase;
 
-class PageComponentTest extends TestCase
+class PageTest extends TestCase
 {
     public function testConstructorSetsHtmlFromService(): void
     {
