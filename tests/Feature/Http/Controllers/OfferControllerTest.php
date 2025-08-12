@@ -15,39 +15,47 @@ use Tests\DatabaseTestCase;
 
 final class OfferControllerFeatureTest extends DatabaseTestCase
 {
+    /** Ensures the endpoint rejects requests without a valid signature. */
     public function testShowRequiresValidSignature(): void
     {
         $batch = Batch::factory()->create();
         $channel = Channel::factory()->create();
 
-        // Ohne Signatur -> 403
-        $this->get(route('offer.show', [$batch, $channel]))->assertStatus(403);
+        $this->get(route('offer.show', [$batch, $channel]))
+            ->assertStatus(403);
     }
 
+    /**
+     * Verifies that:
+     * - only "ready" assignments for the given batch+channel are listed,
+     * - each item gets a temporary signed download URL attached as `temp_url`,
+     * - a zip post URL is provided in the view.
+     */
     public function testShowRendersOnlyReadyAssignmentsAndInjectsTempUrlsAndZipPostUrl(): void
     {
         $batch = Batch::factory()->create();
         $channel = Channel::factory()->create();
 
+        // Two "ready" assignments for the target batch+channel
         $v1 = Video::factory()->create(['original_name' => 'a.mp4']);
         $v2 = Video::factory()->create(['original_name' => 'b.mp4']);
-        $vOther = Video::factory()->create(['original_name' => 'c.mp4']);
-
-        // Ready-Assignments (queued/notified) für batch+channel
         $aQueued = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v1, 'video')
             ->create(['status' => StatusEnum::QUEUED->value]);
         $aNotified = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v2, 'video')
             ->create(['status' => StatusEnum::NOTIFIED->value]);
 
-        // Nicht passend: anderer Channel/Batch oder falscher Status
-        Assignment::factory()->for(Batch::factory(), 'batch')->for($channel, 'channel')->for($vOther, 'video')
-            ->create(['status' => StatusEnum::QUEUED->value]);
-        Assignment::factory()->for($batch, 'batch')->for(Channel::factory(), 'channel')->for($vOther, 'video')
-            ->create(['status' => StatusEnum::QUEUED->value]);
-        Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($vOther, 'video')
-            ->create(['status' => StatusEnum::PICKEDUP->value]); // nicht ready
+        // Irrelevant assignments that must not appear in the list
+        Assignment::factory()->for(Batch::factory(), 'batch')->for($channel, 'channel')->for(Video::factory(), 'video')
+            ->create(['status' => StatusEnum::QUEUED->value]);     // different batch
+        Assignment::factory()->for($batch, 'batch')->for(Channel::factory(), 'channel')->for(Video::factory(), 'video')
+            ->create(['status' => StatusEnum::QUEUED->value]);     // different channel
+        Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for(Video::factory(), 'video')
+            ->create(['status' => StatusEnum::PICKEDUP->value]);   // not "ready"
 
-        $url = URL::signedRoute('offer.show', ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
+        $url = URL::signedRoute('offer.show', [
+            'batch' => $batch->getKey(),
+            'channel' => $channel->getKey(),
+        ]);
 
         $res = $this->get($url)
             ->assertOk()
@@ -56,23 +64,24 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
             ->assertViewHas('channel')
             ->assertViewHas('zipPostUrl')
             ->assertViewHas('items', function ($items) use ($aQueued, $aNotified) {
-                // Es sollen genau die beiden ready-Assignments drin sein
+                // Expect exactly the two ready assignments
                 $ids = collect($items)->pluck('id')->sort()->values()->all();
                 $expected = collect([$aQueued->id, $aNotified->id])->sort()->values()->all();
                 if ($ids !== $expected) {
                     return false;
                 }
-                // Jedes Item muss eine temp_url (signierter Download-Link) tragen
+                // Each item must have a temp_url that points to the signed download route
                 foreach ($items as $it) {
                     if (!is_string($it->temp_url ?? null)) {
                         return false;
                     }
+                    // Should contain the base path to the download route
                     if (strpos($it->temp_url, route('assignments.download', $it->id)) === false) {
                         return false;
                     }
-                    // Signatur/Expires sollten als Query-Parameter vorhanden sein
+                    // Must include signed params
                     $q = [];
-                    parse_str(parse_url($it->temp_url, PHP_URL_QUERY) ?? '', $q);
+                    parse_str(parse_url($it->temp_url, PHP_URL_QUERY) ?: '', $q);
                     if (!isset($q['signature'], $q['expires'], $q['t'])) {
                         return false;
                     }
@@ -80,7 +89,7 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
                 return true;
             });
 
-        // zipPostUrl sollte auf die Zips-Route zeigen (echter LinkService erzeugt signierte URL)
+        // The zip post URL is produced by the real LinkService and should target the zips route
         $zipPostUrl = $res->viewData('zipPostUrl');
         $this->assertIsString($zipPostUrl);
         $this->assertStringContainsString('/zips/', $zipPostUrl);
@@ -88,25 +97,32 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
         $this->assertStringContainsString((string)$channel->getKey(), $zipPostUrl);
     }
 
+    /**
+     * Ensures that the "unused" page lists only PICKEDUP assignments and provides a signed post URL.
+     */
     public function testShowUnusedRendersPickedUpAssignmentsAndProvidesPostUrl(): void
     {
         $batch = Batch::factory()->create();
         $channel = Channel::factory()->create();
+
         $v1 = Video::factory()->create(['original_name' => 'x.mp4']);
         $v2 = Video::factory()->create(['original_name' => 'y.mp4']);
 
         $picked1 = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v1, 'video')
             ->create(['status' => StatusEnum::PICKEDUP->value]);
-        $picked2 = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v2, 'video'
-        )->create(['status' => StatusEnum::PICKEDUP->value]);
+        $picked2 = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v2, 'video')
+            ->create(['status' => StatusEnum::PICKEDUP->value]);
 
-        // Nicht passend
+        // Irrelevant: different status/batch
         Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for(Video::factory(), 'video')
             ->create(['status' => StatusEnum::QUEUED->value]);
         Assignment::factory()->for(Batch::factory(), 'batch')->for($channel, 'channel')->for(Video::factory(), 'video')
             ->create(['status' => StatusEnum::PICKEDUP->value]);
 
-        $url = URL::signedRoute('offer.unused.show', ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
+        $url = URL::signedRoute('offer.unused.show', [
+            'batch' => $batch->getKey(),
+            'channel' => $channel->getKey(),
+        ]);
 
         $res = $this->get($url)
             ->assertOk()
@@ -124,20 +140,28 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
         $this->assertStringContainsString('/unused', $postUrl);
     }
 
+    /** Rejects POST when no assignment IDs are selected. */
     public function testStoreUnusedRejectsEmptySelection(): void
     {
         $batch = Batch::factory()->create();
         $channel = Channel::factory()->create();
 
-        $url = URL::signedRoute('offer.unused.store', ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
+        $url = URL::signedRoute('offer.unused.store', [
+            'batch' => $batch->getKey(),
+            'channel' => $channel->getKey(),
+        ]);
 
-        Session::start();
+        Session::start(); // required for CSRF
         $this->from('/back')
             ->post($url, ['_token' => csrf_token(), 'assignment_ids' => []])
             ->assertRedirect('/back')
             ->assertSessionHasErrors(['nothing']);
     }
 
+    /**
+     * When valid PICKEDUP IDs are posted, the service should mark them as QUEUED,
+     * clear download token/expiry metadata, and flash a success message.
+     */
     public function testStoreUnusedMarksPickedUpAsQueuedAndFlashesSuccess(): void
     {
         $batch = Batch::factory()->create();
@@ -151,7 +175,10 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
         $a2 = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v2, 'video')
             ->create(['status' => StatusEnum::PICKEDUP->value]);
 
-        $url = URL::signedRoute('offer.unused.store', ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
+        $url = URL::signedRoute('offer.unused.store', [
+            'batch' => $batch->getKey(),
+            'channel' => $channel->getKey(),
+        ]);
 
         Session::start();
         $this->from('/back')
@@ -159,24 +186,30 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
             ->assertRedirect('/back')
             ->assertSessionHas('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
 
-        // Echtes AssignmentService hat DB-Update gemacht:
+        // Verify DB updates performed by the real AssignmentService::markUnused()
         $this->assertDatabaseHas('assignments', ['id' => $a1->id, 'status' => StatusEnum::QUEUED->value]);
         $this->assertDatabaseHas('assignments', ['id' => $a2->id, 'status' => StatusEnum::QUEUED->value]);
         $this->assertDatabaseHas('assignments', ['id' => $a1->id, 'download_token' => null]);
         $this->assertDatabaseHas('assignments', ['id' => $a2->id, 'download_token' => null]);
+        $this->assertDatabaseHas('assignments', ['id' => $a1->id, 'expires_at' => null]);
+        $this->assertDatabaseHas('assignments', ['id' => $a2->id, 'expires_at' => null]);
     }
 
+    /** If nothing can be updated (e.g., wrong status), the controller flashes an error. */
     public function testStoreUnusedFlashesErrorWhenNothingUpdated(): void
     {
         $batch = Batch::factory()->create();
         $channel = Channel::factory()->create();
 
-        // IDs sind zwar gültig, aber Status ist nicht PICKEDUP → markUnused findet nichts → error
+        // Not PICKEDUP -> real service won't update -> should flash error
         $v1 = Video::factory()->create();
         $a1 = Assignment::factory()->for($batch, 'batch')->for($channel, 'channel')->for($v1, 'video')
             ->create(['status' => StatusEnum::QUEUED->value]);
 
-        $url = URL::signedRoute('offer.unused.store', ['batch' => $batch->getKey(), 'channel' => $channel->getKey()]);
+        $url = URL::signedRoute('offer.unused.store', [
+            'batch' => $batch->getKey(),
+            'channel' => $channel->getKey(),
+        ]);
 
         Session::start();
         $this->from('/back')
@@ -184,7 +217,7 @@ final class OfferControllerFeatureTest extends DatabaseTestCase
             ->assertRedirect('/back')
             ->assertSessionHas('error', 'Fehler: Die ausgewählten Videos konnten nicht freigegeben werden.');
 
-        // Status bleibt unverändert
+        // Status stays unchanged
         $this->assertDatabaseHas('assignments', ['id' => $a1->id, 'status' => StatusEnum::QUEUED->value]);
     }
 }
