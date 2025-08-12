@@ -35,6 +35,9 @@ class DropboxControllerTest extends TestCase
         // Minimal service configuration for tests.
         config()->set('services.dropbox.client_id', 'app_key_123');
         config()->set('services.dropbox.client_secret', 'app_secret_456');
+
+        // Disallow any real HTTP calls globally for this test class.
+        Http::preventStrayRequests();
     }
 
     public function testConnectRedirectsToDropboxWithStateAndExpectedParams(): void
@@ -69,7 +72,7 @@ class DropboxControllerTest extends TestCase
 
         // Act & Assert
         $this->get(route('dropbox.connect'))
-            ->assertStatus(412) // HTTP_PRECONDITION_FAILED
+            ->assertStatus(412)
             ->assertSee('Fehlende Konfiguration'); // message from controller
     }
 
