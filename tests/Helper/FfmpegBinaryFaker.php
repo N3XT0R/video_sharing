@@ -76,15 +76,23 @@ SH;
      * Zero-output + exit 0: does not create the destination file but exits successfully.
      * Lets you test the "process ok but file missing" branch.
      */
+// Tests/Helper/FfmpegBinaryFaker.php
     public function zeroOutputZeroExit(): string
     {
         $code = <<<'SH'
 #!/usr/bin/env sh
-# Intentionally produce no output file but exit 0
+# Determine destination path = last argument
+dst=""
+for arg in "$@"; do
+  dst="$arg"
+done
+# Simulate success but produce NO output file at all
+rm -f "$dst"
 exit 0
 SH;
         return $this->writeScript($code);
     }
+
 
     /**
      * Success with noisy STDERR: writes some lines to STDERR, still creates the dst file and exits 0.
