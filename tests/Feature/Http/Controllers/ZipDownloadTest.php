@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Http;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Models\{Assignment, Batch, Channel, Video};
 use Illuminate\Support\Facades\Cache;
@@ -10,7 +10,7 @@ use Tests\DatabaseTestCase;
 class ZipDownloadTest extends DatabaseTestCase
 {
 
-    public function test_download_succeeds_when_file_exists(): void
+    public function testDownloadSucceedsWhenFileExists(): void
     {
         Storage::fake();
 
@@ -27,7 +27,7 @@ class ZipDownloadTest extends DatabaseTestCase
         $response->assertHeader('content-disposition');
     }
 
-    public function test_download_marks_assignments_as_downloaded(): void
+    public function testDownloadMarksAssignmentsAsDownloaded(): void
     {
         Storage::fake();
 

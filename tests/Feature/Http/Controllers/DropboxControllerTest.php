@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Http;
+namespace Tests\Feature\Http\Controllers;
 
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
