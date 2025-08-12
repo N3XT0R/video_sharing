@@ -11,16 +11,14 @@ use App\Models\Video;
 use App\Services\CsvService;
 use App\Services\DownloadCacheService;
 use App\Services\ZipService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 use ZipArchive;
 
-class ZipServiceTest extends TestCase
+class ZipServiceTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
