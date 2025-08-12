@@ -10,14 +10,12 @@ use App\Models\Video;
 use App\Services\InfoImporter;
 use App\Services\IngestScanner;
 use App\Services\PreviewService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\DatabaseTestCase;
 use Tests\Helper\FfmpegBinaryFaker;
-use Tests\TestCase;
 
-class IngestScannerTest extends TestCase
+class IngestScannerTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     /** Build destination path like IngestScanner does (videos/aa/bb/hash.ext). */
     private function expectedDest(string $sha256, string $ext): string
