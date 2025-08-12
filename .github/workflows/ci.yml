@@ -9,27 +9,34 @@ on:
 
 jobs:
   ci:
-      name: Run Quality Checks
-      runs-on: ubuntu-latest
+    name: Run Quality Checks
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-        - name: Set up PHP
-          uses: shivammathur/setup-php@v2
-          with:
-            php-version: '8.4'
-            tools: composer, phpunit, xdebug
-            coverage: xdebug
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer, phpunit, xdebug
+          coverage: xdebug
 
-        - name: Install Dependencies
-          run: composer install --no-progress --no-suggest --prefer-dist
+      # NEW: install ffmpeg system package
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
 
-        - name: Run PHPUnit Tests
-          run: vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=coverage/clover.xml --path-coverage
+      - name: Install Dependencies
+        run: composer install --no-progress --no-suggest --prefer-dist
 
-        - uses: qltysh/qlty-action/coverage@v1
-          with:
-            token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
-            files: coverage/clover.xml
+      - name: Run PHPUnit Tests
+        run: vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=coverage/clover.xml --path-coverage
+
+      - uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/clover.xml
