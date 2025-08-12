@@ -66,7 +66,7 @@ class DropboxControllerTest extends DatabaseTestCase
     public function testConnectFailsWith412IfClientIdIsMissing(): void
     {
         // Arrange: simulate missing client_id config
-        config()->set('services.dropbox.client_id', null);
+        config()->set('services.dropbox.client_id', '');
 
         // Act & Assert
         $this->get(route('dropbox.connect'))
