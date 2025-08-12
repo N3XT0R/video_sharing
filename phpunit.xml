@@ -12,7 +12,7 @@
             <directory>tests/Feature</directory>
         </testsuite>
         <testsuite name="Integration">
-            <directory>tests/Feature</directory>
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <source>
