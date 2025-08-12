@@ -27,7 +27,8 @@ class AutoRefreshTokenProvider implements TokenProvider
             throw new \RuntimeException('Dropbox: Kein Refresh Token konfiguriert.');
         }
 
-        $resp = Http::asForm()->post('https://api.dropboxapi.com/oauth2/token', [
+        $tokenUrl = (string)config('services.dropbox.token_url');
+        $resp = Http::asForm()->post($tokenUrl, [
             'grant_type' => 'refresh_token',
             'refresh_token' => $this->refreshToken,
             'client_id' => $this->clientId,
