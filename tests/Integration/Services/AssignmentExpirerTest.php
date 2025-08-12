@@ -15,7 +15,7 @@ use Tests\DatabaseTestCase;
 
 class AssignmentExpirerTest extends DatabaseTestCase
 {
-    public function testExpireMarksPastTtlNotifiedAsExpiredCreatesBlocksAndBatchStats(): void
+    public function testExpireMarksPastTtlNotifiedAsExpiredUpdatesExistingBlocksAndCreatesNewOnes(): void
     {
         // Freeze time for deterministic assertions
         Carbon::setTestNow('2025-08-12 12:00:00');
@@ -25,21 +25,28 @@ class AssignmentExpirerTest extends DatabaseTestCase
         $past = $now->copy()->subDay();
         $future = $now->copy()->addDay();
 
-        // One channel & video shared by two "expired" assignments (to test updateOrCreate dedup)
+        // One channel, two distinct videos (unique constraint prohibits duplicate (video, channel) pairs)
         $ch = Channel::factory()->create();
-        $vid = Video::factory()->create();
+        $vid1 = Video::factory()->create();
+        $vid2 = Video::factory()->create();
 
-        // Ensure assignments have a non-null batch_id (attach any batch via factory/relation)
+        // Ensure assignments have a non-null batch_id
         $assignBatch = Batch::factory()->type('assign')->create(['started_at' => $now]);
 
-        // Expired (status=notified, expires_at in the past) -> should be set to 'expired'
+        // Pre-create an existing block for (ch, vid1) to exercise the "update" path (not a new row)
+        $existingBlock = ChannelVideoBlock::factory()
+            ->for($ch, 'channel')
+            ->for($vid1, 'video')
+            ->until($now->copy()->addDay()) // will be updated to now + cooldownDays
+            ->create();
+
+        // Expired (status=notified, expires_at in the past) for (ch, vid1) and (ch, vid2)
         $a1 = Assignment::factory()
-            ->for($ch, 'channel')->for($vid, 'video')->for($assignBatch, 'batch')
+            ->for($ch, 'channel')->for($vid1, 'video')->for($assignBatch, 'batch')
             ->create(['status' => 'notified', 'expires_at' => $past]);
 
-        // Another expired for the same (channel, video) -> should NOT create a second block row
         $a2 = Assignment::factory()
-            ->for($ch, 'channel')->for($vid, 'video')->for($assignBatch, 'batch')
+            ->for($ch, 'channel')->for($vid2, 'video')->for($assignBatch, 'batch')
             ->create(['status' => 'notified', 'expires_at' => $past]);
 
         // Not expired yet (future) -> should remain 'notified'
@@ -55,7 +62,7 @@ class AssignmentExpirerTest extends DatabaseTestCase
         // Act
         $expiredCount = app(AssignmentExpirer::class)->expire($cooldownDays);
 
-        // Assert: return value equals number of actually expired assignments
+        // Assert: two items expired
         $this->assertSame(2, $expiredCount);
 
         // Reload and assert statuses
@@ -64,14 +71,25 @@ class AssignmentExpirerTest extends DatabaseTestCase
         $this->assertSame('notified', $a3->fresh()->status);
         $this->assertSame('queued', $a4->fresh()->status);
 
-        // Assert: exactly one ChannelVideoBlock for the (channel, video) pair, with correct "until"
-        $this->assertDatabaseCount('channel_video_blocks', 1);
-        $block = ChannelVideoBlock::query()
+        // Assert: exactly two blocks exist (one updated for vid1, one newly created for vid2)
+        $this->assertDatabaseCount('channel_video_blocks', 2);
+
+        // (ch, vid1) block was updated in-place (same id) and has the new "until"
+        $updatedBlock1 = ChannelVideoBlock::query()
             ->where('channel_id', $ch->id)
-            ->where('video_id', $vid->id)
+            ->where('video_id', $vid1->id)
             ->first();
-        $this->assertNotNull($block);
-        $this->assertTrue($block->until->equalTo($now->copy()->addDays($cooldownDays)));
+        $this->assertNotNull($updatedBlock1);
+        $this->assertSame($existingBlock->getKey(), $updatedBlock1->getKey());
+        $this->assertTrue($updatedBlock1->until->equalTo($now->copy()->addDays($cooldownDays)));
+
+        // (ch, vid2) block was created with proper "until"
+        $block2 = ChannelVideoBlock::query()
+            ->where('channel_id', $ch->id)
+            ->where('video_id', $vid2->id)
+            ->first();
+        $this->assertNotNull($block2);
+        $this->assertTrue($block2->until->equalTo($now->copy()->addDays($cooldownDays)));
 
         // Assert: a new "assign" batch was created and finalized with stats ['expired' => 2]
         $createdBatch = Batch::query()->latest('id')->first();
@@ -86,7 +104,6 @@ class AssignmentExpirerTest extends DatabaseTestCase
     {
         Carbon::setTestNow('2025-08-12 12:00:00');
 
-        // Create some assignments that should not match the filter
         $ch = Channel::factory()->create();
         $vid1 = Video::factory()->create();
         $vid2 = Video::factory()->create();
