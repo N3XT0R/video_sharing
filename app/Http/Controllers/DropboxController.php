@@ -18,13 +18,14 @@ class DropboxController extends Controller
      */
     public function connect(Request $request)
     {
+        $authorize = (string)config('services.dropbox.authorize_url');
         $appKey = (string)config('services.dropbox.client_id');
         $scopes = 'files.content.write files.content.read';
         $redirect = route('dropbox.callback');
 
         if (!$appKey) {
             abort(Response::HTTP_PRECONDITION_FAILED,
-                'Fehlende Konfiguration: services.dropbox.client_id / DROPBOX_CLIENT_ID');
+                'Fehlende Konfiguration: services.dropbox.client_id');
         }
 
         // CSRF/Replay-Schutz
@@ -35,12 +36,11 @@ class DropboxController extends Controller
             'client_id' => $appKey,
             'redirect_uri' => $redirect,
             'response_type' => 'code',
-            'token_access_type' => 'offline', // liefert einen refresh_token
+            'token_access_type' => 'offline',
             'scope ' => $scopes,
             'state' => $state,
         ]);
-
-        return redirect("https://www.dropbox.com/oauth2/authorize?{$params}");
+        return redirect()->away($authorize."?{$params}");
     }
 
     /**
@@ -53,6 +53,7 @@ class DropboxController extends Controller
             abort(Response::HTTP_BAD_REQUEST, 'Kein Code erhalten');
         }
 
+        $tokenUrl = (string)config('services.dropbox.token_url');
         $appKey = (string)config('services.dropbox.client_id');
         $appSecret = (string)config('services.dropbox.client_secret');
         $redirect = route('dropbox.callback');
@@ -62,7 +63,7 @@ class DropboxController extends Controller
         }
 
         // Code gegen Token tauschen
-        $resp = Http::asForm()->post('https://api.dropboxapi.com/oauth2/token', [
+        $resp = Http::asForm()->post($tokenUrl, [
             'grant_type' => 'authorization_code',
             'code' => (string)$request->string('code'),
             'client_id' => $appKey,

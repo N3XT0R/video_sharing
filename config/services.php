@@ -43,6 +43,8 @@ return [
         'client_id' => env('DROPBOX_CLIENT_ID'),
         'client_secret' => env('DROPBOX_CLIENT_SECRET'),
         'scopes' => 'files.content.write files.content.read',
+        'authorize_url' => 'https://www.dropbox.com/oauth2/authorize',
+        'token_url' => 'https://api.dropboxapi.com/oauth2/token',
     ],
     'ffmpeg' => [
         'bin' => env('FFMPEG_BIN', '/usr/bin/ffmpeg'),
