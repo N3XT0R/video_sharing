@@ -10,18 +10,19 @@ use App\Models\Video;
 use App\Services\InfoImporter;
 use App\Services\IngestScanner;
 use App\Services\PreviewService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Tests\DatabaseTestCase;
 use Tests\Helper\FfmpegBinaryFaker;
+use Tests\TestCase;
 
-class IngestScannerTest extends DatabaseTestCase
+class IngestScannerTest extends TestCase
 {
+    use RefreshDatabase;
 
     /** Build destination path like IngestScanner does (videos/aa/bb/hash.ext). */
     private function expectedDest(string $sha256, string $ext): string
     {
         $sub = substr($sha256, 0, 2).'/'.substr($sha256, 2, 2);
-
         return sprintf('videos/%s/%s.%s', $sub, $sha256, $ext);
     }
 
@@ -32,7 +33,6 @@ class IngestScannerTest extends DatabaseTestCase
         if (!is_dir($inbox)) {
             mkdir($inbox, 0777, true);
         }
-
         return $inbox;
     }
 
@@ -72,7 +72,7 @@ class IngestScannerTest extends DatabaseTestCase
     {
         // Use a fake ffmpeg that creates a tiny output file and exits 0
         $faker = new FfmpegBinaryFaker();
-        config()->set('services.ffmpeg.bin', $faker->makeFakeFfmpegBinary());
+        config()->set('services.ffmpeg.bin', $faker->success()); // <-- fix: use success()
         config()->set('services.ffmpeg.video_args', []); // no extra flags
         config()->set('services.ffmpeg.timeout', 5);
 
@@ -128,7 +128,7 @@ class IngestScannerTest extends DatabaseTestCase
 
         // Optional: verify the preview file exists on the public disk
         $urlPath = ltrim(parse_url($video->preview_url, PHP_URL_PATH) ?? '', '/'); // e.g. storage/previews/abcd.mp4
-        $publicRel = preg_replace('#^storage/#', '', $urlPath);                     // -> previews/abcd.mp4
+        $publicRel = preg_replace('#^storage/#', '', $urlPath);                      // -> previews/abcd.mp4
         $this->assertTrue(Storage::disk('public')->exists($publicRel));
 
         // Destination file exists, source removed
