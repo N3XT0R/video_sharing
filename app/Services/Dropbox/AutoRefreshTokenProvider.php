@@ -55,7 +55,7 @@ class AutoRefreshTokenProvider implements TokenProvider
             $this->setRefreshToken($resp['refresh_token']);
             Config::query()->updateOrCreate(
                 ['key' => 'dropbox_refresh_token'],
-                ['value' => $this->refreshToken]
+                ['value' => $this->getRefreshToken()]
             );
         }
 
