@@ -79,7 +79,7 @@ class AssignmentServiceTest extends DatabaseTestCase
         $ids = collect([$a1->id, $a2->id, $a3->id]);
         $items = app(AssignmentService::class)->fetchForZip($batch, $channel, $ids);
 
-        $this->assertSameCanonicalizing([$a1->id, $a2->id], $items->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$a1->id, $a2->id], $items->pluck('id')->all());
         $this->assertTrue($items[0]->relationLoaded('video'));
         $this->assertTrue($items[0]->video->relationLoaded('clips'));
     }
