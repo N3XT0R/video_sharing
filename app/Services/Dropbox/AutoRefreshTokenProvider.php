@@ -42,7 +42,11 @@ final class AutoRefreshTokenProvider implements TokenProvider
         $this->cache = $cache;
         $this->tokenUrl = $tokenUrl;
         $this->cacheKey = $cacheKey;
-        $this->persistRefreshToken = $persistRefreshToken;
+        $this->persistRefreshToken = $persistRefreshToken ??
+            fn(string $rt) => Config::query()->updateOrCreate(
+                ['key' => 'dropbox_refresh_token'],
+                ['value' => $rt]
+            );
     }
 
     /** Retrieve a valid access token, using cache and refreshing via OAuth if needed. */

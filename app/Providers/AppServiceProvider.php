@@ -26,9 +26,7 @@ class AppServiceProvider extends ServiceProvider
                 optional(Config::query()->where('key', 'dropbox_refresh_token')->first())->value,
                 Cache::store(), // default cache
                 config('services.dropbox.token_url', 'https://api.dropboxapi.com/oauth2/token'),
-                'dropbox.access_token',
-                fn(string $rt) => Config::query()->updateOrCreate(['key' => 'dropbox_refresh_token'],
-                    ['value' => $rt])
+                'dropbox.access_token'
             );
         });
     }
