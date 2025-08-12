@@ -15,7 +15,7 @@ use Tests\DatabaseTestCase;
  * Feature tests for the "assign:distribute" command using the real distributor.
  * No mocking/faking of services; we assert DB side-effects instead of brittle output.
  */
-final class AssignDistributeFeatureTest extends DatabaseTestCase
+final class AssignDistributeTest extends DatabaseTestCase
 {
     /**
      * Happy path: with two eligible channels and two videos, the command should
