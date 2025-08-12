@@ -24,14 +24,16 @@ jobs:
           coverage: xdebug
 
       # install ffmpeg system package
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          ffmpeg -version
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v2
+        with:
+          token: ${{ github.token }}
+      - run: ffmpeg -version
 
-      - name: Install Dependencies
-        run: composer install --no-progress --no-suggest --prefer-dist
+      - name: Install PHP dependencies (cached)
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --no-progress --no-interaction --prefer-dist
 
       - name: Run PHPUnit Tests
         run: vendor/bin/phpunit --configuration phpunit.xml --coverage-clover=coverage/clover.xml --path-coverage
