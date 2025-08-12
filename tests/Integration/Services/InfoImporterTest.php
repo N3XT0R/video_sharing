@@ -151,7 +151,7 @@ class InfoImporterTest extends DatabaseTestCase
     {
         $warnings = [];
         $csv = $this->writeCsv([
-            // Unknown video + invalid times → two warnings (invalid time + not found)
+            // Unknown video + two invalid times -> 3 warnings total
             ['not_found.mp4', 'xx:yy', 'aa', 'note', '', '', ''],
         ]);
 
@@ -159,13 +159,18 @@ class InfoImporterTest extends DatabaseTestCase
             $warnings[] = $msg;
         });
 
-        $this->assertSame(['created' => 0, 'updated' => 0, 'warnings' => 2], $result);
-        $this->assertCount(2, $warnings);
-        $this->assertStringContainsString('Ungültige Zeitangabe', $warnings[0]);
-        $this->assertStringContainsString("Kein Video gefunden", $warnings[1]);
+        $this->assertSame(['created' => 0, 'updated' => 0, 'warnings' => 3], $result);
+        $this->assertCount(3, $warnings);
+
+        $invalidTimeCount = count(array_filter($warnings, fn($m) => str_contains($m, 'Ungültige Zeitangabe')));
+        $notFoundCount = count(array_filter($warnings, fn($m) => str_contains($m, 'Kein Video gefunden')));
+
+        $this->assertSame(2, $invalidTimeCount, 'Expected two invalid time warnings (start and end).');
+        $this->assertSame(1, $notFoundCount, 'Expected one "video not found" warning.');
 
         @unlink($csv);
     }
+
 
     public function testImportParsesHmsAndSecondsCorrectly(): void
     {
