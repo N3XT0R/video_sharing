@@ -6,15 +6,13 @@ namespace Tests\Integration\Services\Dropbox;
 
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class AutoRefreshTokenProviderTest extends TestCase
+class AutoRefreshTokenProviderTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     private CacheRepository $cache;
     private string $cacheKey = 'dropbox.access_token';
