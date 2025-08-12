@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 
 class DatabaseTestCase extends TestCase
 {
@@ -13,6 +14,6 @@ class DatabaseTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->app->call('config:clear');
+        Artisan::call('config:clear');
     }
 }
