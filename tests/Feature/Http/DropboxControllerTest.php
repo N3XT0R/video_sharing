@@ -46,7 +46,8 @@ class DropboxControllerTest extends DatabaseTestCase
         // Assert: we are redirected to Dropbox OAuth authorize endpoint
         $resp->assertRedirect();
         $url = $resp->headers->get('Location');
-        $this->assertStringStartsWith('https://www.dropbox.com/oauth2/authorize?', $url);
+        $expectedUrl = config('services.dropbox.authorize_url');
+        $this->assertStringStartsWith($expectedUrl.'?', $url);
 
         // Parse query string for assertions
         parse_str(parse_url($url, PHP_URL_QUERY), $q);
@@ -103,7 +104,7 @@ class DropboxControllerTest extends DatabaseTestCase
 
         // Fake successful token exchange
         Http::fake([
-            'https://api.dropboxapi.com/oauth2/token' => Http::response([
+            config('services.dropbox.token_url') => Http::response([
                 'access_token' => 'ACCESS_TOKEN_XYZ',
                 'token_type' => 'bearer',
                 'expires_in' => 14400,
@@ -141,7 +142,7 @@ class DropboxControllerTest extends DatabaseTestCase
     {
         // Arrange: fake an OAuth error response
         Http::fake([
-            'https://api.dropboxapi.com/oauth2/token' => Http::response(['error' => 'invalid_grant'], 400),
+            config('services.dropbox.token_url') => Http::response(['error' => 'invalid_grant'], 400),
         ]);
 
         // Arrange: valid state so we reach the HTTP call
