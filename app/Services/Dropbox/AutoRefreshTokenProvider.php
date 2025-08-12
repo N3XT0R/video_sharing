@@ -28,14 +28,7 @@ class AutoRefreshTokenProvider implements TokenProvider
             throw new \RuntimeException('Dropbox: Kein Refresh Token konfiguriert.');
         }
 
-        $tokenUrl = (string)config('services.dropbox.token_url');
-        $resp = Http::asForm()->post($tokenUrl, [
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $this->refreshToken,
-            'client_id' => $this->clientId,
-            'client_secret' => $this->clientSecret,
-        ])->throw()->json();
-
+        $resp = $this->getTokenResponse();
         $token = $resp['access_token'] ?? null;
         $ttl = max(60, (int)($resp['expires_in'] ?? 0) - 60); // 1 Min Puffer
 
@@ -43,7 +36,7 @@ class AutoRefreshTokenProvider implements TokenProvider
             throw new \RuntimeException('Dropbox: Kein access_token in Token-Response.');
         }
 
-        if (!empty($resp['refresh_token']) && $resp['refresh_token'] !== $this->refreshToken) {
+        if ($this->isValidRefreshToken($resp)) {
             $this->refreshToken = $resp['refresh_token'];
             Config::query()->updateOrCreate(
                 ['key' => 'dropbox_refresh_token'],
@@ -54,5 +47,21 @@ class AutoRefreshTokenProvider implements TokenProvider
         $this->cache->put($this->cacheKey, $token, now()->addSeconds($ttl));
 
         return $token;
+    }
+
+    protected function isValidRefreshToken(array $token): bool
+    {
+        return !empty($token['refresh_token']) && $token['refresh_token'] !== $this->refreshToken;
+    }
+
+    protected function getTokenResponse(): array
+    {
+        $tokenUrl = (string)config('services.dropbox.token_url');
+        return Http::asForm()->post($tokenUrl, [
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $this->refreshToken,
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret,
+        ])->throw()->json();
     }
 }
