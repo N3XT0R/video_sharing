@@ -4,12 +4,10 @@ namespace Tests\Integration\Services;
 
 use App\Models\Video;
 use App\Services\AssignmentDistributor;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class AssignmentDistributorInitialRunTest extends TestCase
+class AssignmentDistributorInitialRunTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     public function test_distributor_handles_initial_run_without_previous_batch(): void
     {

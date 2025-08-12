@@ -3,14 +3,12 @@
 namespace Tests\Feature\Http;
 
 use App\Models\{Assignment, Batch, Channel, Video};
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class ZipDownloadTest extends TestCase
+class ZipDownloadTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     public function test_download_succeeds_when_file_exists(): void
     {

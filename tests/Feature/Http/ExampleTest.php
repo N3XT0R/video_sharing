@@ -2,10 +2,9 @@
 
 namespace Tests\Feature\Http;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class ExampleTest extends TestCase
+class ExampleTest extends DatabaseTestCase
 {
     /**
      * A basic test example.

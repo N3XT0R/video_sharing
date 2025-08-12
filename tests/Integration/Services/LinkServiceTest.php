@@ -5,12 +5,10 @@ namespace Tests\Integration\Services;
 use App\Models\Batch;
 use App\Models\Channel;
 use App\Services\LinkService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class LinkServiceTest extends TestCase
+class LinkServiceTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     public function test_offer_url_allows_access_with_valid_signature(): void
     {

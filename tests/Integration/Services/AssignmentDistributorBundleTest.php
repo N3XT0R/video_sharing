@@ -4,12 +4,10 @@ namespace Tests\Integration\Services;
 
 use App\Models\{Assignment, Clip, Video};
 use App\Services\AssignmentDistributor;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class AssignmentDistributorBundleTest extends TestCase
+class AssignmentDistributorBundleTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     public function test_bundle_videos_are_assigned_together(): void
     {

@@ -5,9 +5,9 @@ namespace Tests\Integration\Services;
 use App\Models\Page;
 use App\Services\PageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
-class PageServiceTest extends TestCase
+class PageServiceTest extends DatabaseTestCase
 {
     use RefreshDatabase;
 

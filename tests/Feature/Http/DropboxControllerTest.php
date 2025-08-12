@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Tests\TestCase;
+use Tests\DatabaseTestCase;
 
 /**
  * Feature tests for Dropbox OAuth connect/callback flow.
@@ -24,9 +23,8 @@ use Tests\TestCase;
  *   - Store a random `state` in session on `connect()` and validate it in `callback()`
  *     using a timing-safe compare (`hash_equals`) and `pull()` to invalidate it.
  */
-class DropboxControllerTest extends TestCase
+class DropboxControllerTest extends DatabaseTestCase
 {
-    use RefreshDatabase;
 
     protected function setUp(): void
     {
