@@ -23,7 +23,7 @@ jobs:
           tools: composer, phpunit, xdebug
           coverage: xdebug
 
-      # NEW: install ffmpeg system package
+      # install ffmpeg system package
       - name: Install ffmpeg
         run: |
           sudo apt-get update
