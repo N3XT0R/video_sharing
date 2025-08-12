@@ -88,7 +88,7 @@ class DropboxControllerTest extends DatabaseTestCase
         session(['dropbox_oauth_state' => 'EXPECTED_STATE']);
 
         // Fake token endpoint to avoid real HTTP (won’t be reached if state is invalid)
-        Http::fake(['https://api.dropboxapi.com/oauth2/token' => Http::response([], 200)]);
+        Http::fake([config('services.dropbox.token_url') => Http::response([], 200)]);
 
         // Act & Assert: wrong state must be rejected
         $this->get(route('dropbox.callback', ['code' => 'CODE123', 'state' => 'WRONG']))
