@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
+use Illuminate\Console\Command;
 
 class RefreshDropboxToken extends Command
 {
@@ -18,8 +18,14 @@ class RefreshDropboxToken extends Command
 
     public function handle(): int
     {
-        $this->provider->getToken();
-        $this->info('Dropbox Token refreshed');
-        return self::SUCCESS;
+        $exitCode = self::SUCCESS;
+        try {
+            $this->provider->getToken();
+            $this->info('Dropbox Token refreshed');
+        } catch (\Throwable $e) {
+            $this->error($e->getMessage());
+            $exitCode = self::FAILURE;
+        }
+        return $exitCode;
     }
 }
