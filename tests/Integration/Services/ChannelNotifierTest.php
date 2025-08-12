@@ -18,15 +18,12 @@ use Tests\DatabaseTestCase;
 /**
  * Integration tests for ChannelNotifier::notify().
  *
- * - Uses real DB via RefreshDatabase and Eloquent models.
+ * - Uses real DB (DatabaseTestCase).
  * - Mails are faked (no real delivery).
- * - AssignmentService is mocked to:
- *   - return deterministic URLs per assignment
- *   - assert it is called once per queued assignment
+ * - AssignmentService is mocked to return deterministic URLs and to assert call count.
  */
 class ChannelNotifierTest extends DatabaseTestCase
 {
-
     public function testNotifyQueuesOneEmailPerChannelAndUpdatesBatch(): void
     {
         // Arrange: two channels
@@ -38,20 +35,17 @@ class ChannelNotifierTest extends DatabaseTestCase
         $v2 = Video::factory()->create(['hash' => 'h2', 'bytes' => 222, 'ext' => 'mp4']);
         $v3 = Video::factory()->create(['hash' => 'h3', 'bytes' => 333, 'ext' => 'avi']);
 
+        // IMPORTANT: assignments.batch_id is NOT NULL -> attach a batch to each assignment
+        $assignBatch = Batch::factory()->create(['type' => 'assign', 'started_at' => now()]);
+
         // Arrange: queued assignments (ch1 gets two, ch2 gets one)
-        $a1 = Assignment::factory()->create([
-            'channel_id' => $ch1->id,
-            'video_id' => $v1->id,
+        $a1 = Assignment::factory()->for($ch1, 'channel')->for($v1, 'video')->for($assignBatch, 'batch')->create([
             'status' => StatusEnum::QUEUED->value,
         ]);
-        $a2 = Assignment::factory()->create([
-            'channel_id' => $ch1->id,
-            'video_id' => $v2->id,
+        $a2 = Assignment::factory()->for($ch1, 'channel')->for($v2, 'video')->for($assignBatch, 'batch')->create([
             'status' => StatusEnum::QUEUED->value,
         ]);
-        $a3 = Assignment::factory()->create([
-            'channel_id' => $ch2->id,
-            'video_id' => $v3->id,
+        $a3 = Assignment::factory()->for($ch2, 'channel')->for($v3, 'video')->for($assignBatch, 'batch')->create([
             'status' => StatusEnum::QUEUED->value,
         ]);
 
@@ -63,7 +57,6 @@ class ChannelNotifierTest extends DatabaseTestCase
         $this->mock(AssignmentService::class, function ($mock) use ($ttlHours) {
             $mock->shouldReceive('prepareDownload')
                 ->andReturnUsing(function (Assignment $a, int $ttl) use ($ttlHours) {
-                    // Assert TTL propagated correctly
                     if ($ttl !== $ttlHours) {
                         throw new \RuntimeException('Unexpected TTL');
                     }
@@ -86,7 +79,7 @@ class ChannelNotifierTest extends DatabaseTestCase
             return $mail->hasTo($ch2->email);
         });
 
-        // Assert: a Batch was created and finalized with correct stats
+        // Assert: a Batch (type=notify) was created and finalized with correct stats
         $batch = Batch::query()->latest('id')->first();
         $this->assertNotNull($batch);
         $this->assertSame('notify', $batch->type);
