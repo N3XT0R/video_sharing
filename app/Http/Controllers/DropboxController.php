@@ -20,7 +20,6 @@ class DropboxController extends Controller
     {
         $authorize = (string)config('services.dropbox.authorize_url');
         $appKey = (string)config('services.dropbox.client_id');
-        $scopes = 'files.content.write files.content.read';
         $redirect = route('dropbox.callback');
 
         if (empty($appKey)) {
@@ -37,7 +36,7 @@ class DropboxController extends Controller
             'redirect_uri' => $redirect,
             'response_type' => 'code',
             'token_access_type' => 'offline',
-            'scope ' => $scopes,
+            'scope' => 'files.content.write files.content.read',
             'state' => $state,
         ]);
         return redirect()->away($authorize."?{$params}");
