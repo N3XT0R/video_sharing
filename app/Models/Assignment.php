@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Assignment extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'video_id',
         'channel_id',
@@ -20,17 +24,17 @@ class Assignment extends Model
     ];
     protected $casts = ['expires_at' => 'datetime', 'last_notified_at' => 'datetime'];
 
-    public function video()
+    public function video(): BelongsTo
     {
         return $this->belongsTo(Video::class);
     }
 
-    public function channel()
+    public function channel(): BelongsTo
     {
         return $this->belongsTo(Channel::class);
     }
 
-    public function batch()
+    public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
     }
