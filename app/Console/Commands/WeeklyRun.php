@@ -9,25 +9,13 @@ use Illuminate\Console\Command;
 class WeeklyRun extends Command
 {
     protected $signature = 'weekly:run';
-    protected $description = 'expire → distribute → notify';
+    protected $description = 'Sonntagslauf: expire → distribute → notify';
 
     public function handle(): int
     {
-        $exitCode = self::SUCCESS;
-        $commands = [
-            'assign:expire',
-            'assign:distribute',
-            'notify:offers'
-        ];
-
-        foreach ($commands as $command) {
-            $tmpCode = $this->call($command);
-            if (self::FAILURE === $tmpCode) {
-                $exitCode = $tmpCode;
-                break;
-            }
-        }
-
-        return $exitCode;
+        $this->call('assign:expire');
+        $this->call('assign:distribute');
+        $this->call('notify:offers');
+        return self::SUCCESS;
     }
 }
