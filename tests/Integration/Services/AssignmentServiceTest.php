@@ -11,8 +11,10 @@ use App\Models\Channel;
 use App\Models\Download;
 use App\Models\Video;
 use App\Services\AssignmentService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Tests\DatabaseTestCase;
 
 class AssignmentServiceTest extends DatabaseTestCase
@@ -180,38 +182,51 @@ class AssignmentServiceTest extends DatabaseTestCase
 
     public function testPrepareDownloadSetsTokenStatusAndReturnsSignedUrlWithTParam(): void
     {
-        Carbon::setTestNow('2025-08-12 09:00:00');
+        // Freeze time so expiry calculations are deterministic
+        \Illuminate\Support\Carbon::setTestNow('2025-08-12 09:00:00');
 
-        $assignment = Assignment::factory()
-            ->for(Batch::factory()->type('assign')->finished(), 'batch')
-            ->for(Channel::factory(), 'channel')
-            ->for(Video::factory(), 'video')
+        // Create a queued assignment without expiry or token
+        $assignment = \App\Models\Assignment::factory()
+            ->for(\App\Models\Batch::factory()->type('assign')->finished(), 'batch')
+            ->for(\App\Models\Channel::factory(), 'channel')
+            ->for(\App\Models\Video::factory(), 'video')
             ->create([
-                'status' => StatusEnum::QUEUED->value,
+                'status' => \App\Enum\StatusEnum::QUEUED->value,
                 'expires_at' => null,
                 'download_token' => null,
             ]);
 
-        $url = app(AssignmentService::class)->prepareDownload($assignment, 24); // +24h
+        // Act: prepare for download with TTL = 24 hours
+        $url = app(AssignmentService::class)->prepareDownload($assignment, 24);
 
-        // URL contains assignment id and a plain token 't' that hashes to the stored download_token
+        // Parse the signed URL into path + query components
         $parts = parse_url($url);
         parse_str($parts['query'] ?? '', $qs);
 
-        $this->assertSame($assignment->id, (int)($qs['assignment'] ?? 0));
+        // The assignment id is embedded in the PATH, not in the query string
+        $this->assertSame("/assignments/{$assignment->id}/download", $parts['path'] ?? '');
+
+        // Required signed-route params should be present
         $this->assertArrayHasKey('signature', $qs);
         $this->assertArrayHasKey('expires', $qs);
         $this->assertArrayHasKey('t', $qs);
 
+        // The stored download_token must equal sha256 of the plain token 't'
         $this->assertSame(hash('sha256', $qs['t']), $assignment->fresh()->download_token);
 
-        // Status changed from QUEUED -> NOTIFIED, and last_notified_at set
-        $this->assertSame(StatusEnum::NOTIFIED->value, $assignment->fresh()->status);
+        // Status transition: QUEUED -> NOTIFIED; last_notified_at must be set
+        $this->assertSame(\App\Enum\StatusEnum::NOTIFIED->value, $assignment->fresh()->status);
         $this->assertNotNull($assignment->fresh()->last_notified_at);
 
-        // Expires exactly now + 24h
+        // Expiry must be exactly now + 24 hours
         $this->assertTrue($assignment->fresh()->expires_at->equalTo(now()->addHours(24)));
+
+        // verify the signature is valid for the generated URL
+        $this->assertTrue(URL::hasValidSignature(
+            Request::create($url)
+        ));
     }
+
 
     public function testPrepareDownloadHonorsExistingSoonerExpiry(): void
     {
