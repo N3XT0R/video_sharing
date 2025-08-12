@@ -103,7 +103,7 @@ class ZipService
         $tmpFiles = [];
         $total = max($items->count(), 1);
         $processed = 0;
-        
+
         foreach ($items as $assignment) {
             $this->processAssignment($zip, $jobId, $assignment, $ip, $userAgent, $tmpFiles);
 
@@ -165,12 +165,6 @@ class ZipService
                 'exists' => file_exists($localPath),
             ]);
         }
-
-        /**
-         * @var AssignmentService $assigmentService
-         */
-        $assigmentService = app(AssignmentService::class);
-        //$assigmentService->markDownloaded($assignment, $ip, $userAgent);
 
         $this->cache->setFileStatus($jobId, $nameInZip, DownloadStatusEnum::READY->value);
     }
