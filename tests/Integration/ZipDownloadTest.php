@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Integration;
 
 use App\Models\{Assignment, Batch, Channel, Video};
 use Illuminate\Foundation\Testing\RefreshDatabase;

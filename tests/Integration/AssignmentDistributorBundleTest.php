@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Integration;
 
 use App\Models\{Assignment, Clip, Video};
 use App\Services\AssignmentDistributor;
