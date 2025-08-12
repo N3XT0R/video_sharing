@@ -23,7 +23,7 @@ class DropboxController extends Controller
         $scopes = 'files.content.write files.content.read';
         $redirect = route('dropbox.callback');
 
-        if (!$appKey) {
+        if (empty($appKey)) {
             abort(Response::HTTP_PRECONDITION_FAILED,
                 'Fehlende Konfiguration: services.dropbox.client_id');
         }
@@ -58,7 +58,7 @@ class DropboxController extends Controller
         $appSecret = (string)config('services.dropbox.client_secret');
         $redirect = route('dropbox.callback');
 
-        if (!$appKey || !$appSecret) {
+        if (empty($appKey) || empty($appSecret)) {
             abort(Response::HTTP_PRECONDITION_FAILED, 'Fehlende Konfiguration: DROPBOX_CLIENT_ID/SECRET');
         }
 
