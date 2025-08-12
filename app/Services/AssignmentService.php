@@ -49,7 +49,7 @@ class AssignmentService
             ->get();
     }
 
-    public function markUnused(Batch $batch, Channel $channel, array $ids): bool
+    public function markUnused(Batch $batch, Channel $channel, iterable $ids): bool
     {
         return Assignment::query()
                 ->where('batch_id', $batch->getKey())
