@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 class WeeklyRun extends Command
 {
     protected $signature = 'weekly:run';
-    protected $description = 'Sonntagslauf: expire → distribute → notify';
+    protected $description = 'expire → distribute → notify';
 
     public function handle(): int
     {
