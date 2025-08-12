@@ -18,7 +18,7 @@ class DropboxController extends Controller
      */
     public function connect(Request $request)
     {
-        $appKey = config('services.dropbox.client_id', env('DROPBOX_CLIENT_ID'));
+        $appKey = (string)config('services.dropbox.client_id');
         $scopes = 'files.content.write files.content.read';
         $redirect = route('dropbox.callback');
 
