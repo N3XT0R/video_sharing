@@ -204,7 +204,7 @@ class AssignmentServiceTest extends DatabaseTestCase
         parse_str($parts['query'] ?? '', $qs);
 
         // The assignment id is embedded in the PATH, not in the query string
-        $this->assertSame("/assignments/{$assignment->id}/download", $parts['path'] ?? '');
+        $this->assertSame("/d/{$assignment->id}", $parts['path'] ?? '');
 
         // Required signed-route params should be present
         $this->assertArrayHasKey('signature', $qs);
