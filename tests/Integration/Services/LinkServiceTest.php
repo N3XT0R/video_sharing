@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Integration;
+namespace Tests\Integration\Services;
 
 use App\Models\Batch;
 use App\Models\Channel;
