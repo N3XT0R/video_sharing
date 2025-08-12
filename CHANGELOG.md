@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-08-13
+
+### Changed
+
+- Added many new automated tests so issues are caught before they affect you.
+- Removed outdated code to keep the app running smoothly.
+- Updated project documentation for clearer setup instructions.
+
+### Fixed
+
+- Small fixes across the app for better stability.
+
 ## [1.1.1] - 2025-08-12
 
 ### Changed
