@@ -15,7 +15,7 @@ use Tests\DatabaseTestCase;
 
 final class OfferControllerTest extends DatabaseTestCase
 {
-    /** Ensures the endpoint rejects requests without a valid signature. */
+    /** Rejects requests without a valid signature. */
     public function testShowRequiresValidSignature(): void
     {
         $batch = Batch::factory()->state(['type' => 'assign'])->create();
@@ -26,17 +26,13 @@ final class OfferControllerTest extends DatabaseTestCase
     }
 
     /**
-     * Verifies that:
-     * - only "ready" assignments for the given batch+channel are listed,
-     * - each item gets a temporary signed download URL attached as `temp_url`,
-     * - a zip post URL is provided in the view.
+     * Ensures only "ready" items are listed and temp URLs + zip post URL are present.
      */
     public function testShowRendersOnlyReadyAssignmentsAndInjectsTempUrlsAndZipPostUrl(): void
     {
         $batch = Batch::factory()->state(['type' => 'assign'])->create();
         $channel = Channel::factory()->create();
 
-        // Two "ready" assignments for the target batch+channel
         $v1 = Video::factory()->create(['original_name' => 'a.mp4']);
         $v2 = Video::factory()->create(['original_name' => 'b.mp4']);
 
@@ -101,7 +97,7 @@ final class OfferControllerTest extends DatabaseTestCase
         $this->assertStringContainsString((string)$channel->getKey(), $zipPostUrl);
     }
 
-    /** Ensures that the "unused" page lists only PICKEDUP assignments and provides a signed post URL. */
+    /** Lists only PICKEDUP assignments and provides a signed post URL. */
     public function testShowUnusedRendersPickedUpAssignmentsAndProvidesPostUrl(): void
     {
         $batch = Batch::factory()->state(['type' => 'assign'])->create();
@@ -146,7 +142,10 @@ final class OfferControllerTest extends DatabaseTestCase
         $this->assertStringContainsString('/unused', $postUrl);
     }
 
-    /** Rejects POST when no assignment IDs are selected. */
+    /**
+     * Triggers your custom "nothing" error: validation passes (array|min:1),
+     * then filtering removes non-digit values -> empty -> custom error.
+     */
     public function testStoreUnusedRejectsEmptySelection(): void
     {
         $batch = Batch::factory()->state(['type' => 'assign'])->create();
@@ -157,16 +156,16 @@ final class OfferControllerTest extends DatabaseTestCase
             'channel' => $channel->getKey(),
         ]);
 
-        Session::start(); // required for CSRF
+        Session::start();
+        // Use a non-numeric entry so the validator passes but your filter drops it.
         $this->from('/back')
-            ->post($url, ['_token' => csrf_token(), 'assignment_ids' => []])
+            ->post($url, ['_token' => csrf_token(), 'assignment_ids' => ['x']])
             ->assertRedirect('/back')
             ->assertSessionHasErrors(['nothing']);
     }
 
     /**
-     * When valid PICKEDUP IDs are posted, the service should mark them as QUEUED,
-     * clear download token/expiry metadata, and flash a success message.
+     * Valid PICKEDUP IDs get marked QUEUED; tokens/expiry cleared; success flash.
      */
     public function testStoreUnusedMarksPickedUpAsQueuedAndFlashesSuccess(): void
     {
@@ -191,11 +190,13 @@ final class OfferControllerTest extends DatabaseTestCase
 
         Session::start();
         $this->from('/back')
-            ->post($url, ['_token' => csrf_token(), 'assignment_ids' => [$a1->getKey(), $a2->getKey()]])
+            ->post($url, [
+                '_token' => csrf_token(),
+                'assignment_ids' => [$a1->getKey(), $a2->getKey()],
+            ])
             ->assertRedirect('/back')
             ->assertSessionHas('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
 
-        // DB state updated by real AssignmentService::markUnused()
         $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'status' => StatusEnum::QUEUED->value]);
         $this->assertDatabaseHas('assignments', ['id' => $a2->getKey(), 'status' => StatusEnum::QUEUED->value]);
         $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'download_token' => null]);
@@ -204,13 +205,12 @@ final class OfferControllerTest extends DatabaseTestCase
         $this->assertDatabaseHas('assignments', ['id' => $a2->getKey(), 'expires_at' => null]);
     }
 
-    /** If nothing can be updated (e.g., wrong status), the controller flashes an error. */
+    /** If nothing can be updated (wrong status), the controller flashes an error. */
     public function testStoreUnusedFlashesErrorWhenNothingUpdated(): void
     {
         $batch = Batch::factory()->state(['type' => 'assign'])->create();
         $channel = Channel::factory()->create();
 
-        // Not PICKEDUP -> real service won't update -> should flash error
         $v1 = Video::factory()->create();
         $a1 = Assignment::factory()
             ->for($batch, 'batch')->for($channel, 'channel')->for($v1, 'video')
@@ -227,7 +227,6 @@ final class OfferControllerTest extends DatabaseTestCase
             ->assertRedirect('/back')
             ->assertSessionHas('error', 'Fehler: Die ausgewählten Videos konnten nicht freigegeben werden.');
 
-        // Status stays unchanged
         $this->assertDatabaseHas('assignments', [
             'id' => $a1->getKey(),
             'status' => StatusEnum::QUEUED->value,
