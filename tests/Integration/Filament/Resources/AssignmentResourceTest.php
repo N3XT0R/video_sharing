@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\Integration\Filament;
+namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Pages\Assignments;
+use App\Filament\Resources\AssignmentResource;
+use App\Filament\Resources\AssignmentResource\Pages\ListAssignments;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -13,9 +14,9 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\URL;
 use Tests\DatabaseTestCase;
 
-class AssignmentsPageTest extends DatabaseTestCase
+class AssignmentResourceTest extends DatabaseTestCase
 {
-    public function test_offer_url_column_generates_signed_url(): void
+    public function test_offer_action_generates_signed_url(): void
     {
         Carbon::setTestNow('2024-01-01 00:00:00');
 
@@ -26,16 +27,16 @@ class AssignmentsPageTest extends DatabaseTestCase
             ->withBatch($batch)
             ->create();
 
-        $page = app(Assignments::class);
-        $table = $page->table(Table::make($page));
+        $page = app(ListAssignments::class);
+        $table = AssignmentResource::table(Table::make($page));
 
-        $column = $table->getColumn('offer_url');
-        $column->record($assignment);
+        $action = $table->getFlatActions()['offer'];
+        $action->record($assignment);
 
-        $url = $column->getUrl();
+        $url = $action->getUrl();
         $expected = URL::temporarySignedRoute(
             'offer.show',
-            Carbon::now()->addYears(10),
+            Carbon::now()->addDay(),
             ['batch' => $batch->id, 'channel' => $channel->id]
         );
 

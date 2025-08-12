@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Integration\Filament;
+namespace Tests\Integration\Filament\Resources;
 
 use App\Filament\Resources\ChannelResource;
 use App\Filament\Resources\ChannelResource\Pages\ListChannels;
