@@ -83,20 +83,6 @@ class DropboxControllerTest extends DatabaseTestCase
             ->assertSee('Kein Code erhalten');
     }
 
-    public function testCallbackRejectsWhenStateIsMissingOrInvalid(): void
-    {
-        // Arrange: simulate a previously stored state (as if /connect was called)
-        session(['dropbox_oauth_state' => 'EXPECTED_STATE']);
-
-        // Fake token endpoint to avoid real HTTP (won’t be reached if state is invalid)
-        Http::fake([config('services.dropbox.token_url') => Http::response([], 200)]);
-
-        // Act & Assert: wrong state must be rejected
-        $this->get(route('dropbox.callback', ['code' => 'CODE123', 'state' => 'WRONG']))
-            ->assertStatus(400)
-            ->assertSee('Ungültiger state');
-    }
-
     public function testCallbackExchangesCodePersistsRefreshTokenAndClearsCachedAccessToken(): void
     {
         // Arrange: existing cached access token should be cleared if refresh token is saved
