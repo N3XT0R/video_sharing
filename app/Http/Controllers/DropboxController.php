@@ -53,8 +53,8 @@ class DropboxController extends Controller
             abort(Response::HTTP_BAD_REQUEST, 'Kein Code erhalten');
         }
 
-        $appKey = config('services.dropbox.client_id', env('DROPBOX_CLIENT_ID'));
-        $appSecret = config('services.dropbox.client_secret', env('DROPBOX_CLIENT_SECRET'));
+        $appKey = (string)config('services.dropbox.client_id');
+        $appSecret = (string)config('services.dropbox.client_secret');
         $redirect = route('dropbox.callback');
 
         if (!$appKey || !$appSecret) {
