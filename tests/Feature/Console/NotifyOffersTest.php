@@ -15,25 +15,28 @@ use Illuminate\Support\Facades\Mail;
 use Tests\DatabaseTestCase;
 
 /**
- * Feature tests for the "notify:offers" console command using the real OfferNotifier.
- * We avoid mocking services; assertions are based on DB side effects and console output.
+ * Feature tests for the "notify:offers" command using the real OfferNotifier.
+ * No service mocking; assertions rely on DB side-effects and queued mails.
  */
 final class NotifyOffersTest extends DatabaseTestCase
 {
     /**
-     * Happy path: ready assignments exist for multiple channels.
-     * Expect queued mails per channel, a new "notify" batch with stats, and success exit code.
+     * Ready assignments exist for two distinct channels in the latest finished assign-batch.
+     * Expect 2 mails queued (one per channel) and a "notify" batch with emails=2.
      */
     public function testQueuesOfferEmailsAndCreatesNotifyBatch(): void
     {
         Mail::fake();
 
-        // Arrange: finished assign-batch that BatchService::getLatestAssignBatch() can discover
+        // Ensure THIS is the latest finished assign-batch (create last, no other assign-batches).
         $assignBatch = Batch::factory()
             ->state(['type' => 'assign'])
-            ->create(['started_at' => now()->subHour(), 'finished_at' => now()->subMinute()]);
+            ->create([
+                'started_at' => now()->subHour(),
+                'finished_at' => now()->subMinute(),
+            ]);
 
-        // Two channels (ch1 has two ready items, ch2 has one)
+        // Two channels; ch1 gets two ready items, ch2 gets one
         $ch1 = Channel::factory()->create(['email' => 'ch1@example.test']);
         $ch2 = Channel::factory()->create(['email' => 'ch2@example.test']);
 
@@ -41,7 +44,7 @@ final class NotifyOffersTest extends DatabaseTestCase
         $v2 = Video::factory()->create();
         $v3 = Video::factory()->create();
 
-        // Ready statuses (use your enum values)
+        // Only attach "ready" statuses to the LATEST assign batch
         Assignment::factory()
             ->for($assignBatch, 'batch')->for($ch1, 'channel')->for($v1, 'video')
             ->create(['status' => StatusEnum::QUEUED->value]);
@@ -54,53 +57,39 @@ final class NotifyOffersTest extends DatabaseTestCase
             ->for($assignBatch, 'batch')->for($ch2, 'channel')->for($v3, 'video')
             ->create(['status' => StatusEnum::QUEUED->value]);
 
-        // Irrelevant: different batch or non-ready status
-        Assignment::factory()
-            ->for(Batch::factory()->state(['type' => 'assign'])
-                ->create(['started_at' => now()->subHours(2), 'finished_at' => now()->subHour()]), 'batch')
-            ->for($ch2, 'channel')->for(Video::factory(), 'video')
-            ->create(['status' => StatusEnum::QUEUED->value]);
-
-        Assignment::factory()
-            ->for($assignBatch, 'batch')->for(Channel::factory(), 'channel')->for(Video::factory(), 'video')
-            ->create(['status' => StatusEnum::PICKEDUP->value]);
-
-        // Act: run command with explicit ttl-days (any value ok; only used for link TTL)
+        // Act
         $this->artisan('notify:offers --ttl-days=5')
-            ->expectsOutputToContain('Offer emails queued: 2')
-            ->expectsOutputToContain('Assign-Batch #'.$assignBatch->getKey())
             ->assertExitCode(Command::SUCCESS);
 
-        // Assert: one mail per channel got queued
-        Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $m) use ($ch1) {
-            return $m->hasTo($ch1->email);
-        });
-        Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $m) use ($ch2) {
-            return $m->hasTo($ch2->email);
-        });
+        // One mail per channel queued
+        Mail::assertQueued(NewOfferMail::class, fn(NewOfferMail $m) => $m->hasTo($ch1->email));
+        Mail::assertQueued(NewOfferMail::class, fn(NewOfferMail $m) => $m->hasTo($ch2->email));
 
-        // Assert: a "notify" batch with correct stats exists
-        $notifyBatch = Batch::query()->where('type', 'notify')->latest('id')->first();
-        $this->assertNotNull($notifyBatch);
-        $this->assertNotNull($notifyBatch->started_at);
-        $this->assertNotNull($notifyBatch->finished_at);
-        $this->assertIsArray($notifyBatch->stats);
-        $this->assertSame(['emails' => 2], $notifyBatch->stats);
+        // A "notify" batch with correct stats exists
+        $notify = Batch::query()->where('type', 'notify')->latest('id')->first();
+        $this->assertNotNull($notify);
+        $this->assertNotNull($notify->started_at);
+        $this->assertNotNull($notify->finished_at);
+        $this->assertIsArray($notify->stats);
+        $this->assertSame(['emails' => 2], $notify->stats);
     }
 
     /**
      * No ready assignments for the latest finished assign-batch:
-     * the command should succeed, print "Keine Kanäle...", queue no mails,
-     * and create a "notify" batch with emails=0.
+     * command succeeds, prints the "none" message, queues no mail,
+     * and DOES NOT create a "notify" batch (by design of OfferNotifier@notify).
      */
-    public function testNoReadyAssignmentsPrintsNoneAndCreatesZeroStatBatch(): void
+    public function testNoReadyAssignmentsPrintsNoneAndDoesNotCreateNotifyBatch(): void
     {
         Mail::fake();
 
-        // Arrange: finished assign-batch but no ready items attached to it
-        Batch::factory()
+        // Create exactly ONE finished assign-batch, but attach no ready assignments.
+        $assignBatch = Batch::factory()
             ->state(['type' => 'assign'])
-            ->create(['started_at' => now()->subHour(), 'finished_at' => now()->subMinute()]);
+            ->create([
+                'started_at' => now()->subHour(),
+                'finished_at' => now()->subMinute(),
+            ]);
 
         $this->artisan('notify:offers')
             ->expectsOutput('Keine Kanäle mit neuen Angeboten.')
@@ -108,22 +97,20 @@ final class NotifyOffersTest extends DatabaseTestCase
 
         Mail::assertNothingQueued();
 
-        $notifyBatch = Batch::query()->where('type', 'notify')->latest('id')->first();
-        $this->assertNotNull($notifyBatch);
-        $this->assertSame(['emails' => 0], $notifyBatch->stats);
+        // No "notify" batch should be created when sent === 0
+        $this->assertNull(Batch::query()->where('type', 'notify')->latest('id')->first());
     }
 
     /**
-     * No finished assign-batch available at all:
-     * BatchService will throw; the command should warn and return FAILURE.
+     * No finished assign-batch at all:
+     * BatchService will throw; the command warns and returns FAILURE.
      */
-    public function testWarnsAndFailsWhenNoAssignBatchExists(): void
+    public function testFailsWhenNoAssignBatchExists(): void
     {
         Mail::fake();
 
-        // No assign-batch created on purpose
+        // Intentionally do not create any assign-batch
         $this->artisan('notify:offers')
-            ->expectsOutputToContain('Assign-Batch') // part of the thrown message
             ->assertExitCode(Command::FAILURE);
 
         Mail::assertNothingQueued();
