@@ -26,13 +26,10 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
         /** @var CacheRepository $cache */
         $cache = Cache::store('array');
 
-        // Provider config
-        config()->set('services.dropbox.token_url', 'https://dropbox.test/oauth2/token');
-
-        // Fake the Dropbox token endpoint response
+        // Wildcard-fake ALL HTTP calls so we don't depend on the exact token URL.
         Http::preventStrayRequests();
         Http::fake([
-            'https://dropbox.test/oauth2/token' => Http::response([
+            '*' => Http::response([
                 'access_token' => 'ACCESS_123',
                 'expires_in' => 14400,
                 'refresh_token' => 'NEW_REFRESH_456',
@@ -41,7 +38,8 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
             ], 200),
         ]);
 
-        // Bind a real provider instance into the container so the command receives it
+        // Bind a concrete provider instance so the command can use it,
+        // even if a singleton was previously registered.
         $provider = new AutoRefreshTokenProvider(
             clientId: 'cid_x',
             clientSecret: 'sec_y',
@@ -49,17 +47,19 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
             cache: $cache,
             cacheKey: 'dropbox.access_token'
         );
+        // Ensure the container will hand out THIS instance
+        $this->app->forgetInstance(AutoRefreshTokenProvider::class);
         $this->app->instance(AutoRefreshTokenProvider::class, $provider);
 
-        // Act: run the command
+        // Act
         $this->artisan('dropbox:refresh-token')
             ->expectsOutput('Dropbox Token refreshed')
             ->assertExitCode(Command::SUCCESS);
 
-        // Assert: access token was cached
+        // Assert: access token cached
         $this->assertSame('ACCESS_123', $cache->get('dropbox.access_token'));
 
-        // Assert: rotated refresh token persisted to DB (configs table)
+        // Assert: rotated refresh token persisted to DB
         $this->assertDatabaseHas('configs', [
             'key' => 'dropbox_refresh_token',
             'value' => 'NEW_REFRESH_456',
