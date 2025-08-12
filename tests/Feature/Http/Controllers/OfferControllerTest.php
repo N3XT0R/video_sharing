@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
 use Tests\DatabaseTestCase;
 
-final class OfferControllerFeatureTest extends DatabaseTestCase
+final class OfferControllerTest extends DatabaseTestCase
 {
     /** Ensures the endpoint rejects requests without a valid signature. */
     public function testShowRequiresValidSignature(): void
