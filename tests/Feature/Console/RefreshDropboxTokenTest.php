@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Console;
 
+use App\Console\Commands\RefreshDropboxToken;
 use App\Models\Config;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use Illuminate\Console\Command;
@@ -12,32 +13,27 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\DatabaseTestCase;
 
-/**
- * Feature tests for the "dropbox:refresh-token" console command.
- * We ensure the container uses a fresh provider instance seeded with a DB refresh token.
- */
 final class RefreshDropboxTokenTest extends DatabaseTestCase
 {
     public function testRefreshesTokenCachesItAndPersistsRotatedRefreshToken(): void
     {
-        // Seed DB with an existing refresh token (what your app expects)
-        $config = Config::factory()->create(
-            [
-                'key' => 'dropbox_refresh_token',
-                'value' => 'OLD_REFRESH_000'
-            ],
+        // Seed DB with existing refresh token (what the app expects).
+        Config::query()->updateOrCreate(
+            ['key' => 'dropbox_refresh_token'],
+            ['value' => 'OLD_REFRESH_000']
         );
 
-        // Make cache predictable and use the same store for provider + assertions
+        // Use array cache and get the SAME store instance for assertions.
         config()->set('cache.default', 'array');
         /** @var CacheRepository $cache */
         $cache = Cache::store('array');
 
-        // Minimal Dropbox service config; URL is irrelevant because we fake '*'
+        // Provide a VALID token URL so the HTTP client doesn't fail before fake intercepts.
         config()->set('services.dropbox.client_id', 'cid_x');
         config()->set('services.dropbox.client_secret', 'sec_y');
+        config()->set('services.dropbox.token_url', 'https://api.dropboxapi.com/oauth2/token');
 
-        // Fake ALL outbound HTTP so no real network is hit
+        // Fake ALL outbound HTTP.
         Http::preventStrayRequests();
         Http::fake([
             '*' => Http::response([
@@ -49,26 +45,30 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
             ], 200),
         ]);
 
-        // IMPORTANT: override any pre-bound singleton with a fresh instance that has the DB RT
+        // Ensure the command and provider are resolved fresh with our test binding.
         $this->app->forgetInstance(AutoRefreshTokenProvider::class);
-        $provider = new AutoRefreshTokenProvider(
-            clientId: (string)config('services.dropbox.client_id'),
-            clientSecret: (string)config('services.dropbox.client_secret'),
-            refreshToken: $config->getAttribute('value'),   // same as in DB
-            cache: $cache,
-            cacheKey: 'dropbox.access_token'
-        );
-        $this->app->instance(AutoRefreshTokenProvider::class, $provider);
+        $this->app->forgetInstance(RefreshDropboxToken::class);
 
-        // Run command
+        // Bind a fresh provider instance seeded with the DB refresh token and our cache store.
+        $this->app->bind(AutoRefreshTokenProvider::class, function () use ($cache) {
+            return new AutoRefreshTokenProvider(
+                clientId: (string)config('services.dropbox.client_id'),
+                clientSecret: (string)config('services.dropbox.client_secret'),
+                refreshToken: (string)(Config::query()->where('key', 'dropbox_refresh_token')->value('value')),
+                cache: $cache,
+                cacheKey: 'dropbox.access_token'
+            );
+        });
+
+        // Act
         $this->artisan('dropbox:refresh-token')
             ->expectsOutput('Dropbox Token refreshed')
             ->assertExitCode(Command::SUCCESS);
 
-        // Assert: token cached on the SAME store instance we injected
+        // Assert: token cached on the SAME array store.
         $this->assertSame('ACCESS_123', $cache->get('dropbox.access_token'));
 
-        // Assert: rotated refresh token persisted
+        // Assert: rotated refresh token persisted to DB.
         $this->assertDatabaseHas('configs', [
             'key' => 'dropbox_refresh_token',
             'value' => 'NEW_REFRESH_456',
@@ -77,21 +77,26 @@ final class RefreshDropboxTokenTest extends DatabaseTestCase
 
     public function testFailsWhenNoRefreshTokenConfigured(): void
     {
-        // Ensure there is no refresh token in DB
+        // Ensure there's NO refresh token row.
         Config::query()->where('key', 'dropbox_refresh_token')->delete();
 
         config()->set('cache.default', 'array');
-        /** @var CacheRepository $cache */
-        $cache = Cache::store('array');
+        config()->set('services.dropbox.client_id', 'cid_x');
+        config()->set('services.dropbox.client_secret', 'sec_y');
+        config()->set('services.dropbox.token_url', 'https://api.dropboxapi.com/oauth2/token');
 
-        // No HTTP should be made; prevent stray
         Http::preventStrayRequests();
 
-        // Override singleton with an instance that has no RT (mirrors app behavior)
+        // Ensure fresh resolution (no stale singleton).
         $this->app->forgetInstance(AutoRefreshTokenProvider::class);
-        $this->app->instance(AutoRefreshTokenProvider::class, new AutoRefreshTokenProvider(
-            clientId: 'cid_x',
-            clientSecret: 'sec_y',
+        $this->app->forgetInstance(RefreshDropboxToken::class);
+
+        // Bind provider explicitly with NULL refresh token to mirror app state.
+        /** @var CacheRepository $cache */
+        $cache = Cache::store('array');
+        $this->app->bind(AutoRefreshTokenProvider::class, fn() => new AutoRefreshTokenProvider(
+            clientId: (string)config('services.dropbox.client_id'),
+            clientSecret: (string)config('services.dropbox.client_secret'),
             refreshToken: null,
             cache: $cache,
             cacheKey: 'dropbox.access_token'
