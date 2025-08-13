@@ -86,14 +86,17 @@ class AssignmentService
         $expiry = $assignment->expires_at
             ? min($assignment->expires_at, now()->addHours($ttlHours))
             : now()->addHours($ttlHours);
-
+        
         if (false === $skipTracking && $assignment->status === StatusEnum::QUEUED->value) {
             $assignment->status = StatusEnum::NOTIFIED->value;
             $assignment->last_notified_at = now();
         }
 
-        $assignment->download_token = hash('sha256', $plain);
-        $assignment->expires_at = $expiry;
+        if (false === $skipTracking) {
+            $assignment->download_token = hash('sha256', $plain);
+            $assignment->expires_at = $expiry;
+        }
+
         $assignment->save();
 
         return URL::temporarySignedRoute(
