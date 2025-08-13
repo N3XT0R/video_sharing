@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Models;
 
 use App\Models\User;
+use Filament\Panel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
@@ -72,7 +73,7 @@ final class UserTest extends DatabaseTestCase
         $user = User::factory()->create();
 
         // We don't care about Panel internals; the method ignores its argument.
-        $panel = Mockery::mock(\Filament\Panel::class);
+        $panel = Mockery::mock(Panel::class);
 
         $this->assertTrue($user->canAccessPanel($panel));
     }
