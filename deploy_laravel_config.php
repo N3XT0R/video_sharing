@@ -260,5 +260,5 @@ task('deploy', [
     'deploy:publish',
 ]);
 
-after('deploy:cleanup', 'npm:ci');
+before('artisan:view:cache', 'npm:ci');
 after('npm:ci', 'npm:build');
