@@ -27,6 +27,9 @@
         <include>
             <directory>app</directory>
         </include>
+        <exclude>
+            <file>app/Console/Commands/WeeklyRun.php</file>
+        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
