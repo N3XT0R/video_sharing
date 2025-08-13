@@ -3,6 +3,7 @@
 namespace Deployer;
 
 require_once 'recipe/common.php';
+require 'contrib/npm.php';
 
 add('recipes', ['laravel']);
 
@@ -229,6 +230,18 @@ task('artisan:octane:stop', artisan('octane:stop'));
 desc('Check the status of the octane server');
 task('artisan:octane:status', artisan('octane:status'));
 
+task('npm:ci', function () {
+    within('{{release_path}}', function () {
+        run('NPM_CONFIG_PRODUCTION=false {{bin/npm}} ci');
+    });
+});
+
+task('npm:build', function () {
+    within('{{release_path}}', function () {
+        run('{{bin/npm}} run build'); // nutzt automatisch mode=production
+    });
+});
+
 /**
  * Main deploy task.
  */
@@ -246,3 +259,6 @@ task('deploy', [
     'artisan:migrate',
     'deploy:publish',
 ]);
+
+after('deploy:update_code', 'npm:ci');
+after('deploy:cleanup', 'npm:build');
