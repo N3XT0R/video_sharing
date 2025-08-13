@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources;
 
-use App\Enum\ConfigTypeEnum;
 use App\Filament\Resources\ConfigResource\Pages;
+use App\Filament\Support\ConfigFilamentMapper;
 use App\Models\Config;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -35,37 +35,9 @@ class ConfigResource extends Resource
                 ->dehydrated(false),
             Forms\Components\Placeholder::make('cast_type_display')
                 ->label('Cast Type')
-                ->content(fn(Get $get) => ucfirst((string)$get('cast_type'))),
+                ->content(fn(Get $get) => ConfigFilamentMapper::typeLabel($get('cast_type'))),
             Forms\Components\Group::make()
-                ->schema(function (Get $get) {
-                    return match (ConfigCaster::normalize($get('cast_type'))) {
-                        ConfigTypeEnum::BOOL => [
-                            Forms\Components\Toggle::make('value')
-                                ->label('Value')
-                                ->required(),
-                        ],
-
-                        ConfigTypeEnum::INT, ConfigTypeEnum::FLOAT => [
-                            Forms\Components\TextInput::make('value')
-                                ->numeric()
-                                ->label('Value')
-                                ->required(),
-                        ],
-
-                        ConfigTypeEnum::JSON => [
-                            Forms\Components\KeyValue::make('value')
-                                ->label('Value')
-                                ->required(),
-                        ],
-
-                        ConfigTypeEnum::STRING => [
-                            Forms\Components\Textarea::make('value')
-                                ->label('Value')
-                                ->required()
-                                ->columnSpanFull(),
-                        ],
-                    };
-                })
+                ->schema(fn(Get $get) => ConfigFilamentMapper::valueFormComponents($get('cast_type')))
                 ->columnSpanFull(),
         ]);
     }
