@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\ConfigResource\Pages;
 
 use App\Filament\Resources\ConfigResource;
-use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
@@ -24,14 +24,14 @@ class EditConfig extends EditRecord
     {
         try {
             $record->update($data);
-        } catch (ValidationException $exception) {
+        } catch (ValidationException $e) {
             Notification::make()
                 ->title('Speichern fehlgeschlagen')
                 ->body('Die Konfiguration konnte nicht gespeichert werden. Bitte prüfen Sie Ihre Eingaben.')
                 ->danger()
                 ->send();
 
-            throw $exception;
+            throw $e;
         }
 
         return $record;

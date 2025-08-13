@@ -34,11 +34,32 @@ class ConfigResource extends Resource
                 ->label('Cast Type')
                 ->content(fn(Get $get) => ucfirst((string)$get('cast_type'))),
             Forms\Components\Group::make()
-                ->schema(fn(Get $get) => match (strtolower($get('cast_type'))) {
-                    'boolean' => [Forms\Components\Toggle::make('value')->label('Value')->required()],
-                    'int', 'integer', 'float' => [Forms\Components\TextInput::make('value')->numeric()->label('Value')->required()],
-                    'array' => [Forms\Components\KeyValue::make('value')->label('Value')->required()],
-                    default => [Forms\Components\Textarea::make('value')->label('Value')->required()->columnSpanFull()],
+                ->schema(fn(Get $get) => match (strtolower((string)$get('cast_type'))) {
+                    'bool', 'boolean' => [
+                        Forms\Components\Toggle::make('value')
+                            ->label('Value')
+                            ->required(),
+                    ],
+
+                    'int', 'integer', 'float', 'double', 'real' => [
+                        Forms\Components\TextInput::make('value')
+                            ->numeric()
+                            ->label('Value')
+                            ->required(),
+                    ],
+
+                    'array', 'json' => [
+                        Forms\Components\KeyValue::make('value')
+                            ->label('Value')
+                            ->required(),
+                    ],
+
+                    default => [
+                        Forms\Components\Textarea::make('value')
+                            ->label('Value')
+                            ->required()
+                            ->columnSpanFull(),
+                    ],
                 })
                 ->columnSpanFull(),
         ]);
