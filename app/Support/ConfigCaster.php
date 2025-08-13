@@ -8,8 +8,8 @@ use App\Enum\ConfigTypeEnum;
 
 class ConfigCaster
 {
-    /** @var array<string, ConfigType> */
-    private const ALIASES = [
+    /** @var array<string, ConfigTypeEnum> */
+    private const array ALIASES = [
         // string
         'string' => ConfigTypeEnum::STRING,
         'str' => ConfigTypeEnum::STRING,
