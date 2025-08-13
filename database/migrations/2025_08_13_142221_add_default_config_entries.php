@@ -20,6 +20,12 @@ return new class extends Migration {
                 'is_visible' => 1,
             ],
             [
+                'key' => 'email_your_name',
+                'value' => config('mail.log.name', ''),
+                'cast_type' => 'string',
+                'is_visible' => 1,
+            ],
+            [
                 'key' => 'download_ttl_hours',
                 'value' => '144',
                 'cast_type' => 'int',

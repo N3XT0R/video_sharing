@@ -16,4 +16,11 @@ class ConfigService implements ConfigServiceInterface
             $default
         );
     }
+
+    public function has(string $key): bool
+    {
+        return Config::query()->where('key', $key)->exists();
+    }
+
+
 }

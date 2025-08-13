@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+@php use App\Facades\Cfg; @endphp
+        <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -74,7 +75,7 @@
 
             <p style="margin:0 0 24px 0;">
                 Viele Grüße<br>
-                {{ config('app.name') }} {{config('mail.log.name') ? '/'.config('mail.log.name') : ''}}
+                {{ config('app.name') }} {{Cfg::has('email_your_name')? '/'.Cfg::get('email_your_name', '') : ''}}
             </p>
         </td>
     </tr>

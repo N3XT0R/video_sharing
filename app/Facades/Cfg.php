@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static mixed get(string $key, mixed $default = null)
+ * @method static bool has(string $key)
  */
 class Cfg extends Facade
 {
