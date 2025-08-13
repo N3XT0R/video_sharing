@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enum\ConfigTypeEnum;
 use App\Filament\Resources\ConfigResource\Pages;
 use App\Models\Config;
 use Filament\Forms;
@@ -29,37 +30,41 @@ class ConfigResource extends Resource
                 ->maxLength(255)
                 ->disabled(),
             Forms\Components\Hidden::make('cast_type')
+                ->default('string')
+                ->reactive()
                 ->dehydrated(false),
             Forms\Components\Placeholder::make('cast_type_display')
                 ->label('Cast Type')
                 ->content(fn(Get $get) => ucfirst((string)$get('cast_type'))),
             Forms\Components\Group::make()
-                ->schema(fn(Get $get) => match (strtolower((string)$get('cast_type'))) {
-                    'bool', 'boolean' => [
-                        Forms\Components\Toggle::make('value')
-                            ->label('Value')
-                            ->required(),
-                    ],
+                ->schema(function (Get $get) {
+                    return match (ConfigCaster::normalize($get('cast_type'))) {
+                        ConfigTypeEnum::BOOL => [
+                            Forms\Components\Toggle::make('value')
+                                ->label('Value')
+                                ->required(),
+                        ],
 
-                    'int', 'integer', 'float', 'double', 'real' => [
-                        Forms\Components\TextInput::make('value')
-                            ->numeric()
-                            ->label('Value')
-                            ->required(),
-                    ],
+                        ConfigTypeEnum::INT, ConfigTypeEnum::FLOAT => [
+                            Forms\Components\TextInput::make('value')
+                                ->numeric()
+                                ->label('Value')
+                                ->required(),
+                        ],
 
-                    'array', 'json' => [
-                        Forms\Components\KeyValue::make('value')
-                            ->label('Value')
-                            ->required(),
-                    ],
+                        ConfigTypeEnum::JSON => [
+                            Forms\Components\KeyValue::make('value')
+                                ->label('Value')
+                                ->required(),
+                        ],
 
-                    default => [
-                        Forms\Components\Textarea::make('value')
-                            ->label('Value')
-                            ->required()
-                            ->columnSpanFull(),
-                    ],
+                        ConfigTypeEnum::STRING => [
+                            Forms\Components\Textarea::make('value')
+                                ->label('Value')
+                                ->required()
+                                ->columnSpanFull(),
+                        ],
+                    };
                 })
                 ->columnSpanFull(),
         ]);
