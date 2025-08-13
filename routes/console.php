@@ -20,7 +20,7 @@ Schedule::command('weekly:run')
 
 // video-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('ingest:scan', [
-    '--inbox' => Cfg::get('ingest_inbox_path', '/srv/ingest/pending/'),
+    '--inbox' => Cfg::get('ingest_inbox_absolute_path', '/srv/ingest/pending/'),
 ])->everyThirtyMinutes()
     ->emailOutputOnFailure($email);
 

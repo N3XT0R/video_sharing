@@ -32,7 +32,7 @@ return new class extends Migration {
                 'is_visible' => 1,
             ],
             [
-                'key' => 'ingest_inbox_path',
+                'key' => 'ingest_inbox_absolute_path',
                 'value' => '/srv/ingest/pending/',
                 'cast_type' => 'string',
                 'is_visible' => 1,
