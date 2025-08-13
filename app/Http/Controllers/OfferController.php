@@ -25,8 +25,8 @@ class OfferController extends Controller
             ->loadMissing('video.clips');
 
         foreach ($items as $assignment) {
-            $assignment->temp_url = $this->assignments->prepareDownload
-            (assignment: $assignment,
+            $assignment->temp_url = $this->assignments->prepareDownload(
+                assignment: $assignment,
                 skipTracking: Filament::auth()?->check() === true
             );
         }
