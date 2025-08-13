@@ -80,7 +80,7 @@ class VideoResource extends Resource
                     ->options(fn() => Video::query()
                         ->select('ext')->whereNotNull('ext')->distinct()->pluck('ext', 'ext')->toArray()),
 
-                Tables\Filters\SelectFilter::make('created_at')
+                Tables\Filters\Filter::make('created_at')
                     ->form([
                         DatePicker::make('from')->label('von'),
                         DatePicker::make('until')->label('bis'),
