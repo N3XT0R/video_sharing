@@ -64,11 +64,9 @@ final class ConfigResourceTest extends DatabaseTestCase
             ->assertFormSet([
                 'key' => 'site.locale',
                 'value' => 'de',
-                'is_visible' => true,
             ])
             ->fillForm([
                 'value' => '',
-                'is_visible' => false,
             ])
             ->call('save')
             ->assertHasFormErrors(['value' => 'required']);
@@ -76,7 +74,6 @@ final class ConfigResourceTest extends DatabaseTestCase
         Livewire::test(EditConfig::class, ['record' => $config->getKey()])
             ->fillForm([
                 'value' => 'en',
-                'is_visible' => false,
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -84,6 +81,5 @@ final class ConfigResourceTest extends DatabaseTestCase
         $fresh = $config->fresh();
         $this->assertSame('site.locale', $fresh->getAttribute('key'));
         $this->assertSame('en', $fresh->getAttribute('value'));
-        $this->assertFalse((bool)$fresh->getAttribute('is_visible'));
     }
 }
