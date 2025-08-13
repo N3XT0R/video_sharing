@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Assignment};
 use App\Services\AssignmentService;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -60,8 +61,11 @@ class AssignmentDownloadController extends Controller
             'ETag' => $video->hash,
             'Content-Disposition' => 'attachment; filename="'.basename($filePath).'"',
         ]);
-        
-        $this->service->markDownloaded($assignment, $req->ip(), $req->userAgent());
+
+        if (Filament::auth()?->check() !== true) {
+            $this->service->markDownloaded($assignment, $req->ip(), $req->userAgent());
+        }
+
         return $response;
     }
 }
