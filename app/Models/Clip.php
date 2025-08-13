@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-// app/Models/Clip.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
