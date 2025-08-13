@@ -53,7 +53,7 @@ class ConfigFilamentMapper
     }
 
     /**
-     * (Optional) Human-friendly label for the normalized type.
+     * Human-friendly label for the normalized type.
      */
     public static function typeLabel(?string $castType): string
     {
