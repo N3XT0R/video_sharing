@@ -48,7 +48,7 @@ final class ConfigResourceTest extends DatabaseTestCase
         Livewire::test(ListConfigs::class)
             ->assertStatus(200)
             ->assertSee('site.name')
-            ->assertSee('ui.theme');
+            ->assertDontSee('ui.theme');
     }
 
     public function testEditConfigValidatesAndUpdatesFields(): void
@@ -84,6 +84,6 @@ final class ConfigResourceTest extends DatabaseTestCase
         $fresh = $config->fresh();
         $this->assertSame('site.locale', $fresh->getAttribute('key'));
         $this->assertSame('en', $fresh->getAttribute('value'));
-        $this->assertFalse((bool) $fresh->getAttribute('is_visible'));
+        $this->assertFalse((bool)$fresh->getAttribute('is_visible'));
     }
 }
