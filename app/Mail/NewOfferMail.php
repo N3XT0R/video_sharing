@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Facades\Cfg;
 use App\Models\{Batch, Channel};
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -23,7 +24,7 @@ class NewOfferMail extends Mailable
 
     public function build(): NewOfferMail
     {
-        $mailTo = (string)config('mail.log.email');
+        $mailTo = Cfg::get('email_admin_mail', (string)config('mail.log.email'));
         return $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
             ->replyTo($mailTo)
             ->bcc($mailTo)
