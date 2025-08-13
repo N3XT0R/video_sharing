@@ -25,7 +25,7 @@ class AutoRefreshTokenProvider implements TokenProvider
 
     public function hasRefreshToken(): bool
     {
-        return null !== $this->getRefreshToken();
+        return !empty($this->getRefreshToken());
     }
 
     public function setRefreshToken(?string $refreshToken): void

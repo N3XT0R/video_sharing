@@ -11,6 +11,7 @@ use App\Models\Batch;
 use App\Models\Channel;
 use App\Services\AssignmentService;
 use App\Services\DownloadCacheService;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -76,16 +77,18 @@ class ZipController extends Controller
         if (!is_file($fullPath)) {
             abort(404);
         }
-
-        $assignmentIds = $this->cache->getAssignments($id);
-        if ($assignmentIds !== []) {
-            Assignment::whereIn('id', $assignmentIds)->get()->each(
-                fn(Assignment $assignment) => $this->assignments->markDownloaded(
-                    $assignment,
-                    $req->ip(),
-                    $req->userAgent(),
-                )
-            );
+        
+        if (false === (bool)Filament::auth()?->check()) {
+            $assignmentIds = $this->cache->getAssignments($id);
+            if ($assignmentIds !== []) {
+                Assignment::query()->whereIn('id', $assignmentIds)->get()->each(
+                    fn(Assignment $assignment) => $this->assignments->markDownloaded(
+                        $assignment,
+                        $req->ip(),
+                        $req->userAgent(),
+                    )
+                );
+            }
         }
 
         return response()->download($fullPath, $name)->deleteFileAfterSend();

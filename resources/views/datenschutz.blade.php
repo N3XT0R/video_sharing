@@ -1,3 +1,4 @@
+@php use App\Facades\Cfg; @endphp
 @extends('layouts.app')
 
 @section('title', 'Datenschutz')
@@ -64,7 +65,8 @@
                 personenbezogenen Daten. Außerdem
                 steht Ihnen ein Widerspruchsrecht gegen die Verarbeitung sowie das Recht auf Datenübertragbarkeit zu.
                 Hierzu und zu weiteren
-                Fragen können Sie sich jederzeit per E-Mail an <a href="mailto:info@php-dev.info">info@php-dev.info</a>
+                Fragen können Sie sich jederzeit per E-Mail an <a
+                        href="mailto:{{Cfg::get('email_admin_mail')}}">{{Cfg::get('email_admin_mail')}}</a>
                 wenden.</p>
         </section>
 

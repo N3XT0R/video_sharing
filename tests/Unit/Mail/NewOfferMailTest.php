@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Mail;
 
+use App\Facades\Cfg;
 use App\Mail\NewOfferMail;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -40,9 +41,11 @@ final class NewOfferMailTest extends DatabaseTestCase
             $mailable->subject
         );
 
+        $email = Cfg::get('email_admin_mail');
+
         // Assert: replyTo and bcc contain the configured log address
-        $this->assertTrue($mailable->hasReplyTo('log@example.test'));
-        $this->assertTrue($mailable->hasBcc('log@example.test'));
+        $this->assertTrue($mailable->hasReplyTo($email));
+        $this->assertTrue($mailable->hasBcc($email));
 
         // Assert: view data contains our public properties (available to the Blade view)
         // buildViewData() aggregates $this->viewData + public properties from the mailable
@@ -63,7 +66,6 @@ final class NewOfferMailTest extends DatabaseTestCase
         $unusedUrl = 'https://example.test/unused/2';
         $expiresAt = Carbon::parse('2025-08-21 09:30:00');
 
-        config()->set('mail.log.email', 'log@example.test');
         Mail::fake();
 
         // Act: queue the mailable to the channel's email
@@ -73,12 +75,13 @@ final class NewOfferMailTest extends DatabaseTestCase
 
         // Assert: one NewOfferMail queued to the correct recipient
         Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $mail) use ($channel, $batch) {
+            $email = Cfg::get('email_admin_mail');
             // Force build so headers are composed
             $mail->build();
 
             return $mail->hasTo($channel->email)
-                && $mail->hasReplyTo(config('mail.log.email'))
-                && $mail->hasBcc(config('mail.log.email'))
+                && $mail->hasReplyTo($email)
+                && $mail->hasBcc($email)
                 && $mail->subject === 'Neue Videos verfügbar – Batch #'.$batch->getKey();
         });
     }

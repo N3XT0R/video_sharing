@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\StatusEnum;
+use App\Facades\Cfg;
 use App\Models\{Assignment, Batch, Channel, Download};
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -80,20 +81,28 @@ class AssignmentService
     /**
      * Prepare an assignment for download and return a temporary URL.
      */
-    public function prepareDownload(Assignment $assignment, int $ttlHours = 144): string
+    public function prepareDownload(Assignment $assignment, ?int $ttlHours = null, bool $skipTracking = false): string
     {
+        if (null === $ttlHours) {
+            $ttlHours = Cfg::get('download_ttl_hours', 144);
+        }
+
+
         $plain = Str::random(40);
         $expiry = $assignment->expires_at
             ? min($assignment->expires_at, now()->addHours($ttlHours))
             : now()->addHours($ttlHours);
 
-        if ($assignment->status === StatusEnum::QUEUED->value) {
+        if (false === $skipTracking && $assignment->status === StatusEnum::QUEUED->value) {
             $assignment->status = StatusEnum::NOTIFIED->value;
             $assignment->last_notified_at = now();
         }
 
-        $assignment->download_token = hash('sha256', $plain);
-        $assignment->expires_at = $expiry;
+        if (false === $skipTracking) {
+            $assignment->download_token = hash('sha256', $plain);
+            $assignment->expires_at = $expiry;
+        }
+
         $assignment->save();
 
         return URL::temporarySignedRoute(

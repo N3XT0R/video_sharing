@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\Config;
+use App\Services\ConfigService;
+use App\Services\Contracts\ConfigServiceInterface;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
+use Illuminate\Contracts\Container\Container as Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -19,20 +21,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        /**
-         * @todo refactor this
-         */
-        $this->app->singleton(AutoRefreshTokenProvider::class, function ($app) {
+        $this->app->bind(ConfigServiceInterface::class, ConfigService::class);
+
+        $this->app->singleton(AutoRefreshTokenProvider::class, function (Application $app) {
             $cfg = config('filesystems.disks.dropbox');
-            $refresh = null;
-            try {
-                $refresh = Config::query()->firstWhere('key', 'dropbox_refresh_token')?->value;
-            } catch (\Throwable $e) {
-            }
+            /**
+             * @var ConfigServiceInterface $configService
+             */
+            $configService = $app->make(ConfigServiceInterface::class);
+
             return new AutoRefreshTokenProvider(
                 (string)($cfg['client_id'] ?: ''),
                 (string)($cfg['client_secret'] ?: ''),
-                $refresh,
+                $configService->get('dropbox_refresh_token'),
                 Cache::store()
             );
         });
