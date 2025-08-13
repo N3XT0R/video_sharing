@@ -242,6 +242,99 @@ task('npm:build', function () {
     });
 });
 
+
+set('systemd', [
+    'units' => [],                 // string "php8.3-fpm,horizon" or array ['php8.3-fpm','horizon']
+    'action' => 'try-reload-or-restart', // or 'restart' / 'reload'
+    'sudo' => true,               // use sudo -n?
+    // 'bin' => '/bin/systemctl', // optional if you want to pin it
+]);
+
+// Will be set by detection; used by restart task.
+set('systemd_bin', null);
+
+desc('Detect systemctl binary (with sudo fallback)');
+task('systemd:detect', function () {
+    // Prefer configured absolute path if provided
+    $cfg = get('systemd');
+    $sudo = ($cfg['sudo'] ?? true) ? 'sudo -n ' : '';
+    $configuredBin = $cfg['bin'] ?? null;
+
+    // Helper closure to set and report found binary
+    $setBin = function (string $bin) {
+        set('systemd_bin', $bin);
+        writeln("<info>systemd: using {$bin}</info>");
+    };
+
+    // If an explicit bin is configured, validate it
+    if (is_string($configuredBin) && $configuredBin !== '') {
+        if (test("[ -x ".escapeshellarg($configuredBin)." ]")) {
+            $setBin($configuredBin);
+            return;
+        }
+        // Try executing it via sudo (handles PATH differences)
+        if (test($sudo.escapeshellarg($configuredBin)." --version >/dev/null 2>&1")) {
+            $setBin($configuredBin);
+            return;
+        }
+        writeln("<comment>Configured systemctl not executable: {$configuredBin}</comment>");
+    }
+
+    // Common absolute paths (works regardless of PATH)
+    if (test('[ -x /bin/systemctl ]')) {
+        $setBin('/bin/systemctl');
+        return;
+    }
+    if (test('[ -x /usr/bin/systemctl ]')) {
+        $setBin('/usr/bin/systemctl');
+        return;
+    }
+
+    // Fallback: try to locate via sudo/which (root PATH)
+    if (test($sudo.'which systemctl >/dev/null 2>&1')) {
+        $setBin('systemctl'); // rely on root PATH with sudo
+        return;
+    }
+
+    // If we get here, we could not detect systemctl reliably
+    writeln('<comment>systemctl not found (even with sudo); skipping.</comment>');
+});
+
+desc('Restart configured systemd services');
+task('systemd:restart', function () {
+    // Ensure we have a systemctl binary detected
+    $bin = get('systemd_bin');
+    if (!$bin) {
+        writeln('<comment>systemctl not detected; skipping restart.</comment>');
+        return;
+    }
+
+    $cfg = get('systemd');
+    $sudo = ($cfg['sudo'] ?? true) ? 'sudo -n ' : '';
+    $units = $cfg['units'] ?? [];
+    $action = $cfg['action'] ?? 'restart';
+
+    // Normalize "units" to an array
+    if (is_string($units)) {
+        $units = array_values(array_filter(array_map('trim', explode(',', $units))));
+    }
+    if (empty($units)) {
+        writeln('<info>No systemd units configured; skipping.</info>');
+        return;
+    }
+
+    // Optional: reload daemon if unit files may have changed
+    // run($sudo . escapeshellcmd($bin) . ' daemon-reload');
+
+    foreach ($units as $unit) {
+        // Execute the action (restart/reload/try-reload-or-restart)
+        run($sudo.escapeshellcmd($bin).' '.escapeshellarg($action).' '.escapeshellarg($unit));
+        // Health check: ensure unit is active
+        run($sudo.escapeshellcmd($bin).' is-active '.escapeshellarg($unit));
+        writeln("<info>systemd: {$unit} {$action} OK</info>");
+    }
+});
+
 /**
  * Main deploy task.
  */
@@ -262,3 +355,5 @@ task('deploy', [
 
 before('artisan:view:cache', 'npm:ci');
 after('npm:ci', 'npm:build');
+before('systemd:restart', 'systemd:detect');
+after('deploy:cleanup', 'systemd:restart');
