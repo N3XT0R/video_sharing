@@ -77,7 +77,7 @@ final class ConfigTest extends DatabaseTestCase
         $cfg = Config::factory()->create([
             'key' => 'int.test',
             'cast_type' => 'integer',
-            'value' => 5,
+            'value' => '5',
         ]);
 
         $this->assertSame(5, $cfg->getAttribute('value'));
