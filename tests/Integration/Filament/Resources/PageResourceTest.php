@@ -26,29 +26,28 @@ final class PageResourceTest extends DatabaseTestCase
     {
         parent::setUp();
 
-        // Authenticate as any Filament-eligible user (your User::canAccessPanel returns true)
+        // Authenticate as a user (User::canAccessPanel returns true)
         $this->user = User::factory()->create();
         $this->actingAs($this->user);
     }
 
     public function testListPagesShowsExistingRecords(): void
     {
-        // Arrange: create a couple of pages
-        $p1 = Page::query()->create([
+        // Use distinct "section" values to satisfy unique constraint on pages.section
+        Page::query()->create([
             'slug' => 'impressum',
             'title' => 'Impressum',
-            'section' => 'legal',
+            'section' => 'legal-1',
             'content' => 'Kontakt …',
         ]);
 
-        $p2 = Page::query()->create([
+        Page::query()->create([
             'slug' => 'datenschutz',
             'title' => 'Datenschutz',
-            'section' => 'legal',
+            'section' => 'legal-2',
             'content' => 'Privacy …',
         ]);
 
-        // Act & Assert: mount the List page and ensure titles are visible
         Livewire::test(ListPages::class)
             ->assertStatus(200)
             ->assertSee('Impressum')
@@ -57,33 +56,30 @@ final class PageResourceTest extends DatabaseTestCase
 
     public function testEditPageValidatesAndUpdatesTitleAndContent(): void
     {
-        // Arrange: an existing page
+        // "section" is unique and disabled in the form; keep it stable
         $page = Page::query()->create([
             'slug' => 'about',
             'title' => 'About',
-            'section' => 'info',
+            'section' => 'info-unique',
             'content' => 'v1',
         ]);
 
-        // Act & Assert: required validation for title
+        // Required validation for title
         Livewire::test(EditPage::class, ['record' => $page->getKey()])
-            // form initially filled
             ->assertStatus(200)
             ->assertFormSet([
                 'title' => 'About',
-                'section' => 'info',
+                'section' => 'info-unique',
                 'content' => 'v1',
             ])
-            // empty title should trigger validation error
             ->fillForm([
                 'title' => '',
                 'content' => 'v2',
-                // section is disabled in the Resource form; we do not change it
             ])
             ->call('save')
             ->assertHasFormErrors(['title' => 'required']);
 
-        // Act: submit with valid title and changed content
+        // Update with valid data (do not touch "section")
         Livewire::test(EditPage::class, ['record' => $page->getKey()])
             ->fillForm([
                 'title' => 'About Us',
@@ -92,10 +88,9 @@ final class PageResourceTest extends DatabaseTestCase
             ->call('save')
             ->assertHasNoFormErrors();
 
-        // Assert: database updated, section unchanged (field is disabled)
         $fresh = $page->fresh();
         $this->assertSame('About Us', $fresh->getAttribute('title'));
         $this->assertSame('v2', $fresh->getAttribute('content'));
-        $this->assertSame('info', $fresh->getAttribute('section'));
+        $this->assertSame('info-unique', $fresh->getAttribute('section'));
     }
 }
