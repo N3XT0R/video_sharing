@@ -10,7 +10,7 @@ return new class extends Migration {
         return [
             [
                 'key' => 'email_admin_mail',
-                'value' => 'info@example.tld',
+                'value' => config('mail.log.email', 'info@example.tld'),
                 'cast_type' => 'string',
                 'is_visible' => 1,
             ],
