@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class ChannelResourceTest extends TestCase
 {
-    public function test_name_column_is_searchable(): void
+    public function testNameColumnIsSearchable(): void
     {
         $page = app(ListChannels::class);
         $table = ChannelResource::table(Table::make($page));

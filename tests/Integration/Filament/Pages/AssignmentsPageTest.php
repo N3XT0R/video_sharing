@@ -15,7 +15,7 @@ use Tests\DatabaseTestCase;
 
 class AssignmentsPageTest extends DatabaseTestCase
 {
-    public function test_offer_url_column_generates_signed_url(): void
+    public function testOfferUrlColumnGeneratesSignedUrl(): void
     {
         Carbon::setTestNow('2024-01-01 00:00:00');
 

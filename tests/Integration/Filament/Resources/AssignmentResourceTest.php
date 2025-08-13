@@ -16,7 +16,7 @@ use Tests\DatabaseTestCase;
 
 class AssignmentResourceTest extends DatabaseTestCase
 {
-    public function test_offer_action_generates_signed_url(): void
+    public function testOfferActionGeneratesSignedUrl(): void
     {
         Carbon::setTestNow('2024-01-01 00:00:00');
 
