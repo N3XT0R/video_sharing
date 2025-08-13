@@ -34,8 +34,6 @@ class NewOfferMail extends Mailable
                 ->bcc($mailTo);
         }
 
-        dd($offerMail);
-
         return $offerMail;
     }
 }
