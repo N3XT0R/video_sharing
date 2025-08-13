@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ConfigResource extends Resource
 {
@@ -30,9 +31,6 @@ class ConfigResource extends Resource
                 ->label('Value')
                 ->required()
                 ->columnSpanFull(),
-            Forms\Components\Toggle::make('is_visible')
-                ->label('Visible')
-                ->required(),
         ]);
     }
 
@@ -46,9 +44,6 @@ class ConfigResource extends Resource
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
                     ->searchable(),
-                Tables\Columns\IconColumn::make('is_visible')
-                    ->boolean()
-                    ->label('Visible'),
             ])
             ->filters([
             ])
@@ -65,5 +60,11 @@ class ConfigResource extends Resource
             'index' => Pages\ListConfigs::route('/'),
             'edit' => Pages\EditConfig::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('is_visible', true);
     }
 }
