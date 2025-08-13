@@ -26,37 +26,50 @@ final class BuildZipJobTest extends DatabaseTestCase
         $channel = Channel::factory()->create();
         $otherChannel = Channel::factory()->create();
 
-        // Video
-        $video = Video::factory()->create([
-            'hash' => 'abc',
+        // Use distinct videos to satisfy (video_id, channel_id) unique constraint.
+        $videoA = Video::factory()->create([
+            'hash' => 'hash-a',
             'ext' => 'mp4',
-            'bytes' => 1234,
-            'path' => 'videos/ab/cd/abcdef.mp4',
+            'bytes' => 111,
+            'path' => 'videos/aa/bb/hash-a.mp4',
+            'disk' => 'local',
+        ]);
+        $videoB = Video::factory()->create([
+            'hash' => 'hash-b',
+            'ext' => 'mp4',
+            'bytes' => 222,
+            'path' => 'videos/cc/dd/hash-b.mp4',
+            'disk' => 'local',
+        ]);
+        $videoC = Video::factory()->create([
+            'hash' => 'hash-c',
+            'ext' => 'mp4',
+            'bytes' => 333,
+            'path' => 'videos/ee/ff/hash-c.mp4',
             'disk' => 'local',
         ]);
 
-        // Assignments:
-        // a1: ready (QUEUED)
+        // a1: ready (QUEUED) for $channel
         $a1 = Assignment::factory()->create([
             'batch_id' => $batch->getKey(),
             'channel_id' => $channel->getKey(),
-            'video_id' => $video->getKey(),
+            'video_id' => $videoA->getKey(),
             'status' => StatusEnum::QUEUED->value,
         ]);
 
-        // a2: ready (NOTIFIED)
+        // a2: ready (NOTIFIED) for the same $channel but different video
         $a2 = Assignment::factory()->create([
             'batch_id' => $batch->getKey(),
             'channel_id' => $channel->getKey(),
-            'video_id' => $video->getKey(),
+            'video_id' => $videoB->getKey(),
             'status' => StatusEnum::NOTIFIED->value,
         ]);
 
-        // a3: not ready (PICKED_UP)
+        // a3: not ready (PICKED_UP) for the same $channel, different video
         $a3 = Assignment::factory()->create([
             'batch_id' => $batch->getKey(),
             'channel_id' => $channel->getKey(),
-            'video_id' => $video->getKey(),
+            'video_id' => $videoC->getKey(),
             'status' => StatusEnum::PICKEDUP->value,
         ]);
 
@@ -64,15 +77,14 @@ final class BuildZipJobTest extends DatabaseTestCase
         $a4 = Assignment::factory()->create([
             'batch_id' => $batch->getKey(),
             'channel_id' => $otherChannel->getKey(),
-            'video_id' => $video->getKey(),
+            'video_id' => $videoA->getKey(), // can reuse video across channels
             'status' => StatusEnum::QUEUED->value,
         ]);
 
-        // Spy ZipService and real AssignmentService
         $zipSpy = new SpyZipService();
         $assignmentService = app(AssignmentService::class);
 
-        // Provide all IDs; fetchForZip must filter them
+        // Provide all IDs; fetchForZip must filter them by batch/channel and ready statuses.
         $ids = [$a1->getKey(), $a2->getKey(), $a3->getKey(), $a4->getKey()];
 
         $job = new BuildZipJob(
@@ -80,7 +92,7 @@ final class BuildZipJobTest extends DatabaseTestCase
             channelId: $channel->getKey(),
             assignmentIds: $ids,
             ip: '203.0.113.10',
-            userAgent: null, // job normalizes to ''
+            userAgent: null, // job passes '' to ZipService when null
         );
 
         // Act
@@ -90,7 +102,7 @@ final class BuildZipJobTest extends DatabaseTestCase
         $this->assertSame($batch->getKey(), $zipSpy->seenBatchId);
         $this->assertSame($channel->getKey(), $zipSpy->seenChannelId);
 
-        // Only ready assignments for the correct batch & channel make it through
+        // Only ready assignments for target batch+channel make it through
         $this->assertEqualsCanonicalizing(
             [$a1->getKey(), $a2->getKey()],
             $zipSpy->seenAssignmentIds
@@ -103,7 +115,7 @@ final class BuildZipJobTest extends DatabaseTestCase
 
     public function testHandleWithNoMatchingAssignmentsStillCallsZipServiceWithEmptyCollection(): void
     {
-        // Arrange: batch/channel without matching assignments
+        // Arrange: batch & channel with no matching assignments
         $batch = Batch::factory()->create([
             'type' => 'assign',
             'started_at' => now(),
@@ -111,7 +123,7 @@ final class BuildZipJobTest extends DatabaseTestCase
         ]);
         $channel = Channel::factory()->create();
 
-        // Irrelevant assignment in different batch
+        // Create an assignment in a different batch to ensure no match.
         $otherBatch = Batch::factory()->create([
             'type' => 'assign',
             'started_at' => now(),
@@ -119,10 +131,10 @@ final class BuildZipJobTest extends DatabaseTestCase
         ]);
 
         $video = Video::factory()->create([
-            'hash' => 'def',
+            'hash' => 'hash-x',
             'ext' => 'mp4',
-            'bytes' => 5678,
-            'path' => 'videos/de/f0/def0.mp4',
+            'bytes' => 444,
+            'path' => 'videos/xx/yy/hash-x.mp4',
             'disk' => 'local',
         ]);
 
@@ -139,7 +151,7 @@ final class BuildZipJobTest extends DatabaseTestCase
         $job = new BuildZipJob(
             batchId: $batch->getKey(),
             channelId: $channel->getKey(),
-            assignmentIds: [], // none
+            assignmentIds: [], // none provided
             ip: '198.51.100.20',
             userAgent: 'TestAgent/1.0',
         );
