@@ -25,12 +25,16 @@ class ConfigFactory extends Factory
 
         return [
             'key' => $key,
+            'cast_type' => match ($key) {
+                'feature.flags' => 'array',
+                default => 'string',
+            },
             'value' => match ($key) {
                 'site.name' => $this->faker->company(),
                 'site.locale' => $this->faker->randomElement(['de', 'en']),
                 'dropbox_refresh_token' => Str::random(64),
                 'ui.theme' => $this->faker->randomElement(['light', 'dark']),
-                'feature.flags' => json_encode(['realtimeZip' => true]),
+                'feature.flags' => ['realtimeZip' => true],
                 default => $this->faker->sentence(),
             },
             'is_visible' => true,
@@ -49,7 +53,10 @@ class ConfigFactory extends Factory
 
     public function json(array $data): static
     {
-        return $this->state(fn() => ['value' => json_encode($data)]);
+        return $this->state(fn() => [
+            'value' => $data,
+            'cast_type' => 'array',
+        ]);
     }
 
     public function dropboxRefreshToken(?string $token = null): static
