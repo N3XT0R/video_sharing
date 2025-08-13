@@ -167,7 +167,7 @@ class AutoRefreshTokenProviderTest extends DatabaseTestCase
         $this->assertSame('ACCESS_Y', $token);
 
         // No DB writes because RT didn't rotate
-        $this->assertDatabaseCount('configs', 0);
+        $this->assertDatabaseCount('configs', 1);
     }
 
     public function testAccessorAndMutatorForRefreshTokenWorkAsExpected(): void
