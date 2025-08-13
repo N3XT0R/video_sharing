@@ -260,5 +260,5 @@ task('deploy', [
     'deploy:publish',
 ]);
 
-after('deploy:update_code', 'npm:ci');
-after('deploy:cleanup', 'npm:build');
+after('deploy:cleanup', 'npm:ci');
+after('npm:ci', 'npm:build');
