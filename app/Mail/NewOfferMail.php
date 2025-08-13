@@ -24,11 +24,11 @@ class NewOfferMail extends Mailable
 
     public function build(): NewOfferMail
     {
-        $mailTo = Cfg::get('email_admin_mail', (string)config('mail.log.email'));
+        $mailTo = Cfg::get('email_admin_mail');
         $offerMail = $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
             ->replyTo($mailTo)
             ->view('emails.new-offer');
-        
+
         if (!empty($mailTo)) {
             $offerMail = $offerMail->bcc($mailTo);
         }
