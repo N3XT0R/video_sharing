@@ -25,15 +25,14 @@ class InfoImporter
         [$inferRole, $defaultBundle, $defaultSubmitter] = $this->parseOptions($options);
 
         $fh = $this->openCsvOrFail($csvPath);
+        $stats = ['created' => 0, 'updated' => 0, 'warnings' => 0];
 
         // Read and ignore the header line. If there is no header, return empty stats.
         if ($this->readHeader($fh) === false) {
             fclose($fh);
-            return ['created' => 0, 'updated' => 0, 'warnings' => 0];
+            return $stats;
         }
-
-        $stats = ['created' => 0, 'updated' => 0, 'warnings' => 0];
-
+        
         while (($row = fgetcsv($fh, 0, self::CSV_DELIMITER)) !== false) {
             $this->processRow(
                 row: $row,
