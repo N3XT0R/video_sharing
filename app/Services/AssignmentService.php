@@ -80,13 +80,20 @@ class AssignmentService
     /**
      * Prepare an assignment for download and return a temporary URL.
      */
-    public function prepareDownload(Assignment $assignment, int $ttlHours = 144, bool $skipTracking = false): string
+    public function prepareDownload(Assignment $assignment, ?int $ttlHours = null, bool $skipTracking = false): string
     {
+        /**
+         * @var ConfigService $configService
+         */
+        $configService = app(ConfigService::class);
+        $ttlHours = $configService->get('download_ttl_hours', $ttlHours ?: 144);
+
+
         $plain = Str::random(40);
         $expiry = $assignment->expires_at
             ? min($assignment->expires_at, now()->addHours($ttlHours))
             : now()->addHours($ttlHours);
-        
+
         if (false === $skipTracking && $assignment->status === StatusEnum::QUEUED->value) {
             $assignment->status = StatusEnum::NOTIFIED->value;
             $assignment->last_notified_at = now();

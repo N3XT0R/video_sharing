@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\{Batch, Channel};
 use App\Services\AssignmentService;
-use App\Services\ConfigService;
 use App\Services\LinkService;
 use Filament\Facades\Filament;
 use Illuminate\Http\RedirectResponse;
@@ -20,11 +19,6 @@ class OfferController extends Controller
     public function show(Request $req, Batch $batch, Channel $channel)
     {
         $this->ensureValidSignature($req);
-        /**
-         * @var ConfigService $configService
-         */
-        $configService = app(ConfigService::class);
-        $ttlHours = $configService->get('download_ttl_hours', 144);
 
         $items = $this->assignments
             ->fetchPending($batch, $channel)
@@ -33,7 +27,6 @@ class OfferController extends Controller
         foreach ($items as $assignment) {
             $assignment->temp_url = $this->assignments->prepareDownload(
                 assignment: $assignment,
-                ttlHours: $ttlHours,
                 skipTracking: Filament::auth()?->check() === true
             );
         }
