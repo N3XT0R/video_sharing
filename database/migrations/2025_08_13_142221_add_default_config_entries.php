@@ -11,7 +11,7 @@ return new class extends Migration {
         if (empty($mail)) {
             $mail = 'info@example.tld';
         }
-        
+
         return [
             [
                 'key' => 'email_admin_mail',
@@ -29,6 +29,12 @@ return new class extends Migration {
                 'key' => 'assign_expire_cooldown_days',
                 'value' => '14',
                 'cast_type' => 'int',
+                'is_visible' => 1,
+            ],
+            [
+                'key' => 'ingest_inbox_path',
+                'value' => '/srv/ingest/pending/',
+                'cast_type' => 'string',
                 'is_visible' => 1,
             ],
         ];
