@@ -6,6 +6,7 @@ use App\Filament\Resources\ConfigResource\Pages;
 use App\Models\Config;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -27,9 +28,18 @@ class ConfigResource extends Resource
                 ->required()
                 ->maxLength(255)
                 ->disabled(),
-            Forms\Components\Textarea::make('value')
-                ->label('Value')
-                ->required()
+            Forms\Components\Hidden::make('cast_type')
+                ->dehydrated(false),
+            Forms\Components\Placeholder::make('cast_type_display')
+                ->label('Cast Type')
+                ->content(fn (Get $get) => ucfirst((string) $get('cast_type'))),
+            Forms\Components\Group::make()
+                ->schema(fn (Get $get) => match ($get('cast_type')) {
+                    'boolean' => [Forms\Components\Toggle::make('value')->label('Value')->required()],
+                    'integer', 'float' => [Forms\Components\TextInput::make('value')->numeric()->label('Value')->required()],
+                    'array' => [Forms\Components\KeyValue::make('value')->label('Value')->required()],
+                    default => [Forms\Components\Textarea::make('value')->label('Value')->required()->columnSpanFull()],
+                })
                 ->columnSpanFull(),
         ]);
     }
@@ -43,6 +53,7 @@ class ConfigResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('value')
                     ->limit(50)
+                    ->formatStateUsing(fn($state) => is_array($state) ? json_encode($state) : (string) $state)
                     ->searchable(),
             ])
             ->filters([
