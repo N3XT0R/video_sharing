@@ -21,8 +21,8 @@ final class ConfigTest extends DatabaseTestCase
     public function testMassAssignmentPersistsKeyAndValue(): void
     {
         // Act
-        $cfg = Config::query()->createOrFirst([
-            'key' => 'dropbox_refresh_token',
+        $cfg = Config::query()->create([
+            'key' => 'dropbox_refresh_token_xy',
             'value' => 'rt_abc123',
             'is_visible' => false,
         ])->fresh();
