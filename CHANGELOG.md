@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-08-15
+
+### Added
+
+- Settings can now be changed directly in the browser, with clear labels and safe defaults.
+- Each setting understands its type (text, number, yes/no, list), making wrong entries less likely.
+
+### Changed
+
+- Download links opened from the admin area no longer count toward viewer statistics.
+- The lifetime of download links can be adjusted in the new settings screen.
+- Importing clip information from CSV files is more forgiving and gives clearer warnings.
+- Dropbox connections treat empty tokens as missing, reducing sync errors.
+
+### Fixed
+
+- General reliability improvements and more automated tests.
+
 ## [1.1.3] - 2025-08-14
 
 ### Added
