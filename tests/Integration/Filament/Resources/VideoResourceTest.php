@@ -130,7 +130,7 @@ final class VideoResourceTest extends DatabaseTestCase
     public function testViewPageRendersRecord(): void
     {
         // Arrange: create a video record
-        $video = \App\Models\Video::factory()->create([
+        $video = Video::factory()->create([
             'original_name' => 'sample.mp4',
             'ext' => 'mp4',
             'disk' => 'local',
