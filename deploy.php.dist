@@ -10,7 +10,7 @@ set('application', 'dashclip-delivery');
 // YOUR github PAT in clear text
 set('GITHUB_PAT', '');
 
-// Repository mit PAT in der URL
+// Repository with PAT in the URL
 set('repository', sprintf(
     'https://%s@github.com/N3XT0R/video_sharing.git',
     get('GITHUB_PAT')
@@ -31,8 +31,7 @@ set('writable_chmod_recursive', true);
 set('http_user', 'www-data');
 set('git_tty', false);
 
-// Hos
-
+// Hosts
 host('prd')
     ->setHostname('example.tld')
     ->set('php_version', '8.4')
