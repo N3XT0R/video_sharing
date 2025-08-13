@@ -7,10 +7,15 @@ return new class extends Migration {
 
     protected function getConfigEntries(): array
     {
+        $mail = config('mail.log.email');
+        if (empty($mail)) {
+            $mail = 'info@example.tld';
+        }
+        
         return [
             [
                 'key' => 'email_admin_mail',
-                'value' => config('mail.log.email', 'info@example.tld'),
+                'value' => $mail,
                 'cast_type' => 'string',
                 'is_visible' => 1,
             ],

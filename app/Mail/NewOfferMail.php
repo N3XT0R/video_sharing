@@ -24,7 +24,7 @@ class NewOfferMail extends Mailable
 
     public function build(): NewOfferMail
     {
-        $mailTo = Cfg::get('email_admin_mail');
+        $mailTo = (string)Cfg::get('email_admin_mail');
         $offerMail = $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
             ->view('emails.new-offer');
 
@@ -33,6 +33,8 @@ class NewOfferMail extends Mailable
                 ->replyTo($mailTo)
                 ->bcc($mailTo);
         }
+
+        dd($offerMail);
 
         return $offerMail;
     }
