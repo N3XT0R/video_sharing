@@ -77,10 +77,8 @@ class ZipController extends Controller
         if (!is_file($fullPath)) {
             abort(404);
         }
-
-        $isAuthenticated = (bool)Filament::auth()?->check();
-
-        if (false === $isAuthenticated) {
+        
+        if (false === (bool)Filament::auth()?->check()) {
             $assignmentIds = $this->cache->getAssignments($id);
             if ($assignmentIds !== []) {
                 Assignment::query()->whereIn('id', $assignmentIds)->get()->each(
@@ -92,7 +90,7 @@ class ZipController extends Controller
                 );
             }
         }
-        
+
         return response()->download($fullPath, $name)->deleteFileAfterSend();
     }
 }
