@@ -62,7 +62,7 @@ class AssignmentDownloadController extends Controller
             'Content-Disposition' => 'attachment; filename="'.basename($filePath).'"',
         ]);
 
-        if (Filament::auth()?->check() !== true) {
+        if (Filament::auth()?->check() === false) {
             $this->service->markDownloaded($assignment, $req->ip(), $req->userAgent());
         }
 
