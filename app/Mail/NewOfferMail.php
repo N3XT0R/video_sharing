@@ -26,11 +26,12 @@ class NewOfferMail extends Mailable
     {
         $mailTo = Cfg::get('email_admin_mail');
         $offerMail = $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
-            ->replyTo($mailTo)
             ->view('emails.new-offer');
 
         if (!empty($mailTo)) {
-            $offerMail = $offerMail->bcc($mailTo);
+            $offerMail = $offerMail
+                ->replyTo($mailTo)
+                ->bcc($mailTo);
         }
 
         return $offerMail;
