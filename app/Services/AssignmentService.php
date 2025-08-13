@@ -86,7 +86,10 @@ class AssignmentService
          * @var ConfigService $configService
          */
         $configService = app(ConfigService::class);
-        $ttlHours = $configService->get('download_ttl_hours', $ttlHours ?: 144);
+
+        if (null === $ttlHours) {
+            $ttlHours = $configService->get('download_ttl_hours', 144);
+        }
 
 
         $plain = Str::random(40);

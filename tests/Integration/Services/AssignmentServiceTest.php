@@ -183,15 +183,15 @@ class AssignmentServiceTest extends DatabaseTestCase
     public function testPrepareDownloadSetsTokenStatusAndReturnsSignedUrlWithTParam(): void
     {
         // Freeze time so expiry calculations are deterministic
-        \Illuminate\Support\Carbon::setTestNow('2025-08-12 09:00:00');
+        Carbon::setTestNow('2025-08-12 09:00:00');
 
         // Create a queued assignment without expiry or token
-        $assignment = \App\Models\Assignment::factory()
-            ->for(\App\Models\Batch::factory()->type('assign')->finished(), 'batch')
-            ->for(\App\Models\Channel::factory(), 'channel')
-            ->for(\App\Models\Video::factory(), 'video')
+        $assignment = Assignment::factory()
+            ->for(Batch::factory()->type('assign')->finished(), 'batch')
+            ->for(Channel::factory(), 'channel')
+            ->for(Video::factory(), 'video')
             ->create([
-                'status' => \App\Enum\StatusEnum::QUEUED->value,
+                'status' => StatusEnum::QUEUED->value,
                 'expires_at' => null,
                 'download_token' => null,
             ]);
@@ -215,7 +215,7 @@ class AssignmentServiceTest extends DatabaseTestCase
         $this->assertSame(hash('sha256', $qs['t']), $assignment->fresh()->download_token);
 
         // Status transition: QUEUED -> NOTIFIED; last_notified_at must be set
-        $this->assertSame(\App\Enum\StatusEnum::NOTIFIED->value, $assignment->fresh()->status);
+        $this->assertSame(StatusEnum::NOTIFIED->value, $assignment->fresh()->status);
         $this->assertNotNull($assignment->fresh()->last_notified_at);
 
         // Expiry must be exactly now + 24 hours
