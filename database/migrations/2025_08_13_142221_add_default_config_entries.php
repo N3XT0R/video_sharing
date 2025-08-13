@@ -53,7 +53,7 @@ return new class extends Migration {
     public function up(): void
     {
         $entries = $this->getConfigEntries();
-        $timestamp = Carbon::now()->format('Y-m-d H:i:s');;
+        $timestamp = Carbon::now()->format('Y-m-d H:i:s');
         foreach ($entries as $entry) {
             $entry['created_at'] = $timestamp;
             $entry['updated_at'] = $timestamp;
