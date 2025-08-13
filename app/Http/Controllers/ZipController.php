@@ -92,8 +92,7 @@ class ZipController extends Controller
                 );
             }
         }
-
-
+        
         return response()->download($fullPath, $name)->deleteFileAfterSend();
     }
 }
