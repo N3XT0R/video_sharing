@@ -37,7 +37,7 @@ host('prd')
     ->setHostname('example.tld')
     ->set('php_version', '8.4')
     ->setRemoteUser('root')
-    ->set('deploy_path', '/var/www/example.tld/htdocs')
+    ->set('deploy_path', '/var/www/dashclip')
     ->set('ssh_arguments', ['-o AddressFamily=inet6', '-o ConnectTimeout=30'])
     ->set('systemd', [
             'units' => ['php8.4-fpm', 'laravel-reverb'],

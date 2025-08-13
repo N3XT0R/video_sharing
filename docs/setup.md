@@ -55,7 +55,7 @@ Diese Anleitung beschreibt die Installation der Anwendung und die Einrichtung de
    REVERB_HOST=localhost
    REVERB_PORT=8080
    ```
-3. Reverb als systemd-Service einrichten. Beispielkonfiguration in `/etc/systemd/system/reverb.service`:
+3. Reverb als systemd-Service einrichten. Beispielkonfiguration in `/etc/systemd/system/laravel-reverb.service`:
    ```ini
    [Unit]
    Description=Laravel Reverb Server
