@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enum\StatusEnum;
+use App\Facades\Cfg;
 use App\Models\{Assignment, Batch, Channel, Download};
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -82,13 +83,8 @@ class AssignmentService
      */
     public function prepareDownload(Assignment $assignment, ?int $ttlHours = null, bool $skipTracking = false): string
     {
-        /**
-         * @var ConfigService $configService
-         */
-        $configService = app(ConfigService::class);
-
         if (null === $ttlHours) {
-            $ttlHours = $configService->get('download_ttl_hours', 144);
+            $ttlHours = Cfg::get('download_ttl_hours', 144);
         }
 
 
