@@ -1,0 +1,51 @@
+<?php
+
+namespace Deployer;
+
+require 'deploy_laravel_config.php';
+
+// Project
+set('application', 'dashclip-delivery');
+
+// YOUR github PAT in clear text
+set('GITHUB_PAT', '');
+
+// Repository mit PAT in der URL
+set('repository', sprintf(
+    'https://%s@github.com/N3XT0R/video_sharing.git',
+    get('GITHUB_PAT')
+));
+
+set('branch', 'master');
+set('git_tty', true);
+set('keep_releases', 5);
+set('allow_anonymous_stats', false);
+
+// Laravel specifics
+add('shared_files', ['.env']);
+add('shared_dirs', ['storage']);
+add('writable_dirs', ['storage', 'bootstrap/cache']);
+set('writable_mode', 'chmod');
+set('writable_chmod_mode', '0775');
+set('writable_chmod_recursive', true);
+set('http_user', 'www-data');
+set('git_tty', false);
+
+// Hos
+
+host('prd')
+    ->setHostname('example.tld')
+    ->set('php_version', '8.4')
+    ->setRemoteUser('root')
+    ->set('deploy_path', '/var/www/example.tld/htdocs')
+    ->set('ssh_arguments', ['-o AddressFamily=inet6', '-o ConnectTimeout=30'])
+    ->set('systemd', [
+            'units' => ['php8.4-fpm', 'laravel-reverb'],
+            'action' => 'restart',
+            'sudo' => true,
+        ])
+    ->setSshMultiplexing(false);
+
+// Hooks
+after('deploy:failed', 'deploy:unlock');
+after('deploy:cleanup', 'artisan:up');
