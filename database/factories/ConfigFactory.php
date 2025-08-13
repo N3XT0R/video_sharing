@@ -33,6 +33,7 @@ class ConfigFactory extends Factory
                 'feature.flags' => json_encode(['realtimeZip' => true]),
                 default => $this->faker->sentence(),
             },
+            'is_visible' => true,
         ];
     }
 

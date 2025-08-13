@@ -24,11 +24,13 @@ final class ConfigTest extends DatabaseTestCase
         $cfg = Config::query()->create([
             'key' => 'dropbox_refresh_token',
             'value' => 'rt_abc123',
+            'is_visible' => false,
         ])->fresh();
 
         // Assert
         $this->assertSame('dropbox_refresh_token', $cfg->getAttribute('key'));
         $this->assertSame('rt_abc123', $cfg->getAttribute('value'));
+        $this->assertFalse((bool) $cfg->getAttribute('is_visible'));
     }
 
     public function testUniqueKeyConstraintPreventsDuplicates(): void
