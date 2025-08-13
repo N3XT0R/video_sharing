@@ -12,7 +12,7 @@ class ConfigService implements ConfigServiceInterface
     public function get(string $key, mixed $default = null): mixed
     {
         return rescue(
-            fn() => Config::query()->where('key', $key)->value('value') ?? $default,
+            fn() => Config::query()->where('key', $key)->first()?->value ?? $default,
             $default
         );
     }

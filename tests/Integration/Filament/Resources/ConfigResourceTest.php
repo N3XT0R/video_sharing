@@ -63,6 +63,7 @@ final class ConfigResourceTest extends DatabaseTestCase
             ->assertStatus(200)
             ->assertFormSet([
                 'key' => 'site.locale',
+                'cast_type' => 'string',
                 'value' => 'de',
             ])
             ->fillForm([
