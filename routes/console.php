@@ -1,11 +1,9 @@
 <?php
 
 use App\Facades\Cfg;
-use App\Services\Schedule\ScheduleConfigFactory;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use Illuminate\Support\Facades\Schema;
 
 $email = config('mail.log.email');
 
@@ -35,7 +33,3 @@ Schedule::command('assign:expire')
 Schedule::command('dropbox:refresh-token')
     ->everyMinute();
 
-// Dynamische Cronjobs aus Datenbank-Konfiguration
-if (Schema::hasTable('configs')) {
-    app(ScheduleConfigFactory::class)->register(app(\Illuminate\Console\Scheduling\Schedule::class));
-}

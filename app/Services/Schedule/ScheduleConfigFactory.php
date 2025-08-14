@@ -9,7 +9,7 @@ use App\Services\ConfigService;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 
-class ScheduleConfigFactory
+class ScheduleConfigFactory implements ScheduleConfigFactoryInterface
 {
     public function __construct(private ConfigService $configService)
     {
