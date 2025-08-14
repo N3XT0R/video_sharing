@@ -16,6 +16,20 @@ class ScheduleConfigFactory implements ScheduleConfigFactoryInterface
     }
 
     /**
+     * Determine if Composer has finished running to avoid triggering console
+     * bootstrapping during install or update scripts.
+     */
+    public static function composerHasFinished(): bool
+    {
+        if (!app()->runningInConsole()) {
+            return true;
+        }
+
+        return getenv('COMPOSER_BINARY') === false
+            && !str_contains($_SERVER['argv'][0] ?? '', 'composer');
+    }
+
+    /**
      * Register schedule events for all configs within the "schedule" category.
      */
     public function register(Schedule $schedule): void

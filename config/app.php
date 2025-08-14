@@ -125,4 +125,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'aliases' => Illuminate\Support\Facades\Facade::defaultAliases()
+        ->except(['Redis'])
+        ->toArray(),
+
 ];
