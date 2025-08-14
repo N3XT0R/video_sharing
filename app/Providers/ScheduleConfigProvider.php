@@ -27,15 +27,15 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
 
     public function boot(): void
     {
-        try {
+        $this->booted(function () {
             if (!$this->app->runningInConsole() || $this->isComposerPostCmd() || !$this->hasRequiredTables()) {
                 return;
             }
+
             $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
                 $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
             });
-        } catch (\Throwable $e) {
-        }
+        });
     }
 
     public function provides(): array
