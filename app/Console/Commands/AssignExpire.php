@@ -23,7 +23,7 @@ class AssignExpire extends Command
     {
         $cooldownDays = (int)$this->option('cooldown-days');
         if (0 === $cooldownDays) {
-            $cooldownDays = (int)Cfg::get('assign_expire_cooldown_days', 14);
+            $cooldownDays = (int)Cfg::get('assign_expire_cooldown_days', null, 14);
         }
         $expiredCount = $this->expirer->expire($cooldownDays);
         $this->info("Expired: {$expiredCount}");
