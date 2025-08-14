@@ -75,7 +75,7 @@
 
             <p style="margin:0 0 24px 0;">
                 Viele Grüße<br>
-                {{ config('app.name') }} {{Cfg::has('email_your_name')? '/'.Cfg::get('email_your_name', '') : ''}}
+                {{ config('app.name') }} {{Cfg::has('email_your_name')? '/'.Cfg::get('email_your_name', null, '') : ''}}
             </p>
         </td>
     </tr>

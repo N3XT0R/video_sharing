@@ -8,17 +8,31 @@ use App\Support\ConfigCaster;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Validator;
+use App\Models\ConfigCategory;
+use App\Models\ConfigSubSetting;
 
 class Config extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['key', 'value', 'is_visible', 'cast_type'];
+    protected $fillable = ['key', 'value', 'is_visible', 'cast_type', 'config_category_id'];
 
     protected $casts = [
         'is_visible' => 'bool',
     ];
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ConfigCategory::class, 'config_category_id');
+    }
+
+    public function subSettings(): HasMany
+    {
+        return $this->hasMany(ConfigSubSetting::class);
+    }
 
     /**
      * Cast the "value" attribute according to the "cast_type" column.
