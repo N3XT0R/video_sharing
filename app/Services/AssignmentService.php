@@ -84,7 +84,7 @@ class AssignmentService
     public function prepareDownload(Assignment $assignment, ?int $ttlHours = null, bool $skipTracking = false): string
     {
         if (null === $ttlHours) {
-            $ttlHours = Cfg::get('download_ttl_hours', 144);
+            $ttlHours = Cfg::get('download_ttl_hours', null, 144);
         }
 
 

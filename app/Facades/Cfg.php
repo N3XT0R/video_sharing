@@ -8,8 +8,9 @@ use App\Services\Contracts\ConfigServiceInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static mixed get(string $key, mixed $default = null)
+ * @method static mixed get(string $key, ?string $category = null, mixed $default = null)
  * @method static bool has(string $key)
+ * @method static \App\Models\Config set(string $key, mixed $value, ?string $category = null, array $subSettings = [], string $castType = 'string', bool $isVisible = true)
  */
 class Cfg extends Facade
 {
