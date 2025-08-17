@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Services\Contracts\ConfigRepositoryInterface;
+use App\Services\Repository\EloquentConfigRepository;
 use App\Services\Schedule\ScheduleConfigFactory;
 use App\Services\Schedule\ScheduleConfigFactoryInterface;
 use Illuminate\Console\Events\CommandStarting;
@@ -25,6 +27,7 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
     public function register(): void
     {
         parent::register();
+        $this->app->bind(ConfigRepositoryInterface::class, EloquentConfigRepository::class);
         $this->app->singleton(ScheduleConfigFactoryInterface::class, ScheduleConfigFactory::class);
     }
 
