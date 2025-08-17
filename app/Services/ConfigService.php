@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Domain\Config\Contracts\ConfigRepositoryInterface;
 use App\Models\Config;
+use App\Services\Contracts\ConfigRepositoryInterface;
 use App\Services\Contracts\ConfigServiceInterface;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Throwable;
