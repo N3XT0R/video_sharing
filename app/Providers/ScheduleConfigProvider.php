@@ -56,20 +56,17 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
 
     protected function hasRequiredTables(): bool
     {
-        $result = true;
         if ($this->dbIsReachable(config('database.default'))) {
             foreach (self::REQUIRED_TABLES as $table) {
                 $tmpResult = Schema::hasTable($table);
                 if ($tmpResult === false) {
-                    $result = false;
-                    break;
+                    return false;
                 }
             }
+            return true;
         } else {
-            $result = false;
+            return false;
         }
-
-        return $result;
     }
 
 
