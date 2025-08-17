@@ -6,8 +6,10 @@ namespace App\Providers;
 
 use App\Services\Schedule\ScheduleConfigFactory;
 use App\Services\Schedule\ScheduleConfigFactoryInterface;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,14 +29,19 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
 
     public function boot(): void
     {
-        $this->booted(function () {
-            if (!$this->app->runningInConsole() || $this->isComposerPostCmd() || !$this->hasRequiredTables()) {
-                return;
+        if (!$this->app->runningInConsole() || !$this->hasRequiredTables()) {
+            return;
+        }
+
+        Event::listen(CommandStarting::class, function (CommandStarting $e) {
+            $targets = ['schedule:run', 'schedule:list', 'schedule:test', 'schedule:work'];
+
+            if (!in_array($e->command ?? '', $targets, true)) {
+                return; // e.g. ignore package:discover
             }
 
-            $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
-                $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
-            });
+            $schedule = $this->app->make(Schedule::class);
+            $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
         });
     }
 
@@ -54,25 +61,5 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
             }
         }
         return $result;
-    }
-
-    private function isComposerPostCmd(): bool
-    {
-        if (!app()->runningInConsole()) {
-            return false;
-        }
-        $isComposer = getenv('COMPOSER_BINARY') !== false
-            || str_contains($_SERVER['argv'][0] ?? '', 'composer');
-
-        $laravelPostCmds = [
-            'package:discover',
-            'config:cache',
-            'event:cache',
-            'route:cache',
-            'view:cache',
-        ];
-        $isKnownArtisanPostCmd = in_array($_SERVER['argv'][1] ?? '', $laravelPostCmds, true);
-
-        return $isComposer && $isKnownArtisanPostCmd;
     }
 }
