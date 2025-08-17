@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Schedule;
 
 use App\Models\Config;
-use App\Services\ConfigService;
+use App\Services\Contracts\ConfigServiceInterface;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 
 class ScheduleConfigFactory implements ScheduleConfigFactoryInterface
 {
-    public function __construct(private ConfigService $configService)
+    public function __construct(private ConfigServiceInterface $configService)
     {
     }
 
