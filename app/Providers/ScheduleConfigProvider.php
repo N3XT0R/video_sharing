@@ -9,6 +9,7 @@ use App\Services\Schedule\ScheduleConfigFactoryInterface;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -34,10 +35,9 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
         }
 
         Event::listen(CommandStarting::class, function (CommandStarting $e) {
-            $targets = ['schedule:run', 'schedule:list', 'schedule:test', 'schedule:work'];
-
-            if (!in_array($e->command ?? '', $targets, true)) {
-                return; // e.g. ignore package:discover
+            $name = $e->command ?? '';
+            if (!str_starts_with($name, 'schedule:')) {
+                return;
             }
 
             $schedule = $this->app->make(Schedule::class);
@@ -53,13 +53,29 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
     protected function hasRequiredTables(): bool
     {
         $result = true;
-        foreach (self::REQUIRED_TABLES as $table) {
-            $tmpResult = Schema::hasTable($table);
-            if ($tmpResult === false) {
-                $result = false;
-                break;
+        if ($this->dbIsReachable(config('database.default'))) {
+            foreach (self::REQUIRED_TABLES as $table) {
+                $tmpResult = Schema::hasTable($table);
+                if ($tmpResult === false) {
+                    $result = false;
+                    break;
+                }
             }
+        } else {
+            $result = false;
         }
+        
         return $result;
+    }
+
+
+    protected function dbIsReachable(?string $connection = null): bool
+    {
+        try {
+            DB::connection($connection)->getPdo();
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }
