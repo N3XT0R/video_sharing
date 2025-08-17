@@ -71,7 +71,11 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
 
     public function provides(): array
     {
-        return [ScheduleConfigFactoryInterface::class];
+        return [
+            ScheduleConfigFactoryInterface::class,
+            ConfigServiceInterface::class,
+            ConfigRepositoryInterface::class,
+        ];
     }
 
     protected function hasTables(array $tables, ?string $connection = null): bool
