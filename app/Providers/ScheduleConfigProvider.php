@@ -39,10 +39,10 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
              */
             try {
                 $cache = $app['cache']->store();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 $cache = new Repository(new NullStore());
             }
-            
+
             return new ConfigService($cache, $app->get(ConfigRepositoryInterface::class));
         });
         $this->app->singleton(ScheduleConfigFactoryInterface::class, ScheduleConfigFactory::class);
