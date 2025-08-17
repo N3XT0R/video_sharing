@@ -30,18 +30,20 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
 
     public function boot(): void
     {
-        if (!$this->app->runningInConsole() || !$this->hasRequiredTables()) {
-            return;
-        }
-
-        Event::listen(CommandStarting::class, function (CommandStarting $e) {
-            $name = $e->command ?? '';
-            if (!str_starts_with($name, 'schedule:')) {
+        $this->booted(function () {
+            if (!$this->app->runningInConsole() || !$this->hasRequiredTables()) {
                 return;
             }
 
-            $schedule = $this->app->make(Schedule::class);
-            $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
+            Event::listen(CommandStarting::class, function (CommandStarting $e) {
+                $name = $e->command ?? '';
+                if (!str_starts_with($name, 'schedule:')) {
+                    return;
+                }
+
+                $schedule = $this->app->make(Schedule::class);
+                $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
+            });
         });
     }
 
@@ -64,7 +66,7 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
         } else {
             $result = false;
         }
-        
+
         return $result;
     }
 
