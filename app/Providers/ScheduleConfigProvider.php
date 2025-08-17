@@ -12,12 +12,11 @@ use App\Services\Schedule\ScheduleConfigFactory;
 use App\Services\Schedule\ScheduleConfigFactoryInterface;
 use Illuminate\Cache\NullStore;
 use Illuminate\Cache\Repository;
-use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\Container as Application;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -54,7 +53,7 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
             return;
         }
 
-        Event::listen(CommandStarting::class, function (CommandStarting $e) {
+        Artisan::starting(function () {
             $name = $e->command ?? '';
             if (!str_starts_with($name, 'schedule:')) {
                 return;
@@ -64,8 +63,9 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
                 return;
             }
 
-            $schedule = $this->app->make(Schedule::class);
-            $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
+            $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
+                $this->app->make(ScheduleConfigFactoryInterface::class)->register($schedule);
+            });
         });
     }
 
