@@ -40,7 +40,7 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
                 return;
             }
 
-            if (!$this->dbIsReachable() || !$this->hasRequiredTables()) {
+            if (!$this->dbIsReachable() || !$this->hasTables(self::REQUIRED_TABLES)) {
                 return;
             }
 
@@ -54,17 +54,16 @@ class ScheduleConfigProvider extends ServiceProvider implements DeferrableProvid
         return [ScheduleConfigFactoryInterface::class];
     }
 
-    protected function hasRequiredTables(): bool
+    protected function hasTables(array $tables, ?string $connection = null): bool
     {
-        if ($this->dbIsReachable(config('database.default'))) {
-            foreach (self::REQUIRED_TABLES as $table) {
-                $tmpResult = Schema::hasTable($table);
-                if ($tmpResult === false) {
+        try {
+            foreach ($tables as $table) {
+                if (!Schema::connection($connection)->hasTable($table)) {
                     return false;
                 }
             }
             return true;
-        } else {
+        } catch (\Throwable) {
             return false;
         }
     }
