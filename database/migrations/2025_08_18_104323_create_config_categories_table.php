@@ -32,7 +32,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('configs', function (Blueprint $table) {
-            $table->dropColumn('config_category_id');
+            $table->dropConstrainedForeignId('config_category_id');
         });
         Schema::dropIfExists('config_categories');
     }
