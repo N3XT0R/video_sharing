@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\StatusEnum;
 use App\Enum\TypeEnum;
 use App\Models\{Assignment, Batch, ChannelVideoBlock};
 
@@ -17,7 +18,7 @@ class AssignmentExpirer
         $batch = Batch::query()->create(['type' => TypeEnum::ASSIGN->value, 'started_at' => now()]);
         $cnt = 0;
 
-        Assignment::query()->where('status', 'notified')
+        Assignment::query()->where('status', StatusEnum::NOTIFIED->value)
             ->where('expires_at', '<', now())
             ->chunkById(500, function ($items) use (&$cnt, $cooldownDays) {
                 foreach ($items as $a) {
