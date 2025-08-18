@@ -9,7 +9,7 @@ use App\Services\Contracts\ConfigServiceInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static mixed get(string $key, ?string $category = null, mixed $default = null)
+ * @method static mixed get(string $key, ?string $category = null, mixed $default = null, bool $withoutCache = false)
  * @method static Config set(string $key, mixed $value, ?string $category = null, string $castType = 'string', bool $isVisible = true)
  * @method static bool has(string $key, ?string $category = null)
  */
