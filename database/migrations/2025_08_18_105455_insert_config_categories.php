@@ -35,6 +35,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        DB::table('config_categories')->whereIn('key', ['default', 'schedule', 'oauth', 'email'])->delete();
+        DB::table('config_categories')->whereIn('key', ['default', 'oauth', 'email'])->delete();
     }
 };
