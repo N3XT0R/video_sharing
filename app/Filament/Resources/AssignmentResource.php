@@ -65,11 +65,14 @@ class AssignmentResource extends Resource
                         return $video ? VideoResource::getUrl('view', ['record' => $video]) : null;
                     })
                     ->openUrlInNewTab(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->since()
+                    ->sortable(),
                 TextColumn::make('expires_at')
                     ->dateTime()
                     ->since()
                     ->sortable(),
-
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
