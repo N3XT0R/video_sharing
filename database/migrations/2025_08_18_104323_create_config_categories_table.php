@@ -19,7 +19,9 @@ return new class extends Migration {
 
         Schema::table('configs', function (Blueprint $table) {
             $table->foreignId('config_category_id')->after('id')
-                ->nullable()->constrained('config_categories');
+                ->nullable()->constrained('config_categories')
+                ->onDelete('SET NULL')
+                ->onUpdate('CASCADE');
         });
     }
 
