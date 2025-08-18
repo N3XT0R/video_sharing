@@ -14,7 +14,7 @@ class AssignmentExpirer
      */
     public function expire(int $cooldownDays): int
     {
-        $batch = Batch::query()->create(['type' => 'assign', 'started_at' => now()]);
+        $batch = Batch::query()->create(['type' => TypeEnum::ASSIGN->value, 'started_at' => now()]);
         $cnt = 0;
 
         Assignment::query()->where('status', 'notified')
