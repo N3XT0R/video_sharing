@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enum\StatusEnum;
+use App\Facades\Cfg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,5 +39,23 @@ class Assignment extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function setExpiresAt(?int $ttlHours = null): void
+    {
+        if (null === $ttlHours) {
+            $ttlHours = Cfg::get('download_ttl_hours', 144);
+        }
+
+        $expiry = $this->expires_at
+            ? min($this->expires_at, now()->addHours($ttlHours))
+            : now()->addHours($ttlHours);
+        $this->setAttribute('expires_at', $expiry);
+    }
+
+    public function setNotified(): void
+    {
+        $this->setAttribute('status', StatusEnum::NOTIFIED->value);
+        $this->setAttribute('last_notified_at', now());
     }
 }

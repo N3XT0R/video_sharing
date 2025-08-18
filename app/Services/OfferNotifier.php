@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enum\StatusEnum;
 use App\Mail\NewOfferMail;
 use App\Models\{Assignment, Batch, Channel};
+use Carbon\Carbon;
 use Illuminate\Support\Facades\{Mail};
 
 class OfferNotifier
@@ -21,10 +22,13 @@ class OfferNotifier
      *
      * @return array{sent:int,batchId:int}
      */
-    public function notify(int $ttlDays): array
+    public function notify(int $ttlDays, ?Batch $assignBatch = null): array
     {
         $expireDate = now()->addDays($ttlDays);
-        $assignBatch = $this->batchService->getLatestAssignBatch();
+        if (null === $assignBatch) {
+            $assignBatch = $this->batchService->getLatestAssignBatch();
+        }
+
         $channelIds = Assignment::query()->where('batch_id', $assignBatch->getKey())
             ->whereIn('status', StatusEnum::getReadyStatus())
             ->pluck('channel_id')->unique()->values();
@@ -34,13 +38,10 @@ class OfferNotifier
         }
 
         $sent = 0;
-        foreach (Channel::query()->whereIn('id', $channelIds)->get() as $channel) {
-            $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
-            $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
 
-            Mail::to($channel->email)->queue(
-                new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
-            );
+        $channels = Channel::query()->whereIn('id', $channelIds)->get();
+        foreach ($channels as $channel) {
+            $this->notifyChannel($channel, $assignBatch, $expireDate);
             $sent++;
         }
 
@@ -52,6 +53,28 @@ class OfferNotifier
         ]);
 
         return ['sent' => $sent, 'batchId' => $assignBatch->getKey()];
+    }
+
+    public function notifyChannel(Channel $channel, Batch $assignBatch, Carbon $expireDate): void
+    {
+        $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
+        $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
+
+
+        $assignments = Assignment::query()->where('batch_id', $assignBatch->getKey())->get();
+        /**
+         * @var Assignment $assignment
+         */
+        foreach ($assignments as $assignment) {
+            $assignment->setNotified();
+            $assignment->setAttribute('expires_at', $expireDate);
+            $assignment->save();
+        }
+
+
+        Mail::to($channel->getAttribute('email'))->queue(
+            new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
+        );
     }
 }
 
