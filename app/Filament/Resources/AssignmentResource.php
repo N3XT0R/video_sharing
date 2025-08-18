@@ -45,7 +45,7 @@ class AssignmentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('id', 'desc')
             ->columns([
                 TextColumn::make('id')
                     ->sortable(),
