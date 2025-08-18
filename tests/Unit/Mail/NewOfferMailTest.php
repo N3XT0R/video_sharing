@@ -42,6 +42,7 @@ final class NewOfferMailTest extends DatabaseTestCase
         );
 
         $email = Cfg::get('email_admin_mail', 'email');
+        Cfg::set('email_get_bcc_notification', 1, 'email');
 
         // Assert: replyTo and bcc contain the configured log address
         $this->assertTrue($mailable->hasReplyTo($email));
