@@ -52,7 +52,7 @@ class OfferNotifier
         return ['sent' => $sent, 'batchId' => $assignBatch->getKey()];
     }
 
-    protected function notifyChannel(Channel $channel, Batch $assignBatch, Carbon $expireDate): void
+    public function notifyChannel(Channel $channel, Batch $assignBatch, Carbon $expireDate): void
     {
         $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
         $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);

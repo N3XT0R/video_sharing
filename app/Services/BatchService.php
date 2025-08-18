@@ -23,4 +23,26 @@ class BatchService
 
         return $assignBatch;
     }
+
+    public function getAssignBatchById(int $id): Batch
+    {
+        $assignBatch = Batch::query()
+            ->where('type', TypeEnum::ASSIGN->value)
+            ->whereNotNull('finished_at')
+            ->whereKey($id)
+            ->first();
+
+        if (false === $assignBatch instanceof Batch) {
+            throw new RuntimeException('Kein Assign-Batch gefunden.');
+        }
+
+        return $assignBatch;
+    }
+
+    public function resetFinishDate(Batch $batch): bool
+    {
+        if ($batch->getAttribute('type') !== TypeEnum::class->value) {
+            throw new RuntimeException('Kein Assign-Batch.');
+        }
+    }
 }

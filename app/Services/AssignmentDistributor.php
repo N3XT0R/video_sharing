@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\TypeEnum;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -116,7 +117,7 @@ class AssignmentDistributor
     private function startBatch(): Batch
     {
         return Batch::query()->create([
-            'type' => 'assign',
+            'type' => TypeEnum::ASSIGN->value,
             'started_at' => now(),
         ]);
     }
@@ -124,7 +125,7 @@ class AssignmentDistributor
     private function lastFinishedAssignBatch(): ?Batch
     {
         return Batch::query()
-            ->where('type', 'assign')
+            ->where('type', TypeEnum::ASSIGN->value)
             ->whereNotNull('finished_at')
             ->orderByDesc('finished_at') // semantisch korrekter als latest() auf created_at
             ->first();
@@ -149,7 +150,7 @@ class AssignmentDistributor
 
         // Requeue-Fälle (z. B. expired)
         $requeueIds = Assignment::query()
-            ->whereIn('status', self::REQUEUE_STATUSES)
+            ->whereIn('status', TypeEnum::getRequeueStatuses())
             ->pluck('video_id')
             ->unique();
 
