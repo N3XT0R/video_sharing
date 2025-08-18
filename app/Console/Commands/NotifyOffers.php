@@ -24,7 +24,7 @@ class NotifyOffers extends Command
     {
         parent::configureUsingFluentDefinition();
         $option = $this->getDefinition()->getOption('ttl-days');
-        $option->setDefault(Cfg::get('expire_after_days', 'default', 6));
+        $option->setDefault(Cfg::get('expire_after_days', 'default', 6, true));
     }
 
     public function handle(): int
