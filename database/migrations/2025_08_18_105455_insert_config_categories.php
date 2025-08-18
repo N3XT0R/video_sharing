@@ -21,17 +21,17 @@ return new class extends Migration {
         ])->all();
         DB::table('config_categories')->insert($categories);
 
-        $oAuthId = DB::table('config_categories')->where('key', 'oauth')->value('id');
+        $oAuthId = DB::table('config_categories')->where('slug', 'oauth')->value('id');
         DB::table('configs')->where('key', 'dropbox_refresh_token')->update([
             'config_category_id' => $oAuthId,
         ]);
 
-        $emailId = DB::table('config_categories')->where('key', 'email')->value('id');
+        $emailId = DB::table('config_categories')->where('slug', 'email')->value('id');
         DB::table('configs')->whereIn('key', ['email_admin_mail', 'email_your_name'])->update([
             'config_category_id' => $emailId,
         ]);
 
-        $defaultId = DB::table('config_categories')->where('key', 'default')->value('id');
+        $defaultId = DB::table('config_categories')->where('slug', 'default')->value('id');
         DB::table('configs')->whereNull('config_category_id')->update([
             'config_category_id' => $defaultId,
         ]);
@@ -42,6 +42,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        DB::table('config_categories')->whereIn('key', ['default', 'oauth', 'email'])->delete();
+        DB::table('config_categories')->whereIn('slug', ['default', 'oauth', 'email'])->delete();
     }
 };
