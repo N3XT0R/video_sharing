@@ -24,6 +24,7 @@ class AssignmentResource extends Resource
     protected static ?string $navigationGroup = 'Media';
     protected static ?string $modelLabel = 'Assignment';
     protected static ?string $pluralModelLabel = 'Assignments';
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Form $form): Form
     {
