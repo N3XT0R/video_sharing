@@ -76,6 +76,7 @@ final class NewOfferMailTest extends DatabaseTestCase
         // Assert: one NewOfferMail queued to the correct recipient
         Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $mail) use ($channel, $batch) {
             $email = Cfg::get('email_admin_mail', 'email');
+            Cfg::set('email_get_bcc_notification', 1, 'email');
             // Force build so headers are composed
             $mail->build();
 
