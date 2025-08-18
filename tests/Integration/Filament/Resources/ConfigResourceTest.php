@@ -8,6 +8,7 @@ use App\Filament\Resources\ConfigResource\Pages\EditConfig;
 use App\Filament\Resources\ConfigResource\Pages\ListConfigs;
 use App\Models\Config;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\DatabaseTestCase;
 
@@ -33,16 +34,19 @@ final class ConfigResourceTest extends DatabaseTestCase
 
     public function testListConfigsShowsExistingRecords(): void
     {
+        $id = DB::table('config_categories')->where('slug', 'default')->value('id');
         Config::query()->create([
             'key' => 'site.name',
             'value' => 'Dashclip',
             'is_visible' => true,
+            'config_category_id' => $id,
         ]);
 
         Config::query()->create([
             'key' => 'ui.theme',
             'value' => 'light',
             'is_visible' => false,
+            'config_category_id' => $id,
         ]);
 
         Livewire::test(ListConfigs::class)
