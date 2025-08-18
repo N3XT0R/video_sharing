@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Enum\StatusEnum;
 use App\Filament\Resources\AssignmentResource\Pages;
 use App\Models\Assignment;
-use App\Models\Video;
 use App\Services\LinkService;
 use Carbon\Carbon;
 use Filament\Forms;
@@ -16,8 +15,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Log;
 
 class AssignmentResource extends Resource
 {
@@ -58,30 +55,10 @@ class AssignmentResource extends Resource
                     ->label('Channel')
                     ->sortable()
                     ->searchable(),
-
-                // Show related video name if you have it; fallback to ID if not.
-                TextColumn::make('video.original_name')
-                    ->label('Video')
-                    ->toggleable()
-                    ->limit(40)
-                    ->url(function (Assignment $assignment) {
-                        $video = $assignment->video;
-                        return $video ? VideoResource::getUrl('view', ['record' => $video]) : null;
-                    })
-                    ->openUrlInNewTab(),
-
-                TextColumn::make('video.preview_url')
-                    ->label('Preview')
-                    ->formatStateUsing(fn() => 'Open')
-                    ->url(fn(Assignment $assignment
-                    ) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
-                    ->openUrlInNewTab(),
-
                 TextColumn::make('expires_at')
                     ->dateTime()
                     ->since()
                     ->sortable(),
-
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -91,12 +68,10 @@ class AssignmentResource extends Resource
                     ])
                     ->sortable()
                     ->searchable(),
-
                 TextColumn::make('attempts')
                     ->label('Attempts')
                     ->numeric()
                     ->sortable(),
-
                 TextColumn::make('last_notified_at')
                     ->dateTime()
                     ->since()
@@ -140,21 +115,8 @@ class AssignmentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-
-                // Minimal preview: open the video's preview_url if present
-                Tables\Actions\Action::make('preview')
-                    ->label('Open preview')
-                    ->icon('heroicon-m-play')
-                    ->url(function (Assignment $assignment) {
-                        $video = $assignment->video;
-                        return $video ? (string)$video->getAttribute('preview_url') : null;
-                    })
-                    ->visible(fn(Assignment $assignment
-                    ) => $assignment->video && filled($assignment->video->getAttribute('preview_url'))
-                    )
-                    ->openUrlInNewTab(),
                 Tables\Actions\Action::make('offer')
-                    ->label('Offer')
+                    ->label('Open Offer')
                     ->url(fn(Assignment $assignment): ?string => (
                         $assignment->batch && $assignment->channel
                     )
@@ -164,41 +126,6 @@ class AssignmentResource extends Resource
                             Carbon::now()->addDay()
                         )
                         : null)
-                    ->openUrlInNewTab(),
-                // Optional: Download via the video's disk/path using Video::getDisk()
-                Tables\Actions\Action::make('download')
-                    ->label('Download')
-                    ->icon('heroicon-m-arrow-down-tray')
-                    ->url(function (Assignment $assignment) {
-                        /**
-                         * @var Video $video
-                         */
-                        $video = $assignment->video;
-                        if (!$video) {
-                            return null;
-                        }
-
-                        $disk = $video->getDisk();
-                        $path = (string)$video->getAttribute('path');
-                        $ext = (string)$video->getAttribute('ext');
-                        $hash = (string)$video->getAttribute('hash');
-                        $origin = (string)$video->getAttribute('original_name');
-                        $name = $origin !== '' ? $origin : ($hash.($ext !== '' ? '.'.$ext : ''));
-
-                        try {
-                            return $disk->temporaryUrl($path, now()->addMinutes(10), [
-                                'ResponseContentDisposition' => 'attachment; filename="'.$name.'"',
-                            ]);
-                        } catch (\Throwable $e) {
-                            Log::error($e->getMessage(), ['exception' => $e]);
-                            return $disk->url($path);
-                        }
-                    })
-                    ->visible(fn(Assignment $assignment) => $assignment->video &&
-                        filled($assignment->video->getAttribute('path')) &&
-                        filled($assignment->video->getAttribute('disk')) &&
-                        false === App::environment('local')
-                    )
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([]);
