@@ -49,9 +49,43 @@ readonly class ConfigService implements ConfigServiceInterface
         return $config->getAttribute('value') ?? $default;
     }
 
-    public function has(string $key): bool
+    public function has(string $key, ?string $category = null): bool
     {
-        return Config::query()->where('key', $key)->exists();
+        $slug = $category ?: 'default';
+
+        // Cache-first: explicit existence flag
+        try {
+            if ($this->cache->get($this->existsKey($slug, $key), false) === true) {
+                return true;
+            }
+
+            // If the concrete value for this slug/key is cached, we also know it exists
+            $sentinel = new \stdClass();
+            $cached = $this->cache->get($this->cacheKey($slug, $key), $sentinel);
+            if ($cached !== $sentinel) {
+                return true;
+            }
+        } catch (\Throwable) {
+            // Ignore cache errors; we'll fall back to DB.
+        }
+
+        // DB fallback via repository
+        try {
+            $exists = $this->repo->existsByKeyAndCategory($key, $slug);
+            if ($exists) {
+                // Memoize for future calls
+                $this->cache->forever($this->existsKey($slug, $key), true);
+            }
+            return $exists;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /** Build an existence cache key for {category}/{key}. */
+    private function existsKey(string $slug, string $configKey): string
+    {
+        return "configs::exists::{$slug}::{$configKey}";
     }
 
 
@@ -107,6 +141,9 @@ readonly class ConfigService implements ConfigServiceInterface
         $value = $config->getAttribute('value');
         $slug = $config->getAttribute('category')?->getAttribute('slug') ?? self::DEFAULT;
 
+        // Existence memo for cache-first has()
+        $this->cache->forever($this->existsKey($slug, $key), true);
+
         // Store a reverse map for invalidation across category changes
         $this->cache->forever($this->mapKey($key), $slug);
 
@@ -126,8 +163,8 @@ readonly class ConfigService implements ConfigServiceInterface
         $oldSlug = $this->cache->get($this->mapKey($configKey), $newSlug);
 
         foreach (array_unique([$newSlug, $oldSlug]) as $slug) {
-            // Root
             $this->cache->forget($this->cacheKey($slug, $configKey));
+            $this->cache->forget($this->existsKey($slug, $configKey));
         }
 
         // Finally remove the mapping itself

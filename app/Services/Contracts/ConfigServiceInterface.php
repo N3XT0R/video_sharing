@@ -18,5 +18,5 @@ interface ConfigServiceInterface
         bool $isVisible = true
     ): Config;
 
-    public function has(string $key): bool;
+    public function has(string $key, ?string $category = null): bool;
 }

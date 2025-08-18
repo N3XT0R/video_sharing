@@ -18,4 +18,6 @@ interface ConfigRepositoryInterface
         string $castType,
         bool $isVisible
     ): Config;
+
+    public function existsByKeyAndCategory(string $key, ?string $categorySlug): bool;
 }

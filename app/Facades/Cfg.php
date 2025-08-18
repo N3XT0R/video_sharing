@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static mixed get(string $key, ?string $category = null, mixed $default = null)
  * @method static Config set(string $key, mixed $value, ?string $category = null, string $castType = 'string', bool $isVisible = true)
- * @method static bool has(string $key)
+ * @method static bool has(string $key, ?string $category = null)
  */
 class Cfg extends Facade
 {
