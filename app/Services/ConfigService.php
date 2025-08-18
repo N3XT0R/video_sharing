@@ -22,15 +22,18 @@ readonly class ConfigService implements ConfigServiceInterface
     }
 
 
-    public function get(string $key, ?string $category = null, mixed $default = null): mixed
+    public function get(string $key, ?string $category = null, mixed $default = null, bool $withoutCache = false): mixed
     {
         $slug = $category ?: self::DEFAULT;
 
         // 1) Try cache first (sub-key prioritized)
-        $cacheKey = $this->cacheKey($slug, $key);
-        if ($this->cache->has($cacheKey)) {
-            return $this->cache->get($cacheKey);
+        if (false === $withoutCache) {
+            $cacheKey = $this->cacheKey($slug, $key);
+            if ($this->cache->has($cacheKey)) {
+                return $this->cache->get($cacheKey);
+            }
         }
+
 
         // 2) DB fallback (wrapped to avoid leaking infra exceptions)
         try {
@@ -45,7 +48,9 @@ readonly class ConfigService implements ConfigServiceInterface
 
 
         // 3) Warm cache and return value
-        $this->rememberConfig($config);
+        if (false === $withoutCache) {
+            $this->rememberConfig($config);
+        }
         return $config->getAttribute('value') ?? $default;
     }
 

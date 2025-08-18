@@ -8,7 +8,12 @@ use App\Models\Config;
 
 interface ConfigServiceInterface
 {
-    public function get(string $key, ?string $category = null, mixed $default = null): mixed;
+    public function get(
+        string $key,
+        ?string $category = null,
+        mixed $default = null,
+        bool $withoutCache = false
+    ): mixed;
 
     public function set(
         string $key,

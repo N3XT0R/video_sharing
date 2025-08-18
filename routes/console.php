@@ -19,7 +19,7 @@ Schedule::command('weekly:run')
 
 
 Schedule::command('ingest:scan', [
-    '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/'),
+    '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/', true),
 ])->hourly()
     ->emailOutputOnFailure($email);
 
