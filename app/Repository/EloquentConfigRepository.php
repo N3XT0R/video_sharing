@@ -10,9 +10,9 @@ use App\Repository\Contracts\ConfigRepositoryInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder;
 
-class EloquentConfigRepository implements ConfigRepositoryInterface
+readonly class EloquentConfigRepository implements ConfigRepositoryInterface
 {
-    public function __construct(private readonly DatabaseManager $db)
+    public function __construct(private DatabaseManager $db)
     {
     }
 
