@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repository\Contracts\ConfigRepositoryInterface;
+use App\Repository\EloquentConfigRepository;
 use App\Services\ConfigService;
 use App\Services\Contracts\ConfigServiceInterface;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
@@ -21,8 +23,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(ConfigServiceInterface::class, ConfigService::class);
+        $this->registerConfig();
+        $this->registerRefreshTokenProvider();
+    }
 
+    protected function registerConfig(): void
+    {
+        $this->app->bind(ConfigRepositoryInterface::class, EloquentConfigRepository::class);
+        $this->app->bind(ConfigServiceInterface::class, ConfigService::class);
+    }
+
+    protected function registerRefreshTokenProvider(): void
+    {
         $this->app->singleton(AutoRefreshTokenProvider::class, function (Application $app) {
             $cfg = config('filesystems.disks.dropbox');
             /**
@@ -46,12 +58,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Storage::extend('dropbox', function ($app, $config) {
             $client = new DropboxClient(app(AutoRefreshTokenProvider::class));
-            $root = trim((string)($config['root'] ?? ''), '/'); // <— neu
+            $root = trim((string)($config['root'] ?? ''), '/');
             $adapter = new DropboxAdapter($client, $root);
 
             $filesystem = new Filesystem($adapter);
-
-            // Für Laravel 11/12 funktioniert diese Signatur:
             return new FilesystemAdapter($filesystem, $adapter, $config);
         });
     }

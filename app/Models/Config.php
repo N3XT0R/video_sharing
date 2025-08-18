@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Config\Category;
 use App\Support\ConfigCaster;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Validator;
 
 class Config extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['key', 'value', 'is_visible', 'cast_type'];
+    protected $fillable = ['key', 'value', 'is_visible', 'cast_type', 'config_category_id'];
 
     protected $casts = [
         'is_visible' => 'bool',
@@ -56,5 +58,10 @@ class Config extends Model
             // Normalize to storage representation (strings for scalars, JSON string for arrays)
             $config->attributes['value'] = ConfigCaster::toStorage($type, $raw);
         });
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'id', 'config_category_id');
     }
 }
