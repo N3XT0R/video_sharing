@@ -12,6 +12,8 @@ class Category extends Model
 {
     protected $table = 'config_categories';
 
+    protected $fillable = ['name'];
+
     public function configs(): HasMany
     {
         return $this->hasMany(Config::class, 'config_category_id');
