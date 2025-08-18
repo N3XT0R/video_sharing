@@ -4,13 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\BatchResource\Pages;
 use App\Filament\Resources\BatchResource\RelationManagers\AssignmentsRelationManager;
-use App\Filament\Resources\BatchResource\RelationManagers\ClipsRelationManager;
 use App\Filament\Resources\BatchResource\RelationManagers\ChannelsRelationManager;
+use App\Filament\Resources\BatchResource\RelationManagers\ClipsRelationManager;
 use App\Models\Batch;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -40,6 +39,12 @@ class BatchResource extends Resource
             ->columns([
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('type')->badge()->sortable(),
+                TextColumn::make('stats')->formatStateUsing(function (Batch $record) {
+                    return collect($record->getAttribute('stats') ?? [])
+                        ->map(fn($val, $key) => $key.': '.$val)
+                        ->values()
+                        ->all();
+                })->listWithLineBreaks(),
                 TextColumn::make('started_at')->dateTime()->since()->sortable(),
                 TextColumn::make('finished_at')->dateTime()->since()->sortable()->toggleable(),
                 TextColumn::make('assignments_count')

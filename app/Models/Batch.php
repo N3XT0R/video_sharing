@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 /**
  * @property array<string,mixed>|null $stats
  */
-
 class Batch extends Model
 {
     use HasFactory;
@@ -31,10 +30,10 @@ class Batch extends Model
         return $this->hasManyThrough(
             Clip::class,
             Assignment::class,
-            'batch_id', // Foreign key on assignments table
-            'video_id', // Foreign key on clips table
-            'id',       // Local key on batches table
-            'video_id'  // Local key on assignments table
+            'batch_id',
+            'video_id',
+            'id',
+            'video_id'
         );
     }
 
