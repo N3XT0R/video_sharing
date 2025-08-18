@@ -247,7 +247,7 @@ class AssignmentServiceTest extends DatabaseTestCase
                 'expires_at' => $existingExpiry,
             ]);
 
-        $url = app(AssignmentService::class)->prepareDownload($assignment, 24);
+        $url = app(AssignmentService::class)->prepareDownload($assignment);
 
         $parts = parse_url($url);
         parse_str($parts['query'] ?? '', $qs);

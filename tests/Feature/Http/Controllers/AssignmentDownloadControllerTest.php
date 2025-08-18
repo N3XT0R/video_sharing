@@ -187,7 +187,7 @@ final class AssignmentDownloadControllerTest extends DatabaseTestCase
 
         /** @var AssignmentService $svc */
         $svc = app(AssignmentService::class);
-        $url = $svc->prepareDownload($assignment, 2); // +2h, returns signed URL incl. 't'
+        $url = $svc->prepareDownload($assignment, 2); // +2d, returns signed URL incl. 't'
 
         // Act: perform the download request
         $resp = $this->withHeaders(['User-Agent' => 'PHPUnit'])
