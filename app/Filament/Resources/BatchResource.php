@@ -40,11 +40,18 @@ class BatchResource extends Resource
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('type')->badge()->sortable(),
                 TextColumn::make('stats')->formatStateUsing(function (Batch $record) {
-                    return collect($record->getAttribute('stats') ?? [])
-                        ->map(fn($val, $key) => $key.': '.$val)
-                        ->values()
-                        ->all();
-                })->listWithLineBreaks(),
+                    $stats = (array)($record->getAttribute('stats') ?? []);
+                    $lines = collect($stats)->map(function ($val, $key) {
+                        if (is_bool($val)) {
+                            $val = $val ? 'true' : 'false';
+                        }
+                        if ($val === null) {
+                            $val = 'null';
+                        }
+                        return $key.': '.(string)$val;
+                    })->implode(', ');
+                    return $lines;
+                }),
                 TextColumn::make('started_at')->dateTime()->since()->sortable(),
                 TextColumn::make('finished_at')->dateTime()->since()->sortable()->toggleable(),
                 TextColumn::make('assignments_count')
