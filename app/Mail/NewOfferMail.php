@@ -25,12 +25,12 @@ class NewOfferMail extends Mailable
     public function build(): NewOfferMail
     {
         $mailTo = (string)Cfg::get('email_admin_mail', 'email');
+        $notification = (bool)Cfg::get('email_get_bcc_notification', 'email');
         $offerMail = $this->subject('Neue Videos verfügbar – Batch #'.$this->batch->getKey())
             ->view('emails.new-offer');
 
-        if (!empty($mailTo)) {
+        if (true === $notification && !empty($mailTo)) {
             $offerMail = $offerMail
-                ->replyTo($mailTo)
                 ->bcc($mailTo);
         }
 
