@@ -55,10 +55,22 @@ class AssignmentResource extends Resource
                     ->label('Channel')
                     ->sortable()
                     ->searchable(),
+
+                // Show related video name if you have it; fallback to ID if not.
+                TextColumn::make('video.original_name')
+                    ->label('Video')
+                    ->toggleable()
+                    ->limit(40)
+                    ->url(function (Assignment $assignment) {
+                        $video = $assignment->video;
+                        return $video ? VideoResource::getUrl('view', ['record' => $video]) : null;
+                    })
+                    ->openUrlInNewTab(),
                 TextColumn::make('expires_at')
                     ->dateTime()
                     ->since()
                     ->sortable(),
+
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -68,10 +80,12 @@ class AssignmentResource extends Resource
                     ])
                     ->sortable()
                     ->searchable(),
+
                 TextColumn::make('attempts')
                     ->label('Attempts')
                     ->numeric()
                     ->sortable(),
+
                 TextColumn::make('last_notified_at')
                     ->dateTime()
                     ->since()
