@@ -57,6 +57,18 @@ class OfferNotifier
         $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
         $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
 
+
+        $assignments = Assignment::query()->where('batch_id', $assignBatch->getKey())->get();
+        /**
+         * @var Assignment $assignment
+         */
+        foreach ($assignments as $assignment) {
+            $assignment->setNotified();
+            $assignment->setExpiresAt();
+            $assignment->save();
+        }
+
+
         Mail::to($channel->getAttribute('email'))->queue(
             new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
         );
