@@ -22,10 +22,13 @@ class OfferNotifier
      *
      * @return array{sent:int,batchId:int}
      */
-    public function notify(int $ttlDays): array
+    public function notify(int $ttlDays, ?Batch $assignBatch = null): array
     {
         $expireDate = now()->addDays($ttlDays);
-        $assignBatch = $this->batchService->getLatestAssignBatch();
+        if (null === $assignBatch) {
+            $assignBatch = $this->batchService->getLatestAssignBatch();
+        }
+
         $channelIds = Assignment::query()->where('batch_id', $assignBatch->getKey())
             ->whereIn('status', StatusEnum::getReadyStatus())
             ->pluck('channel_id')->unique()->values();
