@@ -27,19 +27,18 @@ class AssignmentResource extends Resource
 
     public static function form(Form $form): Form
     {
-        // Read-only form for the "view" page
         return $form->schema([
             Forms\Components\Group::make()->schema([
                 Forms\Components\TextInput::make('id')->disabled(),
                 Forms\Components\TextInput::make('status')->disabled(),
-                Forms\Components\TextInput::make('video_id')->disabled(),
-                Forms\Components\TextInput::make('channel_id')->disabled(),
+                Forms\Components\Select::make('video')->relationship('video', 'original_name')->disabled(),
+                Forms\Components\Select::make('channel')->relationship('channel', 'name')->disabled(),
                 Forms\Components\TextInput::make('batch_id')->disabled(),
                 Forms\Components\TextInput::make('attempts')->numeric()->disabled(),
                 Forms\Components\DateTimePicker::make('expires_at')->disabled(),
                 Forms\Components\DateTimePicker::make('last_notified_at')->disabled(),
                 Forms\Components\TextInput::make('download_token')->disabled()->columnSpanFull(),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
         ]);
     }
 
@@ -91,11 +90,6 @@ class AssignmentResource extends Resource
                     ->since()
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('download_token')
-                    ->label('Token')
-                    ->copyable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->since()
