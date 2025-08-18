@@ -41,7 +41,7 @@ final class NewOfferMailTest extends DatabaseTestCase
             $mailable->subject
         );
 
-        $email = Cfg::get('email_admin_mail');
+        $email = Cfg::get('email_admin_mail', 'email');
 
         // Assert: replyTo and bcc contain the configured log address
         $this->assertTrue($mailable->hasReplyTo($email));
@@ -75,7 +75,7 @@ final class NewOfferMailTest extends DatabaseTestCase
 
         // Assert: one NewOfferMail queued to the correct recipient
         Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $mail) use ($channel, $batch) {
-            $email = Cfg::get('email_admin_mail');
+            $email = Cfg::get('email_admin_mail', 'email');
             // Force build so headers are composed
             $mail->build();
 

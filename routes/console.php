@@ -18,13 +18,11 @@ Schedule::command('weekly:run')
     ->emailOutputTo($email);
 
 
-// video-Import aus Upload-Ordner – alle 30 Minuten
 Schedule::command('ingest:scan', [
-    '--inbox' => Cfg::get('ingest_inbox_absolute_path', '/srv/ingest/pending/'),
+    '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/'),
 ])->hourly()
     ->emailOutputOnFailure($email);
 
-// Abgelaufene Offers aufräumen – täglich 03:00
 Schedule::command('assign:expire')
     ->dailyAt('03:00');
 

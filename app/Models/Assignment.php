@@ -44,7 +44,7 @@ class Assignment extends Model
     public function setExpiresAt(?int $ttlHours = null): void
     {
         if (null === $ttlHours) {
-            $ttlHours = Cfg::get('download_ttl_hours', 144);
+            $ttlHours = Cfg::get('download_ttl_hours', 'default', 144);
         }
 
         $expiry = $this->expires_at

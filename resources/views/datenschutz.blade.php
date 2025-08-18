@@ -66,7 +66,7 @@
                 steht Ihnen ein Widerspruchsrecht gegen die Verarbeitung sowie das Recht auf Datenübertragbarkeit zu.
                 Hierzu und zu weiteren
                 Fragen können Sie sich jederzeit per E-Mail an <a
-                        href="mailto:{{Cfg::get('email_admin_mail')}}">{{Cfg::get('email_admin_mail')}}</a>
+                        href="mailto:{{Cfg::get('email_admin_mail', 'email')}}">{{Cfg::get('email_admin_mail', 'email')}}</a>
                 wenden.</p>
         </section>
 
