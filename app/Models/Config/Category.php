@@ -12,7 +12,11 @@ class Category extends Model
 {
     protected $table = 'config_categories';
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'is_visible'];
+
+    protected $casts = [
+        'is_visible' => 'bool',
+    ];
 
     public function configs(): HasMany
     {
