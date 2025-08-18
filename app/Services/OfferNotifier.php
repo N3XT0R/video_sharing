@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enum\StatusEnum;
 use App\Mail\NewOfferMail;
 use App\Models\{Assignment, Batch, Channel};
+use Carbon\Carbon;
 use Illuminate\Support\Facades\{Mail};
 
 class OfferNotifier
@@ -34,13 +35,10 @@ class OfferNotifier
         }
 
         $sent = 0;
-        foreach (Channel::query()->whereIn('id', $channelIds)->get() as $channel) {
-            $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
-            $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
 
-            Mail::to($channel->email)->queue(
-                new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
-            );
+        $channels = Channel::query()->whereIn('id', $channelIds)->get();
+        foreach ($channels as $channel) {
+            $this->notifyChannel($channel, $assignBatch, $expireDate);
             $sent++;
         }
 
@@ -52,6 +50,16 @@ class OfferNotifier
         ]);
 
         return ['sent' => $sent, 'batchId' => $assignBatch->getKey()];
+    }
+
+    protected function notifyChannel(Channel $channel, Batch $assignBatch, Carbon $expireDate): void
+    {
+        $offerUrl = $this->linkService->getOfferUrl($assignBatch, $channel, $expireDate);
+        $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
+
+        Mail::to($channel->getAttribute('email'))->queue(
+            new NewOfferMail($assignBatch, $channel, $offerUrl, $expireDate, $unusedUrl)
+        );
     }
 }
 
