@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-08-19
+
+### Added
+
+- Settings are now grouped into categories and cached for faster access.
+- New "Batches" page in the admin area shows videos, channels and offers together.
+- All expiration times for links now follow one consistent rule.
+
+### Changed
+
+- The way the app reads settings has changed. If you have custom tools that fetch settings, they may need updates.
+
 ## [1.2.1] - 2025-08-18
 
 ### Fixed
