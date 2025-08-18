@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Facades\Cfg;
 use App\Models\Batch;
 use App\Services\OfferNotifier;
 use Illuminate\Console\Command;
@@ -11,12 +12,19 @@ use RuntimeException;
 
 class NotifyOffers extends Command
 {
-    protected $signature = 'notify:offers {--ttl-days=6} {--assign-batch=}';
+    protected $signature = 'notify:offers {--ttl-days=} {--assign-batch=}';
     protected $description = 'Sendet je Kanal einen Offer-Link (Übersicht + ZIP).';
 
     public function __construct(private OfferNotifier $notifier)
     {
         parent::__construct();
+    }
+
+    protected function configureUsingFluentDefinition(): void
+    {
+        parent::configureUsingFluentDefinition();
+        $option = $this->getDefinition()->getOption('ttl-days');
+        $option->setDefault(Cfg::get('expire_after_days', 'default', 6));
     }
 
     public function handle(): int
