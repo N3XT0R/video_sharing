@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\StatusEnum;
 use App\Enum\TypeEnum;
 use App\Models\Assignment;
 use App\Models\Batch;
@@ -86,7 +87,7 @@ class AssignmentDistributor
                     'video_id' => $video->getKey(),
                     'channel_id' => $target->getKey(),
                     'batch_id' => $batch->getKey(),
-                    'status' => 'queued',
+                    'status' => StatusEnum::QUEUED->value,
                 ]);
 
                 // Für Folgerunden merken, dass dieses Video diesem Kanal nun zugeordnet ist
