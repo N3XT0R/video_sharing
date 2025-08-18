@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
             return new AutoRefreshTokenProvider(
                 (string)($cfg['client_id'] ?: ''),
                 (string)($cfg['client_secret'] ?: ''),
-                $configService->get(key: 'dropbox_refresh_token', withoutCache: true),
+                $configService->get(key: 'dropbox_refresh_token', category: 'oauth', withoutCache: true),
                 Cache::store()
             );
         });
