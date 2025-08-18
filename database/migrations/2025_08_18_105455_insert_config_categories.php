@@ -30,6 +30,11 @@ return new class extends Migration {
         DB::table('configs')->whereIn('key', ['email_admin_mail', 'email_your_name'])->update([
             'config_category_id' => $emailId,
         ]);
+
+        $defaultId = DB::table('config_categories')->where('key', 'default')->value('id');
+        DB::table('configs')->whereNull('config_category_id')->update([
+            'config_category_id' => $defaultId,
+        ]);
     }
 
     /**
