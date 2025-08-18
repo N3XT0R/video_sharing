@@ -67,7 +67,7 @@ class OfferNotifier
          */
         foreach ($assignments as $assignment) {
             $assignment->setNotified();
-            $assignment->setExpiresAt();
+            $assignment->setAttribute('expires_at', $expireDate);
             $assignment->save();
         }
 
