@@ -13,6 +13,8 @@ use Throwable;
 readonly class ConfigService implements ConfigServiceInterface
 {
 
+    private const string DEFAULT = 'default';
+
     public function __construct(
         private Cache $cache,
         private ConfigRepositoryInterface $repo
@@ -22,7 +24,7 @@ readonly class ConfigService implements ConfigServiceInterface
 
     public function get(string $key, ?string $category = null, mixed $default = null): mixed
     {
-        $slug = $category ?: 'default';
+        $slug = $category ?: self::DEFAULT;
 
         // 1) Try cache first (sub-key prioritized)
         $cacheKey = $this->cacheKey($slug, $key);
@@ -103,7 +105,7 @@ readonly class ConfigService implements ConfigServiceInterface
     {
         $key = $config->getAttribute('key');
         $value = $config->getAttribute('value');
-        $slug = $config->getAttribute('category')?->getAttribute('slug') ?? 'default';
+        $slug = $config->getAttribute('category')?->getAttribute('slug') ?? self::DEFAULT;
 
         // Store a reverse map for invalidation across category changes
         $this->cache->forever($this->mapKey($key), $slug);
@@ -120,7 +122,7 @@ readonly class ConfigService implements ConfigServiceInterface
     private function forgetConfig(Config $config): void
     {
         $configKey = $config->getAttribute('key');
-        $newSlug = $config->category?->getAttribute('slug') ?? 'default';
+        $newSlug = $config->category?->getAttribute('slug') ?? self::DEFAULT;
         $oldSlug = $this->cache->get($this->mapKey($configKey), $newSlug);
 
         foreach (array_unique([$newSlug, $oldSlug]) as $slug) {
