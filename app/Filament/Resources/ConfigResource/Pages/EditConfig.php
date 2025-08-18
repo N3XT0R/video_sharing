@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ConfigResource\Pages;
 
 use App\Filament\Resources\ConfigResource;
+use App\Services\ConfigService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +24,12 @@ class EditConfig extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         try {
-            $record->update($data);
+            //reset cache & update entry
+            app(ConfigService::class)->set(
+                $record->getAttribute('key'),
+                $data['value'],
+                $record->getAttribute('category')?->getAttribute('slug')
+            );
         } catch (ValidationException $e) {
             Notification::make()
                 ->title('Speichern fehlgeschlagen')
