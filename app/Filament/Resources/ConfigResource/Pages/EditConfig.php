@@ -28,7 +28,9 @@ class EditConfig extends EditRecord
             app(ConfigService::class)->set(
                 $record->getAttribute('key'),
                 $data['value'],
-                $record->getAttribute('category')?->getAttribute('slug')
+                $record->getAttribute('category')?->getAttribute('slug'),
+                $record->getAttribute('cast_type'),
+                $record->getAttribute('is_visible')
             );
         } catch (ValidationException $e) {
             Notification::make()

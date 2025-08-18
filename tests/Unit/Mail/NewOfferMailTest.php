@@ -29,8 +29,7 @@ final class NewOfferMailTest extends DatabaseTestCase
         $unusedUrl = 'https://example.test/unused';
         $expiresAt = Carbon::parse('2025-08-20 12:00:00');
 
-        // Force mail.log.email so build() uses a deterministic address
-        config()->set('mail.log.email', 'log@example.test');
+        Cfg::set('email_get_bcc_notification', 1, 'email', 'bool');
 
         // Act: build the mailable (no actual send)
         $mailable = (new NewOfferMail($batch, $channel, $offerUrl, $expiresAt, $unusedUrl))->build();
@@ -42,7 +41,7 @@ final class NewOfferMailTest extends DatabaseTestCase
         );
 
         $email = Cfg::get('email_admin_mail', 'email');
-        Cfg::set('email_get_bcc_notification', 1, 'email');
+
 
         // Assert: replyTo and bcc contain the configured log address
         $this->assertTrue($mailable->hasBcc($email));
@@ -76,7 +75,7 @@ final class NewOfferMailTest extends DatabaseTestCase
         // Assert: one NewOfferMail queued to the correct recipient
         Mail::assertQueued(NewOfferMail::class, function (NewOfferMail $mail) use ($channel, $batch) {
             $email = Cfg::get('email_admin_mail', 'email');
-            Cfg::set('email_get_bcc_notification', 1, 'email');
+            Cfg::set('email_get_bcc_notification', 1, 'email', 'bool');
             // Force build so headers are composed
             $mail->build();
 
