@@ -62,6 +62,6 @@ class Config extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'id', 'config_category_id');
+        return $this->belongsTo(Category::class, 'config_category_id');
     }
 }
