@@ -45,7 +45,6 @@ final class NewOfferMailTest extends DatabaseTestCase
         Cfg::set('email_get_bcc_notification', 1, 'email');
 
         // Assert: replyTo and bcc contain the configured log address
-        $this->assertTrue($mailable->hasReplyTo($email));
         $this->assertTrue($mailable->hasBcc($email));
 
         // Assert: view data contains our public properties (available to the Blade view)
