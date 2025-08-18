@@ -3,6 +3,7 @@
 use Carbon\Carbon;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 return new class extends Migration {
     /**
@@ -11,9 +12,10 @@ return new class extends Migration {
     public function up(): void
     {
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
-        $categories = collect(['default', 'oauth', 'email'])->map(fn($key) => [
-            'key' => $key,
-            'is_visible' => $key !== 'oauth',
+        $categories = collect(['default', 'oauth', 'email'])->map(fn($name) => [
+            'slug' => Str::slug($name),
+            'name' => $name,
+            'is_visible' => $name !== 'oauth',
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ])->all();
