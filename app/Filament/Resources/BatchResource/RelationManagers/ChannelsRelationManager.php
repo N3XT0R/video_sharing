@@ -7,6 +7,7 @@ use App\Services\LinkService;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ChannelsRelationManager extends RelationManager
 {
@@ -28,6 +29,9 @@ class ChannelsRelationManager extends RelationManager
         };
 
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->select('channels.*')->distinct();
+            })
             ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
@@ -35,15 +39,17 @@ class ChannelsRelationManager extends RelationManager
                     ->label('Channel')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('offer_link')
-                    ->label('Link')
-                    ->getStateUsing($linkCallback)
-                    ->url($linkCallback)
-                    ->copyable()
-                    ->openUrlInNewTab(),
+                Tables\Columns\TextColumn::make('assignments_count')
+                    ->counts('assignments')
+                    ->label('Assignments'),
             ])
             ->headerActions([])
-            ->actions([])
+            ->actions([
+                Tables\Actions\Action::make('offer_link')
+                    ->label('Open Offer')
+                    ->url($linkCallback)
+                    ->openUrlInNewTab(),
+            ])
             ->bulkActions([]);
     }
 }
