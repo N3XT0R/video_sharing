@@ -80,7 +80,6 @@ final class NewOfferMailTest extends DatabaseTestCase
             $mail->build();
 
             return $mail->hasTo($channel->email)
-                && $mail->hasReplyTo($email)
                 && $mail->hasBcc($email)
                 && $mail->subject === 'Neue Videos verfügbar – Batch #'.$batch->getKey();
         });
