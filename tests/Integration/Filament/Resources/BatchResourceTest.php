@@ -6,14 +6,14 @@ namespace Tests\Integration\Filament\Resources;
 
 use App\Filament\Resources\BatchResource\Pages\ListBatches;
 use App\Filament\Resources\BatchResource\Pages\ViewBatch;
+use App\Filament\Resources\BatchResource\RelationManagers\ChannelsRelationManager;
 use App\Models\Assignment;
 use App\Models\Batch;
-use App\Models\Clip;
 use App\Models\Channel;
+use App\Models\Clip;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\LinkService;
-use App\Filament\Resources\BatchResource\RelationManagers\ChannelsRelationManager;
 use Livewire\Livewire;
 use Tests\DatabaseTestCase;
 
@@ -76,6 +76,6 @@ final class BatchResourceTest extends DatabaseTestCase
             'pageClass' => ViewBatch::class,
         ])
             ->assertCanSeeTableRecords([$channel])
-            ->assertSee($link);
+            ->assertActionHasUrl('offer_link', $link);
     }
 }
