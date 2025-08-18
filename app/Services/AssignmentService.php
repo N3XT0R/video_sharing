@@ -80,7 +80,7 @@ class AssignmentService
     /**
      * Prepare an assignment for download and return a temporary URL.
      */
-    public function prepareDownload(Assignment $assignment, ?int $ttlHours = null, bool $skipTracking = false): string
+    public function prepareDownload(Assignment $assignment, ?int $ttlDays = null, bool $skipTracking = false): string
     {
         $plain = Str::random(40);
         $expiry = $assignment->getAttribute('expires_at');
@@ -93,7 +93,7 @@ class AssignmentService
         if (false === $skipTracking) {
             $assignment->download_token = hash('sha256', $plain);
             if (null === $expiry) {
-                $assignment->setExpiresAt($ttlHours);
+                $assignment->setExpiresAt($ttlDays);
                 $expiry = $assignment->getAttribute('expires_at');
             }
         }

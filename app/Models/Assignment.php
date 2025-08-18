@@ -41,15 +41,15 @@ class Assignment extends Model
         return $this->belongsTo(Batch::class);
     }
 
-    public function setExpiresAt(?int $ttlHours = null): void
+    public function setExpiresAt(?int $ttlDays = null): void
     {
-        if (null === $ttlHours) {
-            $ttlHours = Cfg::get('expire_after_days', 'default', 6);
+        if (null === $ttlDays) {
+            $ttlDays = Cfg::get('expire_after_days', 'default', 6);
         }
 
         $expiry = $this->expires_at
-            ? min($this->expires_at, now()->addDays($ttlHours))
-            : now()->addDays($ttlHours);
+            ? min($this->expires_at, now()->addDays($ttlDays))
+            : now()->addDays($ttlDays);
         $this->setAttribute('expires_at', $expiry);
     }
 

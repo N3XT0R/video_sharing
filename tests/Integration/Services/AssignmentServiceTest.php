@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration\Services;
 
 use App\Enum\StatusEnum;
+use App\Facades\Cfg;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -196,8 +197,10 @@ class AssignmentServiceTest extends DatabaseTestCase
                 'download_token' => null,
             ]);
 
+        $ttlDays = Cfg::get('expire_after_days', 'default', 6);
+
         // Act: prepare for download with TTL = 24 hours
-        $url = app(AssignmentService::class)->prepareDownload($assignment, 24);
+        $url = app(AssignmentService::class)->prepareDownload($assignment, $ttlDays);
 
         // Parse the signed URL into path + query components
         $parts = parse_url($url);
@@ -218,8 +221,8 @@ class AssignmentServiceTest extends DatabaseTestCase
         $this->assertSame(StatusEnum::NOTIFIED->value, $assignment->fresh()->status);
         $this->assertNotNull($assignment->fresh()->last_notified_at);
 
-        // Expiry must be exactly now + 24 hours
-        $this->assertTrue($assignment->fresh()->expires_at->equalTo(now()->addHours(24)));
+        // Expiry must be exactly now + Cfg value
+        $this->assertTrue($assignment->fresh()->expires_at->equalTo(now()->addDays($ttlDays)));
 
         // verify the signature is valid for the generated URL
         $this->assertTrue(URL::hasValidSignature(
