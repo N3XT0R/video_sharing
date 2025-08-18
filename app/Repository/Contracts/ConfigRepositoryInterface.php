@@ -20,4 +20,6 @@ interface ConfigRepositoryInterface
     ): Config;
 
     public function existsByKeyAndCategory(string $key, ?string $categorySlug): bool;
+
+    public function deleteByKeyAndCategory(string $key, ?string $categorySlug): int;
 }

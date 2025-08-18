@@ -119,6 +119,66 @@ readonly class ConfigService implements ConfigServiceInterface
         return $config;
     }
 
+    /**
+     * Delete a config by key and optional category.
+     * Returns true if at least one row was deleted.
+     */
+    public function delete(string $key, ?string $category = null): bool
+    {
+        $slug = $category ?: self::DEFAULT;
+
+        // Try to load once for precise cache invalidation (safe guarded)
+        $config = null;
+        try {
+            $config = $this->repo->findByKeyAndCategory($key, $slug);
+        } catch (\Throwable) {
+            // ignore; we'll still attempt deletion and cache cleanup using map
+        }
+
+        // Invalidate caches optimistically (before delete to avoid race)
+        if ($config) {
+            $this->forgetConfig($config);
+        } else {
+            $this->forgetByKeyWithSlugGuess($key, $slug);
+        }
+
+        // Delete in repository
+        try {
+            $affected = $this->repo->deleteByKeyAndCategory($key, $slug);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        // Ensure reverse map is gone after deletion
+        $this->cache->forget($this->mapKey($key));
+
+        return $affected > 0;
+    }
+
+
+    /**
+     * Forget caches for a key using either the hinted slug or the mapped last-known slug.
+     * This is used when we don't have a hydrated model instance.
+     */
+    private function forgetByKeyWithSlugGuess(string $key, string $hintSlug): void
+    {
+        try {
+            $mapped = $this->cache->get($this->mapKey($key));
+            $slugs = array_values(array_unique(array_filter([$hintSlug, is_string($mapped) ? $mapped : null])));
+            if ($slugs === []) {
+                $slugs = [$hintSlug]; // fall back to hint
+            }
+
+            foreach ($slugs as $slug) {
+                $this->cache->forget($this->cacheKey($slug, $key));
+            }
+
+            $this->cache->forget($this->mapKey($key));
+        } catch (\Throwable) {
+            // ignore cache errors
+        }
+    }
+
 
     /**
      * Build a cache key for {category}/{key}.

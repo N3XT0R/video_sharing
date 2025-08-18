@@ -59,6 +59,12 @@ readonly class EloquentConfigRepository implements ConfigRepositoryInterface
         return $this->queryForKeyAndCategory($key, $categorySlug)->exists();
     }
 
+    public function deleteByKeyAndCategory(string $key, ?string $categorySlug): int
+    {
+        // Fast path: single SQL DELETE (bypasses model events)
+        return $this->queryForKeyAndCategory($key, $categorySlug)->delete();
+    }
+
     /**
      * Build the base query for a given config key and category semantics.
      *
