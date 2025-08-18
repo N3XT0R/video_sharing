@@ -13,13 +13,13 @@ return new class extends Migration {
     public function up(): void
     {
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
-        $defaultId = DB::table('config_categories')->where('slug', 'default')->value('id');
+        $id = DB::table('config_categories')->where('slug', 'email')->value('id');
         DB::table('configs')
             ->insert([
                 'key' => 'email_get_bcc_notification',
                 'value' => 1,
                 'cast_type' => 'bool',
-                'config_category_id' => $defaultId,
+                'config_category_id' => $id,
                 'created_at' => $timestamp,
                 'updated_at' => $timestamp,
                 'is_visible' => 1,
