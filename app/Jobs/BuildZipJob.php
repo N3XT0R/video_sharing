@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Batch;
 use App\Models\Channel;
-use App\Services\{AssignmentService, ZipService};
+use App\Services\{AssignmentService, Zip\ZipService};
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

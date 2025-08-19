@@ -10,7 +10,7 @@ use App\Models\Channel;
 use App\Models\Video;
 use App\Services\CsvService;
 use App\Services\DownloadCacheService;
-use App\Services\ZipService;
+use App\Services\Zip\ZipService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Mockery;

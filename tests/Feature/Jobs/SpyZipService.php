@@ -6,7 +6,7 @@ namespace Tests\Feature\Jobs;
 
 use App\Models\Batch;
 use App\Models\Channel;
-use App\Services\ZipService;
+use App\Services\Zip\ZipService;
 use Illuminate\Support\Collection;
 
 /**

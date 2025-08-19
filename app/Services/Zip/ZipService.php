@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Services\Zip;
 
 use App\Enum\DownloadStatusEnum;
 use App\Models\{Assignment, Batch, Channel, Video};
+use App\Services\CsvService;
+use App\Services\DownloadCacheService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

@@ -6,7 +6,9 @@ use App\Repository\Contracts\ConfigRepositoryInterface;
 use App\Repository\EloquentConfigRepository;
 use App\Services\ConfigService;
 use App\Services\Contracts\ConfigServiceInterface;
+use App\Services\Contracts\UnzipServiceInterface;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
+use App\Services\Zip\UnzipService;
 use Illuminate\Contracts\Container\Container as Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Cache;
@@ -25,12 +27,18 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerConfig();
         $this->registerRefreshTokenProvider();
+        $this->registerZip();
     }
 
     protected function registerConfig(): void
     {
         $this->app->bind(ConfigRepositoryInterface::class, EloquentConfigRepository::class);
         $this->app->bind(ConfigServiceInterface::class, ConfigService::class);
+    }
+
+    protected function registerZip(): void
+    {
+        $this->app->bind(UnzipServiceInterface::class, UnzipService::class);
     }
 
     protected function registerRefreshTokenProvider(): void
