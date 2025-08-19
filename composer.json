@@ -65,6 +65,7 @@
       "@php artisan test"
     ],
     "test-coverage": [
+      "Composer\\Config::disableProcessTimeout",
       "XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage-html=report"
     ]
   },
