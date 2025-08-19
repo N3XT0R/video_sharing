@@ -46,7 +46,7 @@ final class UnzipServiceTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         // Act
-        $service->unzipDirectory($this->tmpDir + '/does-not-exist');
+        $service->unzipDirectory($this->tmpDir.'/does-not-exist');
     }
 
     public function testReturnsEmptyStatsWhenNoArchivesPresent(): void
