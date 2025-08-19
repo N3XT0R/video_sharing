@@ -7,4 +7,8 @@ namespace App\Enum;
 enum BatchTypeEnum: string
 {
     case ASSIGN = 'assign';
+
+    case INGEST = 'ingest';
+
+    case NOTIFY = 'notify';
 }

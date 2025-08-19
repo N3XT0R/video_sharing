@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\BatchTypeEnum;
 use App\Enum\StatusEnum;
 use App\Mail\NewOfferMail;
 use App\Models\{Assignment, Batch, Channel};
@@ -46,7 +47,7 @@ class OfferNotifier
         }
 
         Batch::query()->create([
-            'type' => 'notify',
+            'type' => BatchTypeEnum::NOTIFY->value,
             'started_at' => now(),
             'finished_at' => now(),
             'stats' => ['emails' => $sent]

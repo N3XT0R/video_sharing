@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\BatchTypeEnum;
 use App\Models\Batch;
 use App\Models\Video;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
-use App\Services\PreviewService;
-use App\Services\InfoImporter;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -52,7 +51,7 @@ final class IngestScanner
         $this->log(sprintf('Starte Scan: %s -> %s', $inbox, $diskName));
 
         $batch = Batch::query()->create([
-            'type' => 'ingest',
+            'type' => BatchTypeEnum::INGEST->value,
             'started_at' => now(),
         ]);
 
