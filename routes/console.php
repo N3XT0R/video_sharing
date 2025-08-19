@@ -5,7 +5,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-$email = config('mail.log.email');
+$email = Cfg::get('email_admin_mail', 'email', 'info@example.tld', true);
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -22,6 +22,12 @@ Schedule::command('ingest:scan', [
     '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/', true),
 ])->hourly()
     ->emailOutputOnFailure($email);
+
+Schedule::command('ingest:unzip', [
+    '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/', true),
+])->everyTenMinutes()
+    ->emailOutputOnFailure($email);
+
 
 Schedule::command('assign:expire')
     ->dailyAt('03:00');
