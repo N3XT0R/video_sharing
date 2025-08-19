@@ -13,7 +13,7 @@ class IngestScan extends Command
 {
     protected $signature = 'ingest:scan
         {--inbox=/srv/ingest/pending : Wurzelordner der Uploads (rekursiv)}
-        {--disk= : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
+        {--disk=dropbox : Ziel-Storage-Disk (z.B. dropbox|local; überschreibt Config)}';
 
     protected $description = 'Scannt Inbox rekursiv, dedupe per SHA-256, verschiebt content-addressiert auf konfiguriertes Storage.';
 
@@ -25,7 +25,7 @@ class IngestScan extends Command
     public function handle(): int
     {
         $inbox = rtrim((string)$this->option('inbox'), '/');
-        $diskName = (string)($this->option('disk') ?: config('files.video_disk', env('FILES_VIDEOS_DISK', 'dropbox')));
+        $diskName = (string)$this->option('disk');
         $this->info('started...');
 
         $output = $this->getOutput();

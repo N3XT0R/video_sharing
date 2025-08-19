@@ -34,11 +34,6 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    'sharing' => [
-        'storage' => env('VIDEO_DS', 'video'),
-        'share_interval' => env('SHARE_INTERVAL'),
-        'reminder_interval' => env('REMINDER_INTERVAL'),
-    ],
     'dropbox' => [
         'client_id' => env('DROPBOX_CLIENT_ID'),
         'client_secret' => env('DROPBOX_CLIENT_SECRET'),
