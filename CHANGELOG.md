@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The way the app reads settings has changed. If you have custom tools that fetch settings, they may need updates.
+- Standardized batch handling by introducing `BatchTypeEnum` and migrating usages from the previously mixed enum.
+
+### Removed
+
+- Removed the old type enum and related aliases. **Breaking change:** public APIs now accept `BatchTypeEnum`.
 
 ## [1.2.1] - 2025-08-18
 
