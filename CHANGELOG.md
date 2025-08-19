@@ -12,11 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings are now grouped into categories and cached for faster access.
 - New "Batches" page in the admin area shows videos, channels and offers together.
 - All expiration times for links now follow one consistent rule.
+- New `ingest:unzip` command extracts pending archives automatically.
+- Scheduler entry for `ingest:unzip` runs the extraction every ten minutes.
+- Shared locking via `LockJobTrait` prevents parallel runs of ingest commands.
 
 ### Changed
 
 - The way the app reads settings has changed. If you have custom tools that fetch settings, they may need updates.
 - Standardized batch handling by introducing `BatchTypeEnum` and migrating usages from the previously mixed enum.
+- `ingest:scan` now supports lock options and a configurable target disk.
+- Cron failures send notifications to the admin email setting instead of a fixed address.
 
 ### Removed
 
