@@ -96,9 +96,23 @@ final class IngestScanTest extends DatabaseTestCase
         $this->assertFileExists($destAbs);
         $this->assertGreaterThan(0, filesize($destAbs) ?: 0);
 
-        // NOTE: Preview generation is best-effort; do not assert non-null here.
-        // $this->assertNotNull($video->preview_url);  <-- remove this line
+    }
 
+    /** When another ingest job holds the lock, the command aborts gracefully. */
+    public function testReturnsSuccessWhenAnotherIngestIsRunning(): void
+    {
+        $lock = cache()->lock('ingest:lock', 10);
+        $this->assertTrue($lock->get());
+
+        $inbox = storage_path('app/inbox_'.bin2hex(random_bytes(4)));
+
+        $this->artisan("ingest:scan --inbox={$inbox} --disk=local")
+            ->expectsOutput('Another ingest task is running. Abort.')
+            ->assertExitCode(Command::SUCCESS);
+
+        $lock->release();
+
+        $this->assertSame(0, Batch::query()->count());
     }
 
     /** Duplicate handling: two identical files result in 1 new, 1 dup; the duplicate source is removed. */
