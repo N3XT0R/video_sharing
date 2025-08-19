@@ -178,7 +178,7 @@ class AssignmentServiceTest extends DatabaseTestCase
             'ip' => '203.0.113.10',
             'user_agent' => 'UA/1.0',
         ]);
-        $this->assertNull(Download::query()->where('assignment_id', $assignment->id)->value('bytes_sent'));
+        $this->assertNotNull(Download::query()->where('assignment_id', $assignment->id)->value('bytes_sent'));
     }
 
     public function testPrepareDownloadSetsTokenStatusAndReturnsSignedUrlWithTParam(): void
