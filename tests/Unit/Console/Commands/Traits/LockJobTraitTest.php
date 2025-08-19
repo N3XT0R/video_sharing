@@ -1,14 +1,67 @@
 <?php
+// tests/Unit/Console/Commands/Traits/LockJobTraitTest.php
 
 declare(strict_types=1);
 
 namespace Tests\Unit\Console\Commands\Traits;
 
+use App\Console\Commands\Traits\LockJobTrait;
+use Closure;
+use Illuminate\Container\Container;
 use Illuminate\Contracts\Cache\Lock as LockContract;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Facade;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Helper class exposing LockJobTrait's protected methods for testing.
+ */
+class UsesLockJobTraitClass
+{
+    use LockJobTrait;
+
+    public function setKey(string $key): void
+    {
+        $this->setLockKey($key);
+    }
+
+    public function getKey(): string
+    {
+        return $this->getLockKey();
+    }
+
+    public function setStore(?string $store): void
+    {
+        $this->setLockStore($store);
+    }
+
+    public function getStore(): ?string
+    {
+        return $this->getLockStore();
+    }
+
+    public function callLockName(?string $suffix = null): string
+    {
+        return $this->lockName($suffix);
+    }
+
+    public function callTryWithLock(Closure $callback, int $ttl = 600, ?string $suffix = null)
+    {
+        return $this->tryWithLock($callback, $ttl, $suffix);
+    }
+
+    public function callBlockWithLock(Closure $callback, int $wait = 30, int $ttl = 600, ?string $suffix = null)
+    {
+        return $this->blockWithLock($callback, $wait, $ttl, $suffix);
+    }
+
+    public function callForceUnlock(?string $suffix = null): void
+    {
+        $this->forceUnlock($suffix);
+    }
+}
 
 final class LockJobTraitTest extends TestCase
 {
@@ -17,8 +70,33 @@ final class LockJobTraitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Use array cache by default (safe and fast for tests)
-        config(['cache.default' => 'array']);
+
+        // Minimal bootstrap for Facades: provide an IoC container
+        $app = new Container();
+        Facade::setFacadeApplication($app);
+
+        // (Optional) Provide a dummy config repository if something resolves it
+        $app->instance('config', new class {
+            public array $items = ['cache.default' => 'array'];
+
+            public function get($key, $default = null)
+            {
+                return $this->items[$key] ?? $default;
+            }
+
+            public function set($key, $value)
+            {
+                $this->items[$key] = $value;
+            }
+        });
+    }
+
+    protected function tearDown(): void
+    {
+        // Clean Facade resolved instances between tests
+        Facade::clearResolvedInstances();
+        Facade::setFacadeApplication(null);
+        parent::tearDown();
     }
 
     public function testDefaultLockKeyDerivation(): void
@@ -45,17 +123,15 @@ final class LockJobTraitTest extends TestCase
         $obj = new UsesLockJobTraitClass();
         $obj->setKey('ingest:lock');
 
-        // Mock Lock
         $lock = Mockery::mock(LockContract::class);
         $lock->shouldReceive('get')->once()->andReturn(true);
         $lock->shouldReceive('release')->once();
 
-        // Expect Cache::lock('ingest:lock', 600) to return our mock
+        // Facade is mocked; no underlying cache needed
         Cache::shouldReceive('lock')->once()->with('ingest:lock', 600)->andReturn($lock);
 
         $received = null;
         $result = $obj->callTryWithLock(function (LockContract $l) use (&$received) {
-            // callback receives the acquired lock
             $received = $l;
             return 123;
         });
@@ -71,7 +147,6 @@ final class LockJobTraitTest extends TestCase
 
         $lock = Mockery::mock(LockContract::class);
         $lock->shouldReceive('get')->once()->andReturn(false);
-        // release() must NOT be called when acquisition fails
         $lock->shouldReceive('release')->never();
 
         Cache::shouldReceive('lock')->once()->with('ingest:lock', 600)->andReturn($lock);
@@ -113,7 +188,6 @@ final class LockJobTraitTest extends TestCase
         $lock->shouldReceive('get')->once()->andReturn(true);
         $lock->shouldReceive('release')->once();
 
-        // Expect composed key with suffix
         Cache::shouldReceive('lock')->once()->with('ingest:lock:tenant42', 600)->andReturn($lock);
 
         $value = $obj->callTryWithLock(fn() => 'ok', 600, 'tenant42');
@@ -126,18 +200,15 @@ final class LockJobTraitTest extends TestCase
         $obj->setKey('ingest:block');
 
         $lock = Mockery::mock(LockContract::class);
-
-        // When block() is called, immediately execute the closure and return its result
         $lock->shouldReceive('block')->once()
             ->with(5, Mockery::type(\Closure::class))
             ->andReturnUsing(function (int $wait, \Closure $fn) {
-                return $fn(); // executes closure provided by trait
+                return $fn();
             });
 
         Cache::shouldReceive('lock')->once()->with('ingest:block', 600)->andReturn($lock);
 
         $result = $obj->callBlockWithLock(function (LockContract $l) {
-            // We can assert we got a Lock instance, but here we just return a value
             return 'blocked-ok';
         }, 5, 600);
 
@@ -148,18 +219,26 @@ final class LockJobTraitTest extends TestCase
     {
         $obj = new UsesLockJobTraitClass();
         $obj->setKey('ingest:lock');
-        $obj->setStore('redis');
+        $obj->setStore('array'); // use 'array' store, not redis
 
-        // Mock a store proxy with a lock() method
-        $storeProxy = Mockery::mock();
-        $lock = Mockery::mock(LockContract::class);
+        // Classic mocks with argument expectations (no spies, no shouldHaveReceived)
+        $storeProxy = \Mockery::mock();
+        $lock = \Mockery::mock(\Illuminate\Contracts\Cache\Lock::class);
 
-        // Expect Cache::store('redis')->lock('ingest:lock', 0) then forceRelease()
-        Cache::shouldReceive('store')->once()->with('redis')->andReturn($storeProxy);
-        $storeProxy->shouldReceive('lock')->once()->with('ingest:lock', 0)->andReturn($lock);
+        // Expect Cache::store('array')->lock('ingest:lock', 0) and then forceRelease()
+        \Illuminate\Support\Facades\Cache::shouldReceive('store')
+            ->once()->with('array')->andReturn($storeProxy);
+
+        $storeProxy->shouldReceive('lock')
+            ->once()->with('ingest:lock', 0)->andReturn($lock);
+
         $lock->shouldReceive('forceRelease')->once();
 
+        // Act
         $obj->callForceUnlock();
-        $this->assertTrue(true); // expectations satisfied
+
+        // Real assertion (avoids "risky: no assertions")
+        $this->assertSame('array', $obj->getStore());
     }
+
 }
