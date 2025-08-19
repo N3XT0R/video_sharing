@@ -68,12 +68,13 @@ class AssignmentService
     {
         $assignment->update(['status' => StatusEnum::PICKEDUP->value]);
 
+
         Download::query()->create([
             'assignment_id' => $assignment->getKey(),
             'downloaded_at' => now(),
             'ip' => $ip,
             'user_agent' => $userAgent,
-            'bytes_sent' => null,
+            'bytes_sent' => $assignment->getAttribute('video')?->getAttribute('bytes'),
         ]);
     }
 
