@@ -9,11 +9,13 @@ use App\Services\Contracts\ConfigServiceInterface;
 use App\Services\Contracts\UnzipServiceInterface;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use App\Services\Zip\UnzipService;
+use Carbon\CarbonInterval;
 use Illuminate\Contracts\Container\Container as Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 use League\Flysystem\Filesystem;
 use Spatie\Dropbox\Client as DropboxClient;
 use Spatie\FlysystemDropbox\DropboxAdapter;
@@ -64,6 +66,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureStorageForDropbox();
+        $this->configureOAuth();
+    }
+
+    protected function configureStorageForDropbox(): void
+    {
         Storage::extend('dropbox', function ($app, $config) {
             $client = new DropboxClient(app(AutoRefreshTokenProvider::class));
             $root = trim((string)($config['root'] ?? ''), '/');
@@ -72,5 +80,12 @@ class AppServiceProvider extends ServiceProvider
             $filesystem = new Filesystem($adapter);
             return new FilesystemAdapter($filesystem, $adapter, $config);
         });
+    }
+
+    protected function configureOAuth(): void
+    {
+        Passport::tokensExpireIn(CarbonInterval::days(15));
+        Passport::refreshTokensExpireIn(CarbonInterval::days(30));
+        Passport::personalAccessTokensExpireIn(CarbonInterval::months(6));
     }
 }
