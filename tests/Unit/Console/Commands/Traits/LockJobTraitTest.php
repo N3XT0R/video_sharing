@@ -25,6 +25,10 @@ final class LockJobTraitTest extends TestCase
         $app = new Container();
         Facade::setFacadeApplication($app);
 
+        // Replace Cache facade with a mock so shouldReceive() works without
+        // needing a full cache manager binding.
+        Cache::swap(Mockery::mock());
+
         // (Optional) Provide a dummy config repository if something resolves it
         $app->instance('config', new class {
             public array $items = ['cache.default' => 'array'];
