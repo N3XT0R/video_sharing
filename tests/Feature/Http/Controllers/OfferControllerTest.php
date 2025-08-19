@@ -197,8 +197,8 @@ final class OfferControllerTest extends DatabaseTestCase
             ->assertRedirect('/back')
             ->assertSessionHas('success', 'Die ausgewählten Videos wurden wieder freigegeben.');
 
-        $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'status' => StatusEnum::QUEUED->value]);
-        $this->assertDatabaseHas('assignments', ['id' => $a2->getKey(), 'status' => StatusEnum::QUEUED->value]);
+        $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'status' => StatusEnum::REJECTED->value]);
+        $this->assertDatabaseHas('assignments', ['id' => $a2->getKey(), 'status' => StatusEnum::REJECTED->value]);
         $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'download_token' => null]);
         $this->assertDatabaseHas('assignments', ['id' => $a2->getKey(), 'download_token' => null]);
         $this->assertDatabaseHas('assignments', ['id' => $a1->getKey(), 'expires_at' => null]);
