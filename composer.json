@@ -17,6 +17,7 @@
     "laravel/reverb": "^1.0",
     "laravel/tinker": "^2.10.1",
     "maennchen/zipstream-php": "^3.2",
+    "scalar/laravel": "^0.2.0",
     "spatie/flysystem-dropbox": "^3.0"
   },
   "require-dev": {
@@ -26,7 +27,8 @@
     "laravel/sail": "^1.41",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.6",
-    "phpunit/phpunit": "^11.5.3"
+    "phpunit/phpunit": "^11.5.3",
+    "zircote/swagger-php": "^5.3"
   },
   "autoload": {
     "psr-4": {
