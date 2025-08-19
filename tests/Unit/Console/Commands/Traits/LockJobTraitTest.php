@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Console\Commands\Traits;
+namespace Tests\Unit\Console\Commands\Traits;
 
 use Illuminate\Contracts\Cache\Lock as LockContract;
 use Illuminate\Support\Facades\Cache;

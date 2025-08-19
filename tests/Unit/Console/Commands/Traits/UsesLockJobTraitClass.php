@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Console\Commands\Traits;
+namespace Tests\Unit\Console\Commands\Traits;
 
 use App\Console\Commands\Traits\LockJobTrait;
 
