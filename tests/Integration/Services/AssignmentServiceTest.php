@@ -139,7 +139,7 @@ class AssignmentServiceTest extends DatabaseTestCase
 
         $this->assertTrue($updated);
 
-        $this->assertSame(StatusEnum::QUEUED->value, $picked1->fresh()->status);
+        $this->assertSame(StatusEnum::REJECTED->value, $picked1->fresh()->status);
         $this->assertNull($picked1->fresh()->download_token);
         $this->assertNull($picked1->fresh()->expires_at);
         $this->assertNull($picked1->fresh()->last_notified_at);
