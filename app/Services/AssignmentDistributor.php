@@ -17,8 +17,6 @@ use RuntimeException;
 
 class AssignmentDistributor
 {
-    /** @var string[] Status-Werte, die Videos erneut in den Pool bringen dürfen */
-    private const REQUEUE_STATUSES = ['expired', 'rejected']; // ggf. erweitern: 'returned', 'rejected', ...
 
     /**
      * Distribute new and requeueable videos across channels.
@@ -151,7 +149,7 @@ class AssignmentDistributor
 
         // Requeue-Fälle (z. B. expired)
         $requeueIds = Assignment::query()
-            ->whereIn('status', TypeEnum::getRequeueStatuses())
+            ->whereIn('status', StatusEnum::getRequeueStatuses())
             ->pluck('video_id')
             ->unique();
 

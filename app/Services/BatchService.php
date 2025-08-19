@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enum\TypeEnum;
+use App\Enum\BatchTypeEnum;
 use App\Models\Batch;
 use RuntimeException;
 
@@ -13,7 +13,7 @@ class BatchService
     public function getLatestAssignBatch(): Batch
     {
         $assignBatch = Batch::query()
-            ->where('type', TypeEnum::ASSIGN->value)
+            ->where('type', BatchTypeEnum::ASSIGN->value)
             ->whereNotNull('finished_at')
             ->latest('id')
             ->first();
@@ -27,7 +27,7 @@ class BatchService
     public function getAssignBatchById(int $id): Batch
     {
         $assignBatch = Batch::query()
-            ->where('type', TypeEnum::ASSIGN->value)
+            ->where('type', BatchTypeEnum::ASSIGN->value)
             ->whereNotNull('finished_at')
             ->whereKey($id)
             ->first();
@@ -37,12 +37,5 @@ class BatchService
         }
 
         return $assignBatch;
-    }
-
-    public function resetFinishDate(Batch $batch): bool
-    {
-        if ($batch->getAttribute('type') !== TypeEnum::class->value) {
-            throw new RuntimeException('Kein Assign-Batch.');
-        }
     }
 }

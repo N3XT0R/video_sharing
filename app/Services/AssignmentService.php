@@ -57,7 +57,7 @@ class AssignmentService
                 ->whereIn('id', $ids)
                 ->where('status', StatusEnum::PICKEDUP->value)
                 ->update([
-                    'status' => StatusEnum::QUEUED->value,
+                    'status' => StatusEnum::REJECTED->value,
                     'download_token' => null,
                     'expires_at' => null,
                     'last_notified_at' => null,

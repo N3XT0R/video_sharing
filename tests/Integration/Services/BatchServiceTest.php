@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Services;
 
-use App\Enum\TypeEnum;
+use App\Enum\BatchTypeEnum;
 use App\Models\Batch;
 use App\Services\BatchService;
 use RuntimeException;
@@ -16,16 +16,16 @@ class BatchServiceTest extends DatabaseTestCase
     {
         // Arrange: some noise batches that must be ignored
         Batch::factory()->type('notify')->finished(['emails' => 1])->create(); // other type, finished
-        Batch::factory()->type(TypeEnum::ASSIGN->value)->create();             // assign, NOT finished
+        Batch::factory()->type(BatchTypeEnum::ASSIGN->value)->create();             // assign, NOT finished
 
         // Arrange: two finished assign batches; should return the one with the highest id
         $older = Batch::factory()
-            ->type(TypeEnum::ASSIGN->value)
+            ->type(BatchTypeEnum::ASSIGN->value)
             ->finished(['expired' => 3])
             ->create();
 
         $newer = Batch::factory()
-            ->type(TypeEnum::ASSIGN->value)
+            ->type(BatchTypeEnum::ASSIGN->value)
             ->finished(['expired' => 7])
             ->create();
 
@@ -35,13 +35,13 @@ class BatchServiceTest extends DatabaseTestCase
         // Assert: latest by id and finished
         $this->assertTrue($result->is($newer));
         $this->assertNotNull($result->finished_at);
-        $this->assertSame(TypeEnum::ASSIGN->value, $result->type);
+        $this->assertSame(BatchTypeEnum::ASSIGN->value, $result->type);
     }
 
     public function testThrowsWhenNoFinishedAssignBatchFound(): void
     {
         // Arrange: only non-finished or other types present
-        Batch::factory()->type(TypeEnum::ASSIGN->value)->create();           // not finished
+        Batch::factory()->type(BatchTypeEnum::ASSIGN->value)->create();           // not finished
         Batch::factory()->type('notify')->finished(['emails' => 2])->create(); // finished but wrong type
 
         // Assert: service throws RuntimeException with expected message
