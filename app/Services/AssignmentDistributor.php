@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enum\BatchTypeEnum;
 use App\Enum\StatusEnum;
-use App\Enum\TypeEnum;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
@@ -116,7 +116,7 @@ class AssignmentDistributor
     private function startBatch(): Batch
     {
         return Batch::query()->create([
-            'type' => TypeEnum::ASSIGN->value,
+            'type' => BatchTypeEnum::ASSIGN->value,
             'started_at' => now(),
         ]);
     }
@@ -124,7 +124,7 @@ class AssignmentDistributor
     private function lastFinishedAssignBatch(): ?Batch
     {
         return Batch::query()
-            ->where('type', TypeEnum::ASSIGN->value)
+            ->where('type', BatchTypeEnum::ASSIGN->value)
             ->whereNotNull('finished_at')
             ->orderByDesc('finished_at') // semantisch korrekter als latest() auf created_at
             ->first();
