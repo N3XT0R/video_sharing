@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Console\Commands\Traits;
 
 use App\Console\Commands\Traits\LockJobTrait;
+use Closure;
 
 /**
  * A small helper class exposing LockJobTrait's protected methods for testing.
