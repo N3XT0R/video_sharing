@@ -1,5 +1,4 @@
 <?php
-// tests/Unit/Services/Zip/UnzipServiceTest.php
 
 declare(strict_types=1);
 
