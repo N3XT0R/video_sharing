@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\User;
 use App\Repository\Contracts\ConfigRepositoryInterface;
 use App\Repository\EloquentConfigRepository;
 use App\Services\ConfigService;
@@ -11,7 +10,6 @@ use App\Services\Contracts\UnzipServiceInterface;
 use App\Services\Dropbox\AutoRefreshTokenProvider;
 use App\Services\Zip\UnzipService;
 use Carbon\CarbonInterval;
-use Illuminate\Auth\Access\Gate;
 use Illuminate\Contracts\Container\Container as Application;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Cache;
@@ -70,7 +68,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureStorageForDropbox();
         $this->configureOAuth();
-        $this->configureGates();;
     }
 
     protected function configureStorageForDropbox(): void
@@ -90,12 +87,5 @@ class AppServiceProvider extends ServiceProvider
         Passport::tokensExpireIn(CarbonInterval::days(15));
         Passport::refreshTokensExpireIn(CarbonInterval::days(30));
         Passport::personalAccessTokensExpireIn(CarbonInterval::months(6));
-    }
-
-    protected function configureGates(): void
-    {
-        Gate::define('viewScalar', function (?User $user) {
-            return $user->getKey() !== null;
-        });
     }
 }
