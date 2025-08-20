@@ -23,7 +23,7 @@ class ChannelsRelationManager extends RelationManager
                 ->orderBy('expires_at')
                 ->first();
 
-            $expireAt = $assignment?->expires_at ?? now();
+            $expireAt = $assignment?->expires_at ?? now()->addDays(1);
 
             return app(LinkService::class)->getOfferUrl($batch, $channel, $expireAt);
         };
