@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **ClipsRelationManager** now correctly displays values in the **Video** resource.
+- The app now checks if a Dropbox link is still valid and asks you to reconnect when it has expired.
 
 ## [1.2.1] - 2025-08-18
 
