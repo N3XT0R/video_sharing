@@ -12,6 +12,7 @@
     "ext-intl": "*",
     "ext-zip": "*",
     "filament/filament": "^3.3",
+    "gboquizosanchez/filament-log-viewer": "^1.0.0",
     "laravel/framework": "^12.0",
     "laravel/reverb": "^1.0",
     "laravel/tinker": "^2.10.1",
