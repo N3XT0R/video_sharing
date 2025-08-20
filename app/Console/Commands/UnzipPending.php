@@ -40,7 +40,7 @@ class UnzipPending extends Command
             $this->setLockStore($store);
         }
 
-        $dir = rtrim((string)$this->argument('inbox'), '/');
+        $dir = rtrim((string)$this->option('inbox'), '/');
         $ttl = (int)$this->option('ttl');
         $wait = (int)$this->option('wait');
 
