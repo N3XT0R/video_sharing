@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Config;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -73,6 +74,9 @@ class DropboxController extends Controller
         $refreshToken = $resp['refresh_token'] ?? null;
         $accessToken = $resp['access_token'] ?? null;
         $expiresIn = $resp['expires_in'] ?? null;
+
+        $ttl = max(60, (int)($expiresIn ?? 0) - 60);
+        Cache::forever('dropbox.expire_at', Carbon::now()->addSeconds($ttl));
 
         if ($refreshToken) {
             Cache::delete('dropbox.access_token');
