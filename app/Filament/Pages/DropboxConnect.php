@@ -3,7 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Models\Config;
+use Carbon\Carbon;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Cache;
 
 class DropboxConnect extends Page
 {
@@ -19,12 +21,17 @@ class DropboxConnect extends Page
 
     public bool $connected = false;
 
+    public ?Carbon $expiresAt = null;
+
     public function mount(): void
     {
         $token = Config::query()
             ->where('key', 'dropbox_refresh_token')
             ->value('value');
 
-        $this->connected = filled($token);
+        $expire = Cache::get('dropbox.expire_at');
+        $this->expiresAt = $expire instanceof Carbon ? $expire : null;
+
+        $this->connected = filled($token) && $this->expiresAt?->isFuture();
     }
 }
