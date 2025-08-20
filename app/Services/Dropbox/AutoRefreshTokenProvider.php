@@ -3,6 +3,7 @@
 namespace App\Services\Dropbox;
 
 use App\Models\Config;
+use Carbon\Carbon;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Http;
 use Spatie\Dropbox\TokenProvider;
@@ -14,7 +15,8 @@ class AutoRefreshTokenProvider implements TokenProvider
         private string $clientSecret,
         private ?string $refreshToken,
         private Repository $cache,
-        private string $cacheKey = 'dropbox.access_token'
+        private string $cacheKey = 'dropbox.access_token',
+        private string $expireCacheKey = 'dropbox.expire_at'
     ) {
     }
 
@@ -46,6 +48,7 @@ class AutoRefreshTokenProvider implements TokenProvider
         $resp = $this->getTokenResponse();
         $token = $resp['access_token'] ?? null;
         $ttl = max(60, (int)($resp['expires_in'] ?? 0) - 60); // 1 Min Puffer
+        $this->cache->forever($this->expireCacheKey, Carbon::now()->addSeconds($ttl));
 
         if (!$token) {
             throw new \RuntimeException('Dropbox: Kein access_token in Token-Response.');

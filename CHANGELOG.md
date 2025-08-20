@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduler entry for `ingest:unzip` runs the extraction every ten minutes.
 - Shared locking via `LockJobTrait` prevents parallel runs of ingest commands.
 - Admin panel includes a log viewer for inspecting application logs.
+- Admin panel includes a Dropbox connect page for linking accounts.
+- **Dropbox connect page now shows the access token expiration date when the account is connected.**
 - Deployment guide added to the documentation.
 
 ### Changed
@@ -28,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removed the old type enum and related aliases. **Breaking change:** public APIs now accept `BatchTypeEnum`.
+
+### Fixed
+
+- **ClipsRelationManager** now correctly displays values in the **Video** resource.
 
 ## [1.2.1] - 2025-08-18
 
