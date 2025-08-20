@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed the old type enum and related aliases. **Breaking change:** public APIs now accept `BatchTypeEnum`.
 
+### Fixed
+
+- **ClipsRelationManager** now correctly displays values in the **Video** resource.
+
 ## [1.2.1] - 2025-08-18
 
 ### Fixed
