@@ -16,7 +16,7 @@ class UnzipPending extends Command
     use LockJobTrait;
 
     protected $signature = 'ingest:unzip
-        {inbox=/srv/ingest/pending : Directory containing ZIP files}
+        {--inbox=/srv/ingest/pending : Directory containing ZIP files}
         {--wait=0 : Seconds to wait for the lock (0 = non-blocking)}
         {--ttl=600 : Lock TTL in seconds}
         {--lock-store= : Optional cache store (e.g. redis)}';
