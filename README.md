@@ -63,6 +63,7 @@ Ausführliche Erläuterungen zu Aufbau und Nutzung finden sich im Verzeichnis [`
 - [Setup](docs/setup.md)
 - [Werkzeuge](docs/tool.md)
 - [Workflow](docs/workflow.md)
+- [Deployment](docs/deployment.md)
 
 ## Tests
 
