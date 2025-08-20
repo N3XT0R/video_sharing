@@ -21,9 +21,10 @@ class DropboxConnect extends Page
 
     public function mount(): void
     {
-        $this->connected = Config::query()
+        $token = Config::query()
             ->where('key', 'dropbox_refresh_token')
-            ->exists();
+            ->value('value');
+
+        $this->connected = filled($token);
     }
 }
-
