@@ -20,7 +20,7 @@ final class IngestUnzipTest extends DatabaseTestCase
         $zip->addFromString('ok.txt', 'hi');
         $zip->close();
 
-        $this->artisan("ingest:unzip {$dir}")
+        $this->artisan("ingest:unzip --inbox={$dir}")
             ->expectsOutput('Done. total=1 extracted=1 failed=0 skipped=0')
             ->expectsOutput('Extracted: good.zip')
             ->assertExitCode(Command::SUCCESS);
@@ -33,7 +33,7 @@ final class IngestUnzipTest extends DatabaseTestCase
     {
         $dir = storage_path('app/missing_'.bin2hex(random_bytes(4)));
 
-        $this->artisan("ingest:unzip {$dir}")
+        $this->artisan("ingest:unzip --inbox={$dir}")
             ->expectsOutput("Directory not found or not readable: {$dir}")
             ->assertExitCode(Command::FAILURE);
     }
