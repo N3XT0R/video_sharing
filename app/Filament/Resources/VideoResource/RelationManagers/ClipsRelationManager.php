@@ -19,9 +19,13 @@ class ClipsRelationManager extends RelationManager
             ->recordTitleAttribute('id')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
-                Tables\Columns\TextColumn::make('title')->searchable()->limit(40),
-                Tables\Columns\TextColumn::make('start')->label('Start'),
-                Tables\Columns\TextColumn::make('end')->label('Ende'),
+                Tables\Columns\TextColumn::make('video.original_name')
+                    ->label('Video')
+                    ->searchable()
+                    ->limit(40),
+                Tables\Columns\TextColumn::make('start_sec')->label('Start'),
+                Tables\Columns\TextColumn::make('end_sec')->label('End'),
+                Tables\Columns\TextColumn::make('submitted_by')->label('Submitted By'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->since(),
             ])
             ->headerActions([])
