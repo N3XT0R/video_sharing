@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared locking via `LockJobTrait` prevents parallel runs of ingest commands.
 - Admin panel includes a log viewer for inspecting application logs.
 - Admin panel includes a Dropbox connect page for linking accounts.
+- **Dropbox connect page now shows the access token expiration date when the account is connected.**
 - Deployment guide added to the documentation.
 
 ### Changed
