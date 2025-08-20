@@ -12,7 +12,7 @@ use Tests\DatabaseTestCase;
 
 final class DropboxConnectTest extends DatabaseTestCase
 {
-    public function test_connected_is_false_when_token_missing(): void
+    public function testConnectedIsFalseWhenTokenMissing(): void
     {
         Config::query()->where('key', 'dropbox_refresh_token')->delete();
         Cache::forget('dropbox.expire_at');
@@ -23,7 +23,7 @@ final class DropboxConnectTest extends DatabaseTestCase
         $this->assertFalse($page->connected);
     }
 
-    public function test_connected_is_false_when_token_empty(): void
+    public function testConnectedIsFalseWhenTokenEmpty(): void
     {
         Config::query()->where('key', 'dropbox_refresh_token')->update(['value' => '']);
         Cache::forget('dropbox.expire_at');
@@ -34,7 +34,7 @@ final class DropboxConnectTest extends DatabaseTestCase
         $this->assertFalse($page->connected);
     }
 
-    public function test_connected_is_false_when_expired(): void
+    public function testConnectedIsFalseWhenExpired(): void
     {
         Config::query()->where('key', 'dropbox_refresh_token')->update(['value' => 'TOKEN123']);
         Cache::forever('dropbox.expire_at', Carbon::now()->subMinute());
@@ -45,7 +45,7 @@ final class DropboxConnectTest extends DatabaseTestCase
         $this->assertFalse($page->connected);
     }
 
-    public function test_connected_is_true_when_token_present_and_not_expired(): void
+    public function testConnectedIsTrueWhenTokenPresentAndNotExpired(): void
     {
         Config::query()->where('key', 'dropbox_refresh_token')->update(['value' => 'TOKEN123']);
         Cache::forever('dropbox.expire_at', Carbon::now()->addMinutes(5));
