@@ -46,7 +46,7 @@ final class IngestUnzipTest extends DatabaseTestCase
         $dir = storage_path('app/unzip_'.bin2hex(random_bytes(4)));
         mkdir($dir, 0777, true);
 
-        $this->artisan("ingest:unzip {$dir}")
+        $this->artisan("ingest:unzip --inbox={$dir}")
             ->expectsOutput('Another ingest task is running. Abort.')
             ->assertExitCode(Command::SUCCESS);
 
