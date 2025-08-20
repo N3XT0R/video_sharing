@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `ingest:unzip` command extracts pending archives automatically.
 - Scheduler entry for `ingest:unzip` runs the extraction every ten minutes.
 - Shared locking via `LockJobTrait` prevents parallel runs of ingest commands.
+- Admin panel includes a log viewer for inspecting application logs.
+- Deployment guide added to the documentation.
 
 ### Changed
 
