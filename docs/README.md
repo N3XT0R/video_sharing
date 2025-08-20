@@ -7,4 +7,5 @@ Dieses Verzeichnis enthält ergänzende Informationen zur Video-Sharing-Plattfor
 - [Setup](setup.md)
 - [Werkzeuge](tool.md)
 - [Workflow](workflow.md)
+- [Deployment](deployment.md)
 
