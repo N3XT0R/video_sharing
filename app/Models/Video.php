@@ -42,12 +42,12 @@ class Video extends Model
 
             try {
                 if (!$video->getDisk()->delete($path)) {
-                    \Log::warning('File delete failed', ['video_id' => $video->id, 'path' => $path]);
+                    \Log::warning('File delete failed', ['video_id' => $video->getKey(), 'path' => $path]);
                     return false;
                 }
             } catch (\Throwable $e) {
                 \Log::error('File delete threw',
-                    ['video_id' => $video->id, 'path' => $path, 'err' => $e->getMessage(), 'exception' => $e]);
+                    ['video_id' => $video->getKey(), 'path' => $path, 'err' => $e->getMessage(), 'exception' => $e]);
                 return false;
             }
 
