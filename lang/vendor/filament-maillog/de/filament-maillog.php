@@ -6,7 +6,7 @@ return [
     'navigation.group' => 'System',
 
     'navigation.maillog.label' => 'E-Mail-Log',
-    'navigation.maillog.plural-label' => 'E-Mail-Log',
+    'navigation.maillog.plural-label' => 'E-Mail-Logs',
 
     'table.heading' => 'E-Mail-Log',
 
