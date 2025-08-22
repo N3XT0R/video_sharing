@@ -49,7 +49,7 @@ class Video extends Model
                 }
             } catch (\Throwable $e) {
                 \Log::error('File delete threw',
-                    ['video_id' => $video->id, 'path' => $path, 'err' => $e->getMessage()]);
+                    ['video_id' => $video->id, 'path' => $path, 'err' => $e->getMessage(), 'exception' => $e]);
                 return false;
             }
 
