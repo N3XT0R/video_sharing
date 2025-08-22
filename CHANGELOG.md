@@ -15,13 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin downloads page lists who downloaded which video and when.
 - Batch assignment table now provides a direct "Open Offer" link for each item.
 - Admin login now offers a password reset option.
-- Videos delete their files from storage when they are removed.
+- Videos delete their files and preview clips from storage when they are removed.
 - New batch type `remove` tracks cleanup runs.
 
 ### Changed
 
 - Dropbox connection callback now redirects back to the connect page, logs the token exchange and clears cached access
   tokens.
+- README now lists the new `video:cleanup` command.
 
 ## [2.0.2] - 2025-08-20
 
