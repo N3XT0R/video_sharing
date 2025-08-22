@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enum\BatchTypeEnum;
-use App\Enum\StatusEnum;
+use App\Enum\{BatchTypeEnum, NotificationTypeEnum, StatusEnum};
 use App\Mail\NewOfferMail;
-use App\Models\{Assignment, Batch, Channel};
+use App\Models\{Assignment, Batch, Channel, Notification};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\{Mail};
 
@@ -62,13 +61,20 @@ class OfferNotifier
         $unusedUrl = $this->linkService->getUnusedUrl($assignBatch, $channel, $expireDate);
 
 
-        $assignments = Assignment::query()->where('batch_id', $assignBatch->getKey())->get();
-        /**
-         * @var Assignment $assignment
-         */
+        $assignments = Assignment::query()
+            ->where('batch_id', $assignBatch->getKey())
+            ->where('channel_id', $channel->getKey())
+            ->get();
+
+        $notification = Notification::query()->create([
+            'channel_id' => $channel->getKey(),
+            'type' => NotificationTypeEnum::OFFER->value,
+        ]);
+
         foreach ($assignments as $assignment) {
             $assignment->setNotified();
             $assignment->setAttribute('expires_at', $expireDate);
+            $assignment->setAttribute('notification_id', $notification->getKey());
             $assignment->save();
         }
 
