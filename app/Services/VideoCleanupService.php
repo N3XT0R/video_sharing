@@ -18,14 +18,14 @@ class VideoCleanupService
     ) {
     }
 
-    public function cleanup(): int
+    public function cleanup(int $subWeeks = 1): int
     {
         $batch = Batch::query()->create([
             'type' => BatchTypeEnum::REMOVE->value,
             'started_at' => now(),
         ]);
 
-        $threshold = Carbon::now()->subWeek();
+        $threshold = Carbon::now()->subWeeks($subWeeks);
         $candidates = $this->downloads->fetchDownloadedVideoIds($threshold);
         $deletable = $this->videos->filterDeletableVideoIds($candidates, $threshold);
         $names = $this->videos->fetchOriginalNames($deletable);

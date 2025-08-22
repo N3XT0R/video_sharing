@@ -127,4 +127,29 @@ final class VideoCleanupTest extends DatabaseTestCase
         $this->assertNotNull($batchRemove);
         $this->assertSame(0, $batchRemove->stats['removed']);
     }
+
+    public function test_respects_weeks_option(): void
+    {
+        Carbon::setTestNow('2025-08-12 12:00:00');
+
+        $batch = Batch::factory()->state(['type' => 'assign'])
+            ->create(['started_at' => now()->subHour(), 'finished_at' => now()->subMinute()]);
+
+        $video = Video::factory()->create();
+        $assignment = Assignment::factory()
+            ->for($batch, 'batch')
+            ->for(Channel::factory()->create(), 'channel')
+            ->for($video, 'video')
+            ->create([
+                'status' => 'picked_up',
+                'expires_at' => now()->subDays(10),
+            ]);
+        Download::factory()->forAssignment($assignment)->create();
+
+        $this->artisan('video:cleanup', ['--weeks' => 2])
+            ->expectsOutput('Removed: 0')
+            ->assertExitCode(Command::SUCCESS);
+
+        $this->assertDatabaseHas('videos', ['id' => $video->getKey()]);
+    }
 }

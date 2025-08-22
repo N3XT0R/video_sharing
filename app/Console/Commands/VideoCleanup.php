@@ -11,9 +11,9 @@ use Illuminate\Console\Command;
 
 class VideoCleanup extends Command
 {
-    protected $signature = 'video:cleanup';
+    protected $signature = 'video:cleanup {--weeks=1 : Anzahl der Wochen, die der Ablauf überschritten haben muss}';
 
-    protected $description = 'Löscht heruntergeladene Videos, deren Ablauf seit einer Woche überschritten ist.';
+    protected $description = 'Löscht heruntergeladene Videos, deren Ablauf seit der angegebenen Wochenzahl überschritten ist.';
 
     public function __construct(private VideoCleanupService $service)
     {
@@ -22,7 +22,8 @@ class VideoCleanup extends Command
 
     public function handle(): int
     {
-        $deleted = $this->service->cleanup();
+        $weeks = (int) $this->option('weeks');
+        $deleted = $this->service->cleanup($weeks);
         $this->info("Removed: {$deleted}");
 
         return self::SUCCESS;
