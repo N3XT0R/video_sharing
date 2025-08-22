@@ -41,9 +41,7 @@ class Video extends Model
             }
 
             try {
-                $ok = $video->getDisk()->delete($path);
-
-                if (!$ok) {
+                if (!$video->getDisk()->delete($path)) {
                     \Log::warning('File delete failed', ['video_id' => $video->id, 'path' => $path]);
                     return false;
                 }
