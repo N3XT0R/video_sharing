@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 return [
-    'navigation.group' => 'Protokolle',
+    'navigation.group' => 'System',
 
-    'navigation.maillog.label' => 'E-Mail-Protokoll',
+    'navigation.maillog.label' => 'E-Mail-Log',
     'navigation.maillog.plural-label' => 'E-Mail-Protokolle',
 
     'table.heading' => 'E-Mail-Protokolle',
