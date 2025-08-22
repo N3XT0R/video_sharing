@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Notification;
 
 class Assignment extends Model
 {
@@ -23,7 +24,8 @@ class Assignment extends Model
         'expires_at',
         'attempts',
         'last_notified_at',
-        'download_token'
+        'download_token',
+        'notification_id'
     ];
     protected $casts = ['expires_at' => 'datetime', 'last_notified_at' => 'datetime'];
 
@@ -45,6 +47,11 @@ class Assignment extends Model
     public function downloads(): HasMany
     {
         return $this->hasMany(Download::class);
+    }
+
+    public function notification(): BelongsTo
+    {
+        return $this->belongsTo(Notification::class);
     }
 
     public function setExpiresAt(?int $ttlDays = null): void

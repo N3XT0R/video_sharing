@@ -6,31 +6,31 @@
 
 ## Projektbeschreibung
 
-Dashclip-Delivery ist eine Laravel‑Anwendung zum Verteilen von Videomaterial an verschiedene Kanäle. Neue Videos werden
+Dashclip-Delivery ist eine LaravelâAnwendung zum Verteilen von Videomaterial an verschiedene KanÃ¤le. Neue Videos werden
 aus
-einem Upload‑Verzeichnis oder aus Dropbox eingelesen, auf einem konfigurierten Storage gespeichert und anschließend fair
-auf Kanäle mit Quoten und Gewichtung verteilt. Die Kanäle erhalten per E‑Mail signierte Links zu einer Angebotsseite,
-auf der sie einzelne Videos oder eine ZIP‑Datei mit begleitender `info.csv` herunterladen können. Nicht benötigte Videos
-lassen sich zurückgeben, und alle Downloads werden protokolliert.
+einem UploadâVerzeichnis oder aus Dropbox eingelesen, auf einem konfigurierten Storage gespeichert und anschlieÃend fair
+auf KanÃ¤le mit Quoten und Gewichtung verteilt. Die KanÃ¤le erhalten per EâMail signierte Links zu einer Angebotsseite,
+auf der sie einzelne Videos oder eine ZIPâDatei mit begleitender `info.csv` herunterladen kÃ¶nnen. Nicht benÃ¶tigte Videos
+lassen sich zurÃ¼ckgeben, und alle Downloads werden protokolliert.
 
 ## Funktionen
 
-- **Ingest**: rekursives Scannen eines Upload‑Ordners (lokal oder Dropbox) mit Deduplizierung per SHA‑256.
-- **Verteilung**: Zuweisung neuer bzw. abgelaufener Videos an Kanäle (gewichtetes Round‑Robin, Wochenquota).
-- **Benachrichtigung**: Versand von E‑Mails mit temporären Download‑Links und Angebotsseiten.
-- **Angebot & Download**: Weboberfläche zur Auswahl und zum ZIP‑Download ausgewählter Videos inkl. `info.csv` und
+- **Ingest**: rekursives Scannen eines UploadâOrdners (lokal oder Dropbox) mit Deduplizierung per SHAâ256.
+- **Verteilung**: Zuweisung neuer bzw. abgelaufener Videos an KanÃ¤le (gewichtetes RoundâRobin, Wochenquota).
+- **Benachrichtigung**: Versand von EâMails mit temporÃ¤ren DownloadâLinks und Angebotsseiten.
+- **Angebot & Download**: WeboberflÃ¤che zur Auswahl und zum ZIPâDownload ausgewÃ¤hlter Videos inkl. `info.csv` und
   Tracking der Abholungen.
-- **Vorschauen**: Generierung kurzer MP4‑Clips mit `ffmpeg`.
-- **Dropbox‑Integration**: OAuth‑Anbindung und automatisches Auffrischen von Tokens.
+- **Vorschauen**: Generierung kurzer MP4âClips mit `ffmpeg`.
+- **DropboxâIntegration**: OAuthâAnbindung und automatisches Auffrischen von Tokens.
 
 ## Voraussetzungen
 
 - PHP 8.4
 - Composer
-- Node.js & npm (für Build‑Assets)
+- Node.js & npm (fÃ¼r BuildâAssets)
 - ffmpeg
-- Eine von Laravel unterstützte Datenbank (z. B. SQLite)
-- Optional: Dropbox‑App mit Client‑ID und ‑Secret
+- Eine von Laravel unterstÃ¼tzte Datenbank (z. B. SQLite)
+- Optional: DropboxâApp mit ClientâID und âSecret
 
 ## Installation
 
@@ -42,25 +42,28 @@ php artisan key:generate
 php artisan migrate
 ```
 
-## Nützliche Befehle
+## NÃ¼tzliche Befehle
 
 | Befehl                              | Beschreibung                                                                                    |
 |-------------------------------------|-------------------------------------------------------------------------------------------------|
 | `php artisan ingest:unzip`          | Entpackt ZIP-Dateien aus einem Verzeichnis.                                                     |
-| `php artisan ingest:scan`           | Durchsucht den Upload‑Ordner und speichert neue Videos.                                         |
-| `php artisan info:import`           | Importiert Clip‑Infos aus einer `info.csv`.                                                     |
-| `php artisan assign:distribute`     | Verteilt Videos auf Kanäle.                                                                     |
-| `php artisan notify:offers`         | Versendet Angebotslinks per E‑Mail.                                                             |
-| `php artisan assign:expire`         | Markiert abgelaufene Zuweisungen und blockiert Kanäle temporär.                                 |
+| `php artisan ingest:scan`           | Durchsucht den UploadâOrdner und speichert neue Videos.                                         |
+| `php artisan info:import`           | Importiert ClipâInfos aus einer `info.csv`.                                                     |
+| `php artisan assign:distribute`     | Verteilt Videos auf KanÃ¤le.                                                                     |
+| `php artisan notify:offers`         | Versendet Angebotslinks per E‑Mail.                |
+        |
+| `php artisan notify:reminders`      | Benachrichtigt Kanäle vor Ablauf über offene Angebote.                |
+        |
+| `php artisan assign:expire`         | Markiert abgelaufene Zuweisungen und blockiert KanÃ¤le temporÃ¤r.                                 |
 | `php artisan dropbox:refresh-token` | Aktualisiert den Dropbox Token.                                                                 |
-| `php artisan weekly:run`            | Führt Expire → Distribute → Notify hintereinander aus.                                          |
-| `php artisan video:cleanup`         | Löscht heruntergeladene Videos, deren Ablauf seit der angegebenen Wochenzahl überschritten ist. |
+| `php artisan weekly:run`            | FÃ¼hrt Expire â Distribute â Notify hintereinander aus.                                          |
+| `php artisan video:cleanup`         | LÃ¶scht heruntergeladene Videos, deren Ablauf seit der angegebenen Wochenzahl Ã¼berschritten ist. |
 
 ## Dokumentation
 
-Ausführliche Erläuterungen zu Aufbau und Nutzung finden sich im Verzeichnis [`docs`](docs):
+AusfÃ¼hrliche ErlÃ¤uterungen zu Aufbau und Nutzung finden sich im Verzeichnis [`docs`](docs):
 
-- [Übersicht](docs/README.md)
+- [Ãbersicht](docs/README.md)
 - [Setup](docs/setup.md)
 - [Werkzeuge](docs/tool.md)
 - [Workflow](docs/workflow.md)

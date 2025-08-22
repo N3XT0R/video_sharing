@@ -35,6 +35,12 @@ Schedule::command('video:cleanup', [
     ->dailyAt('04:00')
     ->emailOutputOnFailure($email);
 
+Schedule::command('notify:reminders', [
+    '--days' => Cfg::get('email_reminder_days', 'email', 1, true),
+])
+    ->dailyAt('09:00')
+    ->emailOutputOnFailure($email);
+
 // Dropbox Refresh Token regelmäßig aktualisieren
 Schedule::command('dropbox:refresh-token')
     ->everyMinute();

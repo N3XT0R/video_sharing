@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin login now offers a password reset option.
 - Videos delete their files and preview clips from storage when they are removed.
 - New batch type `remove` tracks cleanup runs.
+- Channels now receive reminder emails one day before assignment links expire, listing remaining video offers and recording the send in a notification history.
+- New setting `email_reminder_days` configures how many days in advance reminder emails are sent.
 
 ### Changed
 
