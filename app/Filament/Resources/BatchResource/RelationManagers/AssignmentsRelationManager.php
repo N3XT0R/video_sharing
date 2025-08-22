@@ -4,6 +4,7 @@ namespace App\Filament\Resources\BatchResource\RelationManagers;
 
 use App\Filament\Resources\AssignmentResource;
 use App\Models\Assignment;
+use App\Services\LinkService;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -16,6 +17,14 @@ class AssignmentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $linkCallback = function (Assignment $assignment): string {
+            $batch = $this->getOwnerRecord();
+            $expireAt = $assignment?->expires_at ?? now()->addDays(1);
+            $channel = $assignment->getAttribute('channel');
+
+            return app(LinkService::class)->getOfferUrl($batch, $channel, $expireAt);
+        };
+
         return $table
             ->recordTitleAttribute('id')
             ->columns([
@@ -31,7 +40,8 @@ class AssignmentsRelationManager extends RelationManager
                 TextColumn::make('video.preview_url')
                     ->label('Preview')
                     ->formatStateUsing(fn() => 'Open')
-                    ->url(fn(Assignment $assignment) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
+                    ->url(fn(Assignment $assignment
+                    ) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
                     ->openUrlInNewTab(),
                 TextColumn::make('created_at')->dateTime()->since()->sortable(),
             ])
@@ -40,13 +50,11 @@ class AssignmentsRelationManager extends RelationManager
                 Tables\Actions\Action::make('open')
                     ->label('Open')
                     ->icon('heroicon-m-arrow-top-right-on-square')
-                    ->url(fn (Assignment $assignment) => AssignmentResource::getUrl('view', ['record' => $assignment]))
+                    ->url(fn(Assignment $assignment) => AssignmentResource::getUrl('view', ['record' => $assignment]))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('preview')
-                    ->label('Open preview')
-                    ->icon('heroicon-m-play')
-                    ->url(fn (Assignment $assignment) => $assignment->video ? (string)$assignment->video->getAttribute('preview_url') : null)
-                    ->visible(fn(Assignment $assignment) => $assignment->video && filled($assignment->video->getAttribute('preview_url')))
+                Tables\Actions\Action::make('offer_link')
+                    ->label('Open Offer')
+                    ->url($linkCallback)
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([]);
