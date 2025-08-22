@@ -37,16 +37,16 @@ final class DownloadResourceTest extends DatabaseTestCase
             ->withBatch($batch)
             ->create(['status' => 'queued']);
 
-        $download = Download::factory()
+        Download::factory()
             ->forAssignment($assignment)
             ->create(['ip' => '203.0.113.1']);
 
         Livewire::test(ListDownloads::class)
             ->assertStatus(200)
-            ->assertSee((string) $assignment->id)
+            ->assertSee((string)$assignment->id)
             ->assertSee($assignment->status)
             ->assertSee('203.0.113.1')
             ->assertSee($channel->name)
-            ->assertSee((string) $assignment->video_id);
+            ->assertSee((string)$assignment->getAttribute('video')->getAttribute('original_name'));
     }
 }
