@@ -31,4 +31,15 @@ class Video extends Model
     {
         return Storage::disk($this->getAttribute('disk'));
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Video $video) {
+            if ($video->exists === false) {
+                return true;
+            }
+            $disk = $video->getDisk();
+            return $disk->delete($video->getAttribute('path'));
+        });
+    }
 }
