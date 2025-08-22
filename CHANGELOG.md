@@ -9,7 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Daily `video:cleanup` cron job removes videos once their picked-up assignments have been downloaded and expired for over a week.
+- Daily `video:cleanup` command removes downloaded videos after their assignments expired for a configurable number of weeks.
+- New setting `post_expiry_retention_weeks` controls how long downloaded videos are kept before cleanup.
+- Admin downloads page lists who downloaded which video and when.
+- Batch assignment table now provides a direct "Open Offer" link for each item.
+- Admin login now offers a password reset option.
+- Videos delete their files from storage when they are removed.
+- New batch type `remove` tracks cleanup runs.
+
+### Changed
+
+- Dropbox connection callback now redirects back to the connect page, logs the token exchange and clears cached access tokens.
 
 ## [2.0.2] - 2025-08-20
 
