@@ -11,4 +11,5 @@ enum BatchTypeEnum: string
     case INGEST = 'ingest';
 
     case NOTIFY = 'notify';
+    case REMOVE = 'remove';
 }
