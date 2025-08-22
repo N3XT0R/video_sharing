@@ -107,12 +107,8 @@ class DropboxControllerTest extends DatabaseTestCase
             'state' => 'STATE_OK',
         ]));
 
-        // Assert: JSON response contains useful data
-        $resp->assertOk()
-            ->assertJson([
-                'status' => 'ok',
-                'access_token_expires_in' => 14400,
-            ]);
+        // Assert: redirects back to filament
+        $resp->assertRedirectToRoute('filament.admin.pages.dropbox-connect');
 
         // Assert: refresh token persisted to DB
         $this->assertDatabaseHas('configs', [
