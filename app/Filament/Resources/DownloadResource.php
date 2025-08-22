@@ -4,10 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DownloadResource\Pages;
 use App\Models\Download;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -28,7 +26,7 @@ class DownloadResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('downloaded_at', 'desc')
             ->columns([
                 TextColumn::make('assignment.id')
                     ->label('Assignment ID')
@@ -38,17 +36,20 @@ class DownloadResource extends Resource
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('ip')
+                    ->url(function (Download $download) {
+                        return sprintf('https://utrace.me/?query=%s', $download->getAttribute('ip'));
+                    }, true)
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('assignment.channel.name')
                     ->label('Channel')
                     ->sortable()
                     ->searchable(),
-                TextColumn::make('assignment.video_id')
-                    ->label('Video ID')
+                TextColumn::make('assignment.video.original_name')
+                    ->label('Video')
                     ->sortable(),
-                TextColumn::make('updated_at')
-                    ->label('Updated')
+                TextColumn::make('downloaded_at')
+                    ->label('Downloaded at')
                     ->dateTime()
                     ->since()
                     ->sortable(),

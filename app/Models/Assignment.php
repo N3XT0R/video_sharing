@@ -9,6 +9,7 @@ use App\Facades\Cfg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Assignment extends Model
 {
@@ -39,6 +40,11 @@ class Assignment extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function downloads(): HasMany
+    {
+        return $this->hasMany(Download::class);
     }
 
     public function setExpiresAt(?int $ttlDays = null): void
