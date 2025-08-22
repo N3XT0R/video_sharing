@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - undefined
+## [2.1.0] - 2025-08-22
 
 ### Added
 
@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin login now offers a password reset option.
 - Videos delete their files and preview clips from storage when they are removed.
 - New batch type `remove` tracks cleanup runs.
-- Channels now receive reminder emails one day before assignment links expire, listing remaining video offers and recording the send in a notification history.
+- Channels now receive reminder emails one day before assignment links expire, listing remaining video offers and
+  recording the send in a notification history.
 - New setting `email_reminder_days` configures how many days in advance reminder emails are sent.
 - Admin panel now lists sent notifications with their channel, type, and send time.
 - Admin panel now logs outgoing emails in a dedicated mail log.
