@@ -14,7 +14,7 @@ return new class extends Migration {
         $categoryId = DB::table('config_categories')->where('slug', 'email')->value('id');
         DB::table('configs')->insert([
             'key' => 'email_reminder_days',
-            'value' => 1,
+            'value' => 2,
             'cast_type' => 'int',
             'config_category_id' => $categoryId,
             'created_at' => $timestamp,
