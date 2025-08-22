@@ -18,5 +18,12 @@ class Clip extends Model
     {
         return $this->belongsTo(Video::class);
     }
+
+    public function getPreviewPath(): string
+    {
+        $videoId = $this->getAttribute('video')->getKey();
+        $hash = md5($videoId.'_'.$this->getAttribute('start_sec').'_'.$this->getAttribute('end_sec'));
+        return "previews/{$hash}.mp4";
+    }
 }
 

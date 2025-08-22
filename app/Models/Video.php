@@ -40,9 +40,24 @@ class Video extends Model
                 return true;
             }
 
+            /**
+             * @var Clip $clip
+             *
+             */
+            $clip = $video->clips()->first();
+
             try {
-                if (!$video->getDisk()->delete($path)) {
-                    \Log::warning('File delete failed', ['video_id' => $video->getKey(), 'path' => $path]);
+                $storageDisk = $video->getDisk();
+                $previewDisk = Storage::disk('public');
+                $previewPath = $clip->getPreviewPath();
+
+                if ($storageDisk->exists($path) && !$storageDisk->delete($path)) {
+                    \Log::warning('video delete failed', ['video_id' => $video->getKey(), 'path' => $path]);
+                    return false;
+                }
+
+                if ($previewDisk->exists($previewPath) && !$previewDisk->delete($previewPath)) {
+                    \Log::warning('preview delete failed', ['video_id' => $video->getKey(), 'path' => $path]);
                     return false;
                 }
             } catch (\Throwable $e) {
