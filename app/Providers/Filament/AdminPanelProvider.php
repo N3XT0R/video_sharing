@@ -18,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Tapp\FilamentMailLog\FilamentMailLogPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -60,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
                 FilamentLogViewerPlugin::make()
                     ->navigationGroup('System')
                     ->navigationLabel('Log Viewer'),
+                FilamentMailLogPlugin::make(),
             ]);
     }
 }
