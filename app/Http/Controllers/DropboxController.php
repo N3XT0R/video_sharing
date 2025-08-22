@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -62,7 +63,7 @@ class DropboxController extends Controller
             abort(Response::HTTP_PRECONDITION_FAILED, 'Fehlende Konfiguration: DROPBOX_CLIENT_ID/SECRET');
         }
 
-        // Code gegen Token tauschen
+        // exchange code against token
         $resp = Http::asForm()->post($tokenUrl, [
             'grant_type' => 'authorization_code',
             'code' => (string)$request->string('code'),
@@ -72,30 +73,23 @@ class DropboxController extends Controller
         ])->throw()->json();
 
         $refreshToken = $resp['refresh_token'] ?? null;
+        /*
         $accessToken = $resp['access_token'] ?? null;
-        $expiresIn = $resp['expires_in'] ?? null;
-
-        $ttl = max(60, (int)($expiresIn ?? 0) - 60);
-        Cache::forever('dropbox.expire_at', Carbon::now()->addSeconds($ttl));
+        */
 
         if ($refreshToken) {
+            Log::debug('response', ['response' => $resp]);
             Cache::delete('dropbox.access_token');
             Config::query()->updateOrCreate(
                 ['key' => 'dropbox_refresh_token'],
                 ['value' => $refreshToken]
             );
+
+            $expiresIn = $resp['expires_in'] ?? null;
+            $ttl = max(60, (int)($expiresIn ?? 0) - 60);
+            Cache::forever('dropbox.expire_at', Carbon::now()->addSeconds($ttl));
         }
 
-        return response()->json([
-            'status' => 'ok',
-            'message' => $refreshToken
-                ? 'Refresh Token gespeichert. App neu laden.'
-                : 'Kein refresh_token erhalten (prüfe token_access_type=offline & Scopes).',
-            'access_token_preview' => $accessToken ? substr($accessToken, 0, 12).'…' : null,
-            'access_token_expires_in' => $expiresIn,
-            'redirect_uri_used' => $redirect,
-            'note' => 'Stelle sicher, dass die Redirect-URI exakt in der Dropbox-App hinterlegt ist.',
-            'raw' => config('app.debug') ? $resp : null, // nur im Debug sinnvoll
-        ]);
+        return response()->redirectToRoute('filament.admin.pages.dropbox-connect');
     }
 }
