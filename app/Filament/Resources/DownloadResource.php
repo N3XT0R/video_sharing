@@ -55,6 +55,7 @@ class DownloadResource extends Resource
                     ->label('Downloaded at')
                     ->dateTime()
                     ->since()
+                    ->dateTimeTooltip()
                     ->sortable(),
             ])
             ->filters([])
