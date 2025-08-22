@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2025-08-21
+## [2.1.0] - undefined
 
 ### Added
 
-- Daily `video:cleanup` command removes downloaded videos after their assignments expired for a configurable number of weeks.
+- Daily `video:cleanup` command removes downloaded videos after their assignments expired for a configurable number of
+  weeks.
 - New setting `post_expiry_retention_weeks` controls how long downloaded videos are kept before cleanup.
 - Admin downloads page lists who downloaded which video and when.
 - Batch assignment table now provides a direct "Open Offer" link for each item.
@@ -19,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Dropbox connection callback now redirects back to the connect page, logs the token exchange and clears cached access tokens.
+- Dropbox connection callback now redirects back to the connect page, logs the token exchange and clears cached access
+  tokens.
 
 ## [2.0.2] - 2025-08-20
 
