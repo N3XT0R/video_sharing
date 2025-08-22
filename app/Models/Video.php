@@ -35,11 +35,25 @@ class Video extends Model
     protected static function booted(): void
     {
         static::deleting(function (Video $video) {
-            if ($video->exists === false) {
+            $path = $video->getAttribute('path');
+            if (!$path) {
                 return true;
             }
-            $disk = $video->getDisk();
-            return $disk->delete($video->getAttribute('path'));
+
+            try {
+                $ok = $video->getDisk()->delete($path);
+
+                if (!$ok) {
+                    \Log::warning('File delete failed', ['video_id' => $video->id, 'path' => $path]);
+                    return false;
+                }
+            } catch (\Throwable $e) {
+                \Log::error('File delete threw',
+                    ['video_id' => $video->id, 'path' => $path, 'err' => $e->getMessage()]);
+                return false;
+            }
+
+            return true;
         });
     }
 }
