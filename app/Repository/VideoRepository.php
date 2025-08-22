@@ -21,6 +21,7 @@ class VideoRepository
             ->whereIn('id', $candidateIds)
             ->whereDoesntHave('assignments', function ($q) use ($threshold) {
                 $q->where('status', '!=', StatusEnum::PICKEDUP->value)
+                    ->orWhereNull('expires_at')
                     ->orWhere('expires_at', '>=', $threshold)
                     ->orWhereDoesntHave('downloads');
             })
