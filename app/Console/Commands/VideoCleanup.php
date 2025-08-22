@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-// app/Console/Commands/VideoCleanup.php
-
 namespace App\Console\Commands;
 
 use App\Services\VideoCleanupService;
@@ -22,7 +20,7 @@ class VideoCleanup extends Command
 
     public function handle(): int
     {
-        $weeks = (int) $this->option('weeks');
+        $weeks = (int)$this->option('weeks');
         $deleted = $this->service->cleanup($weeks);
         $this->info("Removed: {$deleted}");
 
