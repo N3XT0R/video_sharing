@@ -11,12 +11,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 Schedule::command('weekly:run')
     ->mondays()
     ->at('08:00')
     ->emailOutputTo($email);
-
 
 Schedule::command('ingest:scan', [
     '--inbox' => Cfg::get('ingest_inbox_absolute_path', 'default', '/srv/ingest/pending/', true),
@@ -28,10 +26,12 @@ Schedule::command('ingest:unzip', [
 ])->everyTenMinutes()
     ->emailOutputOnFailure($email);
 
-
 Schedule::command('assign:expire')
     ->dailyAt('03:00');
 
+Schedule::command('video:cleanup')
+    ->dailyAt('04:00')
+    ->emailOutputOnFailure($email);
 
 // Dropbox Refresh Token regelmäßig aktualisieren
 Schedule::command('dropbox:refresh-token')
