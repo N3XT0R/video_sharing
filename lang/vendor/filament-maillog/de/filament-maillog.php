@@ -6,9 +6,9 @@ return [
     'navigation.group' => 'System',
 
     'navigation.maillog.label' => 'E-Mail-Log',
-    'navigation.maillog.plural-label' => 'E-Mail-Protokolle',
+    'navigation.maillog.plural-label' => 'E-Mail-Log',
 
-    'table.heading' => 'E-Mail-Protokolle',
+    'table.heading' => 'E-Mail-Log',
 
     'column.status' => 'Status',
     'column.subject' => 'Betreff',
