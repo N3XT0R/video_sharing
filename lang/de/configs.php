@@ -14,5 +14,6 @@ return [
         'expire_after_days' => 'Assignment Gültigkeit in Tagen',
         'assign_expire_cooldown_days' => 'Cooldown-Tage je (channel, video)',
         'ingest_inbox_absolute_path' => 'Inbox-Pfad für Videos (absolut)',
+        'post_expiry_retention_weeks' => 'Aufbewahrungsfrist nach Ablauf (in Wochen)',
     ],
 ];
