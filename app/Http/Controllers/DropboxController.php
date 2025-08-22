@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 class DropboxController extends Controller
 {
     /**
-     * Leitet zum Dropbox-OAuth – mit CSRF/Replay-Schutz via state.
+     * Also redirects to Dropbox OAuth, with CSRF/replay protection via the state parameter.
      */
     public function connect(Request $request)
     {
@@ -45,11 +45,11 @@ class DropboxController extends Controller
     }
 
     /**
-     * Empfängt den Code, tauscht ihn gegen Tokens und speichert den refresh_token in der Datenbank.
+     * Receives the authorization code, exchanges it for tokens, and stores the refresh_token in the database.
      */
     public function callback(Request $request)
     {
-        // State prüfen
+        // check code
         if (!$request->filled('code')) {
             abort(Response::HTTP_BAD_REQUEST, 'Kein Code erhalten');
         }
