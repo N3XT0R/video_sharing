@@ -46,6 +46,9 @@ class DownloadResource extends Resource
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('assignment.video.original_name')
+                    ->url(function (Download $download) {
+                        return $download->getAttribute('assignment')->getAttribute('video')->getAttribute('preview_url');
+                    }, true)
                     ->label('Video')
                     ->sortable(),
                 TextColumn::make('downloaded_at')
