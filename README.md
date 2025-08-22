@@ -44,16 +44,17 @@ php artisan migrate
 
 ## Nützliche Befehle
 
-| Befehl                              | Beschreibung                                                    |
-|-------------------------------------|-----------------------------------------------------------------|
-| `php artisan ingest:unzip`          | Entpackt ZIP-Dateien aus einem Verzeichnis.                     |
-| `php artisan ingest:scan`           | Durchsucht den Upload‑Ordner und speichert neue Videos.         |
-| `php artisan info:import`           | Importiert Clip‑Infos aus einer `info.csv`.                     |
-| `php artisan assign:distribute`     | Verteilt Videos auf Kanäle.                                     |
-| `php artisan notify:offers`         | Versendet Angebotslinks per E‑Mail.                             |
-| `php artisan assign:expire`         | Markiert abgelaufene Zuweisungen und blockiert Kanäle temporär. |
-| `php artisan dropbox:refresh-token` | Aktualisiert den Dropbox Token.                                 |
-| `php artisan weekly:run`            | Führt Expire → Distribute → Notify hintereinander aus.          |
+| Befehl                              | Beschreibung                                                                                    |
+|-------------------------------------|-------------------------------------------------------------------------------------------------|
+| `php artisan ingest:unzip`          | Entpackt ZIP-Dateien aus einem Verzeichnis.                                                     |
+| `php artisan ingest:scan`           | Durchsucht den Upload‑Ordner und speichert neue Videos.                                         |
+| `php artisan info:import`           | Importiert Clip‑Infos aus einer `info.csv`.                                                     |
+| `php artisan assign:distribute`     | Verteilt Videos auf Kanäle.                                                                     |
+| `php artisan notify:offers`         | Versendet Angebotslinks per E‑Mail.                                                             |
+| `php artisan assign:expire`         | Markiert abgelaufene Zuweisungen und blockiert Kanäle temporär.                                 |
+| `php artisan dropbox:refresh-token` | Aktualisiert den Dropbox Token.                                                                 |
+| `php artisan weekly:run`            | Führt Expire → Distribute → Notify hintereinander aus.                                          |
+| `php artisan video:cleanup`         | Löscht heruntergeladene Videos, deren Ablauf seit der angegebenen Wochenzahl überschritten ist. |
 
 ## Dokumentation
 
