@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Channels now receive reminder emails one day before assignment links expire, listing remaining video offers and recording the send in a notification history.
 - New setting `email_reminder_days` configures how many days in advance reminder emails are sent.
 - Admin panel now lists sent notifications with their channel, type, and send time.
+- Admin panel now logs outgoing emails in a dedicated mail log.
 
 ### Changed
 
