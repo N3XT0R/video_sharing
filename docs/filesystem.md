@@ -2,20 +2,18 @@
 
 ## Dropbox einrichten (optional)
 
-Neue App einrichten auf https://www.dropbox.com/de/developers
-![Dropbox](./assets/images/dropbox_app.png)
+Öffne das [Dropbox Developer Portal](https://www.dropbox.com/de/developers) und lege eine neue Anwendung an. Die ersten Einstellungen nimmst du wie in den folgenden Abbildungen gezeigt vor:
 
-Erste Einstellungen konfigurieren (wie im Bild):
+![Dropbox](./assets/images/dropbox_app.png)
 ![Dropbox](./assets/images/dropbox_first_settings.png)
 
-Der Name der Anwendung muss unique sein.
-
-Anschließend sind der App Key und das App secret zu sichern,
-wie aber auch die erlaubten Redirect Urls und Domains anzugeben wie hier im Bild:
+Wähle einen eindeutigen Namen für die App. Nachdem die Anwendung erstellt wurde, sichere den App-Key und das App-Secret und trage die erlaubten Redirect-URLs sowie Domains ein, wie im nächsten Screenshot dargestellt:
 
 ![Dropbox](./assets/images/configuration.png)
 
-App-Key und App-Secret werden in der .env als Keys angegeben:
+Aktiviere außerdem die Berechtigungen `files.metadata.write`, `files.content.write`, `files.content.read` sowie `openid`, damit der OAuth-Connect-Flow gestartet werden kann.
+
+Die beiden Schlüssel werden anschließend in der Datei `.env` als Variablen `DROPBOX_CLIENT_ID` und `DROPBOX_CLIENT_SECRET` hinterlegt:
 
 ```dotenv
 DROPBOX_CLIENT_ID=
