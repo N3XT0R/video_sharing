@@ -11,30 +11,36 @@ Diese Anleitung beschreibt die Installation der Anwendung und die Einrichtung de
 
 ## Laravel installieren
 
-1. Repository klonen und ins Projektverzeichnis wechseln:
+- Repository klonen und ins Projektverzeichnis wechseln:
    ```bash
    git clone <REPO_URL>
    cd dashclip-delivery
    ```
-2. Abhängigkeiten installieren:
+- Abhängigkeiten installieren:
    ```bash
    composer install
    npm install
    ```
-3. Beispieldatei kopieren und Anwendungsschlüssel generieren:
+- Beispieldatei kopieren und Anwendungsschlüssel generieren:
    ```bash
    cp .env.example .env
    php artisan key:generate
    ```
-4. Datenbank konfigurieren und Migrationen ausführen:
+
+- Datenbank/Redis und etc konfigurieren:
+   ```bash
+   nano .env
+   ```
+
+- Datenbank konfigurieren und Migrationen ausführen:
    ```bash
    php artisan migrate
    ```
-5. Assets kompilieren:
+- Assets kompilieren:
    ```bash
    npm run build
    ```
-6. Filament-Benutzer erstellen:
+- Filament-Benutzer erstellen:
    ```bash
    php artisan make:filament-user
    ```
