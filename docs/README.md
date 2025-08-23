@@ -1,6 +1,7 @@
 # Dokumentation
 
-Dieses Verzeichnis enthält ergänzende Informationen zur Video-Sharing-Plattform. Die Dokumente erläutern Werkzeuge, Abläufe und Entscheidungen rund um das Projekt.
+Dieses Verzeichnis enthält ergänzende Informationen zur Video-Sharing-Plattform. Die Dokumente erläutern Werkzeuge,
+Abläufe und Entscheidungen rund um das Projekt.
 
 ## Inhalt
 
@@ -8,4 +9,5 @@ Dieses Verzeichnis enthält ergänzende Informationen zur Video-Sharing-Plattfor
 - [Werkzeuge](tool.md)
 - [Workflow](workflow.md)
 - [Deployment](deployment.md)
+- [Filesystem](filesystem.md)
 
