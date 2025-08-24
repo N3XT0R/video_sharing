@@ -112,7 +112,7 @@ final class IngestScanner
     /**
      * @return 'new'|'dups'|'err'
      */
-    private function processFile(string $path, string $ext, string $fileName, string $diskName): string
+    public function processFile(string $path, string $ext, string $fileName, string $diskName): string
     {
         $hash = hash_file('sha256', $path);
         $bytes = filesize($path);
