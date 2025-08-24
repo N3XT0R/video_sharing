@@ -7,8 +7,8 @@ namespace App\Services;
 use App\Enum\{NotificationTypeEnum, StatusEnum};
 use App\Mail\ReminderMail;
 use App\Models\{Assignment, Channel, Notification};
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 
 class ReminderNotifier
 {
@@ -23,12 +23,13 @@ class ReminderNotifier
      */
     public function notify(int $days = 1): array
     {
-        $start = now()->addDays($days)->startOfDay();
-        $end = $start->copy()->endOfDay();
+        $start = today();
+        $end = today()->addDays($days + 1);
 
         $assignments = Assignment::query()
             ->where('status', StatusEnum::NOTIFIED->value)
-            ->whereBetween('expires_at', [$start, $end])
+            ->where('expires_at', '>=', $start)
+            ->where('expires_at', '<', $end)
             ->with('video.clips')
             ->get()
             ->groupBy('channel_id');
