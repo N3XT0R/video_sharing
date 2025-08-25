@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 
 use App\Console\Commands\Traits\LockJobTrait;
 use App\Services\IngestScanner;
+use App\Facades\Cfg;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\Lock;
 use RuntimeException;
@@ -17,7 +18,7 @@ class IngestScan extends Command
 
     protected $signature = 'ingest:scan
         {--inbox=/srv/ingest/pending : Root directory of uploads (recursive)}
-        {--disk=dropbox : Target storage disk (e.g., dropbox|local)}
+        {--disk= : Target storage disk (e.g., dropbox|local)}
         {--wait=0 : Seconds to wait for the lock (0 = non-blocking)}
         {--ttl=900 : Lock TTL in seconds}
         {--lock-store= : Optional cache store (e.g., redis)}';
@@ -41,7 +42,7 @@ class IngestScan extends Command
         }
 
         $inbox = rtrim((string)$this->option('inbox'), '/');
-        $disk = (string)$this->option('disk');
+        $disk = (string)($this->option('disk') ?: Cfg::get('default_file_system', 'default', 'dropbox'));
         $ttl = (int)$this->option('ttl');
         $waitSec = (int)$this->option('wait');
 
