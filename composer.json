@@ -18,7 +18,7 @@
     "laravel/tinker": "^2.10.1",
     "maennchen/zipstream-php": "^3.2",
     "spatie/flysystem-dropbox": "^3.0",
-    "tapp/filament-maillog": "^1.0"
+    "tapp/filament-maillog": "^2.0"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
