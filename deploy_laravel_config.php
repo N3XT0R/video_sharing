@@ -358,7 +358,7 @@ task('deploy', [
     'deploy:publish',
 ]);
 
-before('artisan:view:cache', 'npm:ci');
+before('filament:view:cache', 'npm:ci');
 after('npm:ci', 'npm:build');
 before('systemd:restart', 'systemd:detect');
 after('deploy:cleanup', 'systemd:restart');
