@@ -28,7 +28,8 @@ return [
             'authEndpoint' => '/broadcasting/auth',
             'disableStats' => true,
             'encrypted' => true,
-            // 'forceTLS' => true,
+            'wsPath' => env('VITE_REVERB_SERVER'),
+            'forceTLS' => env('REVERB_SCHEME', 'https') === 'https',
         ],
 
     ],
