@@ -1,10 +1,10 @@
 <div
-    x-data="{
+        x-data="{
         start: 0,
         end: 0,
         duration: 0,
         init() {
-            const input = this.$el.parentElement.querySelector('input[type=file][wire\\:model$=\"file\"]');
+            const input = this.$el.parentElement.querySelector('input[type=file][wire\\:model$=file]');
             input?.addEventListener('change', e => {
                 const file = e.target.files[0];
                 if (file) {
@@ -19,7 +19,7 @@
             });
         }
     }"
-    class="space-y-2"
+        class="space-y-2"
 >
     <video x-ref="video" controls class="w-full"></video>
     <input type="hidden" x-model="start" wire:model="start_sec">
