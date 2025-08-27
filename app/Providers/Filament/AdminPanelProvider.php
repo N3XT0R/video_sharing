@@ -30,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->brandLogo(asset('images/logo.png'))
             ->id('admin')
             ->path('admin')
             ->login()
