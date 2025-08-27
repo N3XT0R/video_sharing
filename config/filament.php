@@ -28,7 +28,7 @@ return [
             'authEndpoint' => '/broadcasting/auth',
             'disableStats' => true,
             'encrypted' => true,
-            'forceTLS' => true,
+            // 'forceTLS' => true,
         ],
 
     ],
