@@ -19,7 +19,7 @@ return [
     'broadcasting' => [
 
         'echo' => [
-            'broadcaster' => 'pusher',
+            'broadcaster' => 'reverb',
             'key' => env('VITE_PUSHER_APP_KEY'),
             'cluster' => env('VITE_PUSHER_APP_CLUSTER'),
             'wsHost' => env('VITE_PUSHER_HOST'),
