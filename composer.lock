@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "24c7d32e507daef6353130c7a4a55636",
+    "content-hash": "c963ae573dfe5af40f96131535410c0e",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9018,16 +9018,16 @@
         },
         {
             "name": "tapp/filament-maillog",
-            "version": "v1.0.8",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/TappNetwork/filament-maillog.git",
-                "reference": "b6050aa0785d56ee0ebe429e5f928fa2bb227edc"
+                "reference": "2f82c27b8babcff65fb910198ac9a72fab0d3792"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/TappNetwork/filament-maillog/zipball/b6050aa0785d56ee0ebe429e5f928fa2bb227edc",
-                "reference": "b6050aa0785d56ee0ebe429e5f928fa2bb227edc",
+                "url": "https://api.github.com/repos/TappNetwork/filament-maillog/zipball/2f82c27b8babcff65fb910198ac9a72fab0d3792",
+                "reference": "2f82c27b8babcff65fb910198ac9a72fab0d3792",
                 "shasum": ""
             },
             "require": {
@@ -9050,7 +9050,7 @@
                 "spatie/laravel-ray": "^1.35"
             },
             "suggest": {
-                "filament/filament": "^3.0-stable - Adds Filament admin panel integration"
+                "filament/filament": "^4.0 - Adds Filament admin panel integration"
             },
             "type": "library",
             "extra": {
@@ -9090,7 +9090,7 @@
             ],
             "support": {
                 "issues": "https://github.com/TappNetwork/filament-maillog/issues",
-                "source": "https://github.com/TappNetwork/filament-maillog/tree/v1.0.8"
+                "source": "https://github.com/TappNetwork/filament-maillog/tree/v2.0.0"
             },
             "funding": [
                 {
@@ -9098,7 +9098,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-06-19T00:50:43+00:00"
+            "time": "2025-06-19T00:36:48+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
