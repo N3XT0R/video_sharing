@@ -2,28 +2,28 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\View;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Hidden;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Jobs\ProcessUploadedVideo;
-use Filament\Forms;
-use Filament\Pages\Page;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class VideoUpload extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::ArrowUpTray;
     protected static ?string $navigationLabel = 'Video Upload';
-    protected static string | \UnitEnum | null $navigationGroup = 'Media';
+    protected static string|\UnitEnum|null $navigationGroup = 'Media';
     protected static ?string $title = 'Video Upload';
     protected string $view = 'filament.pages.video-upload';
 
@@ -72,7 +72,7 @@ class VideoUpload extends Page implements HasForms
             $stored = $file->store('uploads/tmp');
 
             ProcessUploadedVideo::dispatch(
-                path: storage_path('app/' . $stored),
+                path: storage_path('app/'.$stored),
                 originalName: $file->getClientOriginalName(),
                 ext: $file->getClientOriginalExtension(),
                 start: (int)($clip['start_sec'] ?? 0),
