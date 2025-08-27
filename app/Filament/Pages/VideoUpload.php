@@ -47,9 +47,7 @@ class VideoUpload extends Page implements HasForms
                             ->required()
                             ->acceptedFileTypes(['video/*'])
                             ->storeFiles(false),
-                        View::make('clip')
-                            ->view('filament.forms.components.clip-selector')
-                            ->label('Ausschnitt')
+                        View::make('filament.forms.components.clip-selector')
                             ->dehydrated(false),
                         TextInput::make('note')->label('Notiz'),
                         TextInput::make('bundle_key')->label('Bundle ID'),
