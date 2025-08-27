@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -64,6 +65,9 @@ class AdminPanelProvider extends PanelProvider
                     ->navigationGroup('System')
                     ->navigationLabel('Log Viewer'),
                 FilamentMailLogPlugin::make(),
+            ])
+            ->multiFactorAuthentication([
+                AppAuthentication::make(),
             ]);
     }
 }
