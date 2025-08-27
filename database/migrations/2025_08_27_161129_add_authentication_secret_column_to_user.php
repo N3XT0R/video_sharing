@@ -12,6 +12,8 @@ return new class extends Migration {
     {
         Schema::table('users', function (Blueprint $table) {
             $table->text('app_authentication_secret')->nullable();
+            $table->text('app_authentication_recovery_codes')->nullable();
+            $table->boolean('has_email_authentication')->default(false);
         });
     }
 
@@ -22,6 +24,8 @@ return new class extends Migration {
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('app_authentication_secret');
+            $table->dropColumn('app_authentication_recovery_codes');
+            $table->dropColumn('has_email_authentication');
         });
     }
 };
