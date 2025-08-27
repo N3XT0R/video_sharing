@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Multi-Factor Auth added
+- **Multi-factor authentication (MFA)** with support for authenticator apps (TOTP) and one-time codes via email.
+- **Web-based video upload** in the admin UI, complementing existing ingest workflows.
 
 ### Changed
 
-- Upgraded to Filament v4.
+- **Backend upgraded to Filament v4** (UI components and pages migrated).
+
+### Breaking
+
+- The Filament v4 upgrade may require adjustments to custom admin pages, widgets, or themes.
 
 ## [2.1.2] - 2025-08-25
 
