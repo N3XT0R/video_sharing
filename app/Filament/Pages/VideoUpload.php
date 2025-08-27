@@ -2,22 +2,30 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\View;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use App\Jobs\ProcessUploadedVideo;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 
-class VideoUpload extends Page implements Forms\Contracts\HasForms
+class VideoUpload extends Page implements HasForms
 {
-    use Forms\Concerns\InteractsWithForms;
+    use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-up-tray';
     protected static ?string $navigationLabel = 'Video Upload';
-    protected static ?string $navigationGroup = 'Media';
+    protected static string | \UnitEnum | null $navigationGroup = 'Media';
     protected static ?string $title = 'Video Upload';
-    protected static string $view = 'filament.pages.video-upload';
+    protected string $view = 'filament.pages.video-upload';
 
     public ?array $data = [];
 
@@ -26,28 +34,28 @@ class VideoUpload extends Page implements Forms\Contracts\HasForms
         $this->form->fill();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Repeater::make('clips')
+        return $schema
+            ->components([
+                Repeater::make('clips')
                     ->label('Videos')
                     ->defaultItems(1)
                     ->schema([
-                        Forms\Components\FileUpload::make('file')
+                        FileUpload::make('file')
                             ->label('Video')
                             ->required()
                             ->acceptedFileTypes(['video/*'])
                             ->storeFiles(false),
-                        Forms\Components\View::make('clip')
+                        View::make('clip')
                             ->view('filament.forms.components.clip-selector')
                             ->label('Ausschnitt')
                             ->dehydrated(false),
-                        Forms\Components\TextInput::make('note')->label('Notiz'),
-                        Forms\Components\TextInput::make('bundle_key')->label('Bundle ID'),
-                        Forms\Components\TextInput::make('role')->label('Rolle'),
-                        Forms\Components\Hidden::make('start_sec')->default(0),
-                        Forms\Components\Hidden::make('end_sec')->default(0),
+                        TextInput::make('note')->label('Notiz'),
+                        TextInput::make('bundle_key')->label('Bundle ID'),
+                        TextInput::make('role')->label('Rolle'),
+                        Hidden::make('start_sec')->default(0),
+                        Hidden::make('end_sec')->default(0),
                     ])
             ])
             ->statePath('data');
@@ -59,7 +67,7 @@ class VideoUpload extends Page implements Forms\Contracts\HasForms
         $user = Auth::user()?->name;
 
         foreach ($state['clips'] ?? [] as $clip) {
-            /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file */
+            /** @var TemporaryUploadedFile $file */
             $file = $clip['file'];
             $stored = $file->store('uploads/tmp');
 

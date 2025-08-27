@@ -9,15 +9,15 @@ use Illuminate\Support\Facades\Cache;
 
 class DropboxConnect extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-cloud';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cloud';
 
     protected static ?string $navigationLabel = 'Dropbox';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static string | \UnitEnum | null $navigationGroup = 'Settings';
 
     protected static ?string $title = 'Dropbox verbinden';
 
-    protected static string $view = 'filament.pages.dropbox-connect';
+    protected string $view = 'filament.pages.dropbox-connect';
 
     public bool $connected = false;
 

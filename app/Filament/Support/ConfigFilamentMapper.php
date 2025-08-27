@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Textarea;
 use App\Enum\ConfigTypeEnum;
 use App\Support\ConfigCaster;
 use Filament\Forms;
-use Filament\Forms\Components\Component;
 
 /**
  * Maps a ConfigTypeEnum (via normalized cast_type) to Filament components.
@@ -19,32 +22,32 @@ class ConfigFilamentMapper
      * based on the provided cast type (aliases resolved by ConfigCaster).
      *
      * @param  string|null  $castType
-     * @return array<int, Component>
+     * @return array<int, \Filament\Schemas\Components\Component>
      */
     public static function valueFormComponents(?string $castType): array
     {
         return match (ConfigCaster::normalize($castType)) {
             ConfigTypeEnum::BOOL => [
-                Forms\Components\Toggle::make('value')
+                Toggle::make('value')
                     ->label('Value')
                     ->required(),
             ],
 
             ConfigTypeEnum::INT, ConfigTypeEnum::FLOAT => [
-                Forms\Components\TextInput::make('value')
+                TextInput::make('value')
                     ->numeric()
                     ->label('Value')
                     ->required(),
             ],
 
             ConfigTypeEnum::JSON => [
-                Forms\Components\KeyValue::make('value')
+                KeyValue::make('value')
                     ->label('Value')
                     ->required(),
             ],
 
             ConfigTypeEnum::STRING => [
-                Forms\Components\Textarea::make('value')
+                Textarea::make('value')
                     ->label('Value')
                     ->required()
                     ->columnSpanFull(),

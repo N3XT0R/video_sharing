@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\BatchResource\Pages\ListBatches;
-use App\Filament\Resources\BatchResource\Pages\ViewBatch;
-use App\Filament\Resources\BatchResource\RelationManagers\ChannelsRelationManager;
+use App\Filament\Resources\Batches\Pages\ListBatches;
+use App\Filament\Resources\Batches\Pages\ViewBatch;
+use App\Filament\Resources\Batches\RelationManagers\ChannelsRelationManager;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;

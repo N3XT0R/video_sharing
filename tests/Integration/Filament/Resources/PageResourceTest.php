@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\PageResource\Pages\EditPage;
-use App\Filament\Resources\PageResource\Pages\ListPages;
+use App\Filament\Resources\Pages\Pages\EditPage;
+use App\Filament\Resources\Pages\Pages\ListPages;
 use App\Models\Page;
 use App\Models\User;
 use Livewire\Livewire;

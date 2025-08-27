@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\ConfigResource\Pages\EditConfig;
-use App\Filament\Resources\ConfigResource\Pages\ListConfigs;
+use App\Filament\Resources\Configs\Pages\EditConfig;
+use App\Filament\Resources\Configs\Pages\ListConfigs;
 use App\Models\Config;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

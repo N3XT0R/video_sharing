@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\NotificationResource;
-use App\Filament\Resources\NotificationResource\Pages\ListNotifications;
+use App\Filament\Resources\Notifications\NotificationResource;
+use App\Filament\Resources\Notifications\Pages\ListNotifications;
 use App\Models\Notification;
 use App\Models\User;
 use Filament\Tables\Table;

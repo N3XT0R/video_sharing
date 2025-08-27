@@ -11,17 +11,18 @@
     "php": "^8.4",
     "ext-intl": "*",
     "ext-zip": "*",
-    "filament/filament": "^3.3",
-    "gboquizosanchez/filament-log-viewer": "^1.0.0",
+    "filament/filament": "^4.0",
+    "gboquizosanchez/filament-log-viewer": "^2.0.0",
     "laravel/framework": "^12.0",
     "laravel/reverb": "^1.0",
     "laravel/tinker": "^2.10.1",
     "maennchen/zipstream-php": "^3.2",
     "spatie/flysystem-dropbox": "^3.0",
-    "tapp/filament-maillog": "^1.0"
+    "tapp/filament-maillog": "^2.0"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
+    "filament/upgrade": "^4.0",
     "laravel/pail": "^1.2.2",
     "laravel/pint": "^1.13",
     "laravel/sail": "^1.41",

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\ChannelResource;
-use App\Filament\Resources\ChannelResource\Pages\ListChannels;
+use App\Filament\Resources\Channels\ChannelResource;
+use App\Filament\Resources\Channels\Pages\ListChannels;
 use Filament\Tables\Table;
 use Tests\TestCase;
 

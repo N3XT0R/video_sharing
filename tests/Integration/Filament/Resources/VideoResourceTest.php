@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\VideoResource\Pages\ListVideos;
-use App\Filament\Resources\VideoResource\Pages\ViewVideo;
+use App\Filament\Resources\Videos\Pages\ListVideos;
+use App\Filament\Resources\Videos\Pages\ViewVideo;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;

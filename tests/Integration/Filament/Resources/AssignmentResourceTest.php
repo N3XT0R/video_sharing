@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Filament\Resources;
 
-use App\Filament\Resources\AssignmentResource;
-use App\Filament\Resources\AssignmentResource\Pages\ListAssignments;
+use App\Filament\Resources\Assignments\AssignmentResource;
+use App\Filament\Resources\Assignments\Pages\ListAssignments;
 use App\Models\Assignment;
 use App\Models\Batch;
 use App\Models\Channel;
