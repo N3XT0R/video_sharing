@@ -72,6 +72,7 @@ class AdminPanelProvider extends PanelProvider
                 FilamentMailLogPlugin::make(),
                 EasyFooterPlugin::make()
                     ->withGithub()
+                    ->withBorder()
             ])
             ->multiFactorAuthentication([
                 AppAuthentication::make()
