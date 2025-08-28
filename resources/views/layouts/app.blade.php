@@ -41,8 +41,8 @@
 </main>
 
 <footer>
-    &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: <a
-            href="{{route('changelog')}}" target="_blank">{{ config('app.version', '0.0.0-dev') }}</a>
+      &copy; {{ date('Y') }} {{ config('app.name', 'App') }} - Version: <a
+              href="{{route('changelog')}}" target="_blank">@livewire(\Devonab\FilamentEasyFooter\Livewire\GitHubVersion::class)</a>
     - <a href="{{ route('impressum') }}" target="_blank">Impressum</a>
     - <a href="{{ route('datenschutz') }}" target="_blank">Datenschutz</a>
     <br/>
