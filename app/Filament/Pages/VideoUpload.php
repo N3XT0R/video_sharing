@@ -15,6 +15,7 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Clip;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class VideoUpload extends Page implements HasForms
@@ -50,7 +51,17 @@ class VideoUpload extends Page implements HasForms
                         View::make('filament.forms.components.clip-selector')
                             ->dehydrated(false),
                         TextInput::make('note')->label('Notiz'),
-                        TextInput::make('bundle_key')->label('Bundle ID'),
+                        TextInput::make('bundle_key')
+                            ->label('Bundle ID')
+                            ->datalist(
+                                Clip::query()
+                                    ->whereNotNull('bundle_key')
+                                    ->whereHas('video', fn ($q) => $q->doesntHave('assignments'))
+                                    ->pluck('bundle_key')
+                                    ->unique()
+                                    ->values()
+                                    ->all()
+                            ),
                         TextInput::make('role')->label('Rolle'),
                         Hidden::make('start_sec')->default(0),
                         Hidden::make('end_sec')->default(0),
