@@ -7,8 +7,8 @@ namespace Tests\Feature\Filament\Widgets;
 use App\Enum\StatusEnum;
 use App\Filament\Widgets\AssignmentStatusChart;
 use App\Models\Assignment;
-use App\Models\Channel;
 use App\Models\Batch;
+use App\Models\Channel;
 use Tests\DatabaseTestCase;
 
 final class AssignmentStatusChartTest extends DatabaseTestCase
@@ -45,9 +45,24 @@ final class AssignmentStatusChartTest extends DatabaseTestCase
 
         $this->assertSame(['A', 'B'], $data['labels']);
         $this->assertEquals([
-            ['label' => 'Picked up', 'data' => [50.0, 50.0]],
-            ['label' => 'Notified', 'data' => [25.0, 50.0]],
-            ['label' => 'Rejected', 'data' => [25.0, 0.0]],
+            [
+                'label' => 'Picked up',
+                'data' => [50.0, 50.0],
+                'backgroundColor' => '#10b981',
+                'borderColor' => '#10b981',
+            ],
+            [
+                'label' => 'Notified',
+                'data' => [25.0, 50.0],
+                'backgroundColor' => '#3b82f6',
+                'borderColor' => '#3b82f6',
+            ],
+            [
+                'label' => 'Rejected',
+                'data' => [25.0, 0.0],
+                'backgroundColor' => '#ef4444',
+                'borderColor' => '#ef4444',
+            ],
         ], $data['datasets']);
     }
 }

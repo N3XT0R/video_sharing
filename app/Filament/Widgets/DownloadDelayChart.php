@@ -70,6 +70,7 @@ class DownloadDelayChart extends ChartWidget
                 [
                     'label' => 'Minutes',
                     'data' => [$avg, $median],
+                    'borderColor' => ['#3b82f6', '#f59e0b'],
                 ],
             ],
             'labels' => ['Average', 'Median'],

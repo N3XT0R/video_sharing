@@ -47,13 +47,27 @@ class UploadStatsChart extends ChartWidget
             ->get();
 
         $labels = $rows->map(fn($row) => $row->submitted_by ?? 'Unknown')->all();
-        $data = $rows->map(fn($row) => (int) $row->count)->all();
+        $data = $rows->map(fn($row) => (int)$row->count)->all();
+
+        $colorPalette = [
+            '#3b82f6',
+            '#10b981',
+            '#f59e0b',
+            '#ef4444',
+            '#8b5cf6',
+            '#ec4899',
+            '#14b8a6',
+            '#f97316',
+            '#84cc16',
+            '#06b6d4',
+        ];
 
         return [
             'datasets' => [
                 [
                     'label' => 'Uploads',
                     'data' => $data,
+                    'backgroundColor' => array_slice($colorPalette, 0, count($data)),
                 ],
             ],
             'labels' => $labels,

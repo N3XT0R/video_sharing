@@ -73,6 +73,10 @@ class AdminPanelProvider extends PanelProvider
                 EasyFooterPlugin::make()
                     ->withGithub()
                     ->withBorder()
+                    ->withLinks([
+                        ['title' => 'Changelog', 'url' => url('/changelog')],
+                        ['title' => 'Privacy Policy', 'url' => url('/datenschutz')],
+                    ])
             ])
             ->multiFactorAuthentication([
                 AppAuthentication::make()

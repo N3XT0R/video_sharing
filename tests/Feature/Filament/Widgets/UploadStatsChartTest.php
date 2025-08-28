@@ -27,6 +27,7 @@ final class UploadStatsChartTest extends DatabaseTestCase
             [
                 'label' => 'Uploads',
                 'data' => [2, 1],
+                'backgroundColor' => ['#3b82f6', '#10b981'],
             ],
         ], $data['datasets']);
     }

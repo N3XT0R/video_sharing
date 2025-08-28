@@ -47,7 +47,7 @@ class DownloadsPerHourChart extends ChartWidget
 
         $data = array_fill(0, 24, 0);
         foreach ($rows as $row) {
-            $data[(int) $row->hour] = (int) $row->count;
+            $data[(int)$row->hour] = (int)$row->count;
         }
 
         return [
@@ -55,9 +55,11 @@ class DownloadsPerHourChart extends ChartWidget
                 [
                     'label' => 'Downloads',
                     'data' => array_values($data),
+                    'borderColor' => '#8b5cf6',
+                    'backgroundColor' => '#8b5cf6',
                 ],
             ],
-            'labels' => array_map(fn ($h) => str_pad((string) $h, 2, '0', STR_PAD_LEFT), range(0, 23)),
+            'labels' => array_map(fn($h) => str_pad((string)$h, 2, '0', STR_PAD_LEFT), range(0, 23)),
         ];
     }
 

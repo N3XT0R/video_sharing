@@ -48,14 +48,21 @@ class AssignmentStatusChart extends ChartWidget
 
         $stats = [];
         foreach ($rows as $row) {
-            $stats[$row->channel][$row->status] = (int) $row->count;
-            $stats[$row->channel]['total'] = ($stats[$row->channel]['total'] ?? 0) + (int) $row->count;
+            $stats[$row->channel][$row->status] = (int)$row->count;
+            $stats[$row->channel]['total'] = ($stats[$row->channel]['total'] ?? 0) + (int)$row->count;
         }
 
         $labels = array_keys($stats);
 
+        $colors = [
+            'picked_up' => '#10b981',
+            'notified' => '#3b82f6',
+            'rejected' => '#ef4444',
+        ];
+
         $datasets = [];
         foreach (['picked_up', 'notified', 'rejected'] as $status) {
+            $color = $colors[$status];
             $datasets[] = [
                 'label' => ucfirst(str_replace('_', ' ', $status)),
                 'data' => array_map(function ($channel) use ($stats, $status) {
@@ -63,6 +70,8 @@ class AssignmentStatusChart extends ChartWidget
                     $count = $stats[$channel][$status] ?? 0;
                     return round($count / $total * 100, 2);
                 }, $labels),
+                'backgroundColor' => $color,
+                'borderColor' => $color,
             ];
         }
 
