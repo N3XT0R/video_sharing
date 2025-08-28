@@ -16,10 +16,11 @@ class Config extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['key', 'value', 'is_visible', 'cast_type', 'config_category_id'];
+    protected $fillable = ['key', 'value', 'selectable', 'is_visible', 'cast_type', 'config_category_id'];
 
     protected $casts = [
         'is_visible' => 'bool',
+        'selectable' => 'array',
     ];
 
     /**

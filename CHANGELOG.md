@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Multi-factor authentication (MFA)** with support for authenticator apps (TOTP) and one-time codes via email.
 - **Web-based video upload** in the admin UI, complementing existing ingest workflows.
+- Config table now supports a `selectable` JSON column so settings can offer predefined choices.
+- New **FFMPEG** configuration category seeds codec, preset and parameter defaults for preview generation.
+- Admin UI renders selectable values for JSON-based settings as multi-select inputs.
 
 ### Changed
 
 - **Backend upgraded to Filament v4** (UI components and pages migrated).
+- Preview generation now uses the `pbmedia/laravel-ffmpeg` package and reads all codec options from the database.
 
 ### Breaking
 

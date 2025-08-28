@@ -41,11 +41,14 @@ class ConfigResource extends Resource
                 ->default('string')
                 ->reactive()
                 ->dehydrated(false),
+            Hidden::make('selectable')
+                ->default(fn(?Config $record) => $record?->selectable)
+                ->dehydrated(false),
             Placeholder::make('cast_type_display')
                 ->label('Cast Type')
                 ->content(fn(Get $get) => ConfigFilamentMapper::typeLabel($get('cast_type'))),
             Group::make()
-                ->schema(fn(Get $get) => ConfigFilamentMapper::valueFormComponents($get('cast_type')))
+                ->schema(fn(Get $get) => ConfigFilamentMapper::valueFormComponents($get('cast_type'), $get('selectable')))
                 ->columnSpanFull(),
         ]);
     }
