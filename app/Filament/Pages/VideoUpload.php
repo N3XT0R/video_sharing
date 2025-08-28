@@ -41,7 +41,8 @@ class VideoUpload extends Page implements HasForms
         return $schema
             ->components([
                 Repeater::make('clips')
-                    ->label('Videos')
+                    ->label('Video')
+                    ->addActionLabel('Weiteres Video hinzufügen')
                     ->defaultItems(1)
                     ->schema([
                         FileUpload::make('file')
