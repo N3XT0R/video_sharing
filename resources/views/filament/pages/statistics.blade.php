@@ -13,13 +13,21 @@
 
     <div class="mt-6 space-y-6">
         @if ($tab === 'assignments')
-            @livewire(\App\Filament\Widgets\AssignmentStatusChart::class)
+            @foreach ($this->getWidgetsSchemaComponents([\App\Filament\Widgets\AssignmentStatusChart::class]) as $widget)
+                {{ $widget }}
+            @endforeach
         @elseif ($tab === 'uploads')
-            @livewire(\App\Filament\Widgets\UploadStatsChart::class)
+            @foreach ($this->getWidgetsSchemaComponents([\App\Filament\Widgets\UploadStatsChart::class]) as $widget)
+                {{ $widget }}
+            @endforeach
         @elseif ($tab === 'downloads')
             <div class="grid gap-6">
-                @livewire(\App\Filament\Widgets\DownloadDelayChart::class)
-                @livewire(\App\Filament\Widgets\DownloadsPerHourChart::class)
+                @foreach ($this->getWidgetsSchemaComponents([
+                    \App\Filament\Widgets\DownloadDelayChart::class,
+                    \App\Filament\Widgets\DownloadsPerHourChart::class,
+                ]) as $widget)
+                    {{ $widget }}
+                @endforeach
             </div>
         @endif
     </div>

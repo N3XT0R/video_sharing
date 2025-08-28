@@ -65,11 +65,7 @@ class AssignmentStatusChart extends ChartWidget
             $color = $colors[$status];
             $datasets[] = [
                 'label' => ucfirst(str_replace('_', ' ', $status)),
-                'data' => array_map(function ($channel) use ($stats, $status) {
-                    $total = $stats[$channel]['total'] ?: 1;
-                    $count = $stats[$channel][$status] ?? 0;
-                    return round($count / $total * 100, 2);
-                }, $labels),
+                'data' => array_map(fn ($channel) => $stats[$channel][$status] ?? 0, $labels),
                 'backgroundColor' => $color,
                 'borderColor' => $color,
             ];
@@ -78,6 +74,16 @@ class AssignmentStatusChart extends ChartWidget
         return [
             'datasets' => $datasets,
             'labels' => $labels,
+        ];
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'scales' => [
+                'x' => ['stacked' => true],
+                'y' => ['stacked' => true],
+            ],
         ];
     }
 
