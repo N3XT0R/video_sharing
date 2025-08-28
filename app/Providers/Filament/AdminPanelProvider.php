@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
+use Devonab\FilamentEasyFooter\EasyFooterPlugin;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Auth\MultiFactor\Email\EmailAuthentication;
 use Filament\Http\Middleware\Authenticate;
@@ -69,6 +70,8 @@ class AdminPanelProvider extends PanelProvider
                     ->navigationGroup('System')
                     ->navigationLabel('Log Viewer'),
                 FilamentMailLogPlugin::make(),
+                EasyFooterPlugin::make()
+                    ->withGithub()
             ])
             ->multiFactorAuthentication([
                 AppAuthentication::make()

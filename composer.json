@@ -11,6 +11,7 @@
     "php": "^8.4",
     "ext-intl": "*",
     "ext-zip": "*",
+    "devonab/filament-easy-footer": "^2.0",
     "filament/filament": "^4.0",
     "gboquizosanchez/filament-log-viewer": "^2.0.0",
     "laravel/framework": "^12.0",
