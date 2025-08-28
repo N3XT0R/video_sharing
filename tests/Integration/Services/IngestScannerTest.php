@@ -13,6 +13,7 @@ use App\Services\PreviewService;
 use Illuminate\Support\Facades\Storage;
 use Tests\DatabaseTestCase;
 use Tests\Helper\FfmpegBinaryFaker;
+use App\Facades\Cfg;
 
 class IngestScannerTest extends DatabaseTestCase
 {
@@ -34,6 +35,11 @@ class IngestScannerTest extends DatabaseTestCase
         return $inbox;
     }
 
+    private function sampleVideoContent(): string
+    {
+        return 'FAKE_MP4';
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,6 +58,10 @@ class IngestScannerTest extends DatabaseTestCase
         // Ensure public root + previews/ directory exist (PreviewService writes there)
         Storage::makeDirectory('public');
         Storage::disk('public')->makeDirectory('previews');
+
+        // Clean videos directory to avoid cross-test interference
+        Storage::deleteDirectory('videos');
+        Storage::makeDirectory('videos');
     }
 
     protected function tearDown(): void
@@ -70,9 +80,8 @@ class IngestScannerTest extends DatabaseTestCase
     {
         // Use a fake ffmpeg that creates a tiny output file and exits 0
         $faker = new FfmpegBinaryFaker();
-        config()->set('services.ffmpeg.bin', $faker->success()); // fake binary
-        config()->set('services.ffmpeg.video_args', []);          // no extra flags
-        config()->set('services.ffmpeg.timeout', 5);
+        Cfg::set('ffmpeg_bin', $faker->success(), 'ffmpeg'); // fake binary
+        Cfg::set('ffmpeg_video_args', [], 'ffmpeg', 'json');          // no extra flags
 
         return app(PreviewService::class);
     }
@@ -84,7 +93,7 @@ class IngestScannerTest extends DatabaseTestCase
         // Source video inside inbox
         $filename = 'cam1.mp4';
         $absFile = $inbox.'/'.$filename;
-        file_put_contents($absFile, str_repeat('A', 2048));
+        file_put_contents($absFile, $this->sampleVideoContent());
         $hash = hash_file('sha256', $absFile);
         $destRel = $this->expectedDest($hash, 'mp4');
 
@@ -152,7 +161,7 @@ class IngestScannerTest extends DatabaseTestCase
 
         // First run: ingest one
         $abs1 = $inbox.'/d1.mp4';
-        file_put_contents($abs1, str_repeat('X', 100));
+        file_put_contents($abs1, $this->sampleVideoContent());
         $hash = hash_file('sha256', $abs1);
         $destRel = $this->expectedDest($hash, 'mp4');
 
@@ -163,7 +172,7 @@ class IngestScannerTest extends DatabaseTestCase
 
         // Second run: same content, different name
         $abs2 = $inbox.'/duplicate_same_content.mp4';
-        file_put_contents($abs2, str_repeat('X', 100));
+        file_put_contents($abs2, $this->sampleVideoContent());
 
         $stats2 = $scanner->scan($inbox, 'local');
         $this->assertSame(['new' => 0, 'dups' => 1, 'err' => 0], $stats2);
@@ -178,7 +187,7 @@ class IngestScannerTest extends DatabaseTestCase
         $inbox = $this->makeInbox();
 
         $abs = $inbox.'/broken.mp4';
-        file_put_contents($abs, 'content');
+        file_put_contents($abs, $this->sampleVideoContent());
         $hash = hash_file('sha256', $abs);
 
         // Create a directory at the final file path to force fopen() failure
@@ -186,6 +195,7 @@ class IngestScannerTest extends DatabaseTestCase
         $destAbs = Storage::path($destRel);
         @mkdir(dirname($destAbs), 0777, true);
         @mkdir($destAbs, 0777, true);
+        @file_put_contents($destAbs.'/keep', 'x');
 
         $scanner = new IngestScanner($this->makePreviewService(), app(InfoImporter::class));
         $stats = $scanner->scan($inbox, 'local');
