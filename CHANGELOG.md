@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New **FFMPEG** configuration category seeds codec, preset and parameter defaults for preview generation.
 - Admin UI renders selectable values for JSON-based settings as multi-select inputs.
 
+- Admin statistics page with chart widgets for assignments, uploads, and download activity.
+
 ### Changed
 
 - **Backend upgraded to Filament v4** (UI components and pages migrated).
