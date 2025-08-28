@@ -2,22 +2,19 @@
 
 namespace App\Filament\Resources\Configs;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Group;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\EditAction;
-use App\Filament\Resources\Configs\Pages\ListConfigs;
 use App\Filament\Resources\Configs\Pages\EditConfig;
-use App\Filament\Resources\ConfigResource\Pages;
+use App\Filament\Resources\Configs\Pages\ListConfigs;
 use App\Filament\Support\ConfigFilamentMapper;
 use App\Models\Config;
-use Filament\Forms;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -25,8 +22,8 @@ class ConfigResource extends Resource
 {
     protected static ?string $model = Config::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string | \UnitEnum | null $navigationGroup = 'Settings';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
     protected static ?string $modelLabel = 'Config';
     protected static ?string $pluralModelLabel = 'Configs';
 
@@ -42,13 +39,14 @@ class ConfigResource extends Resource
                 ->reactive()
                 ->dehydrated(false),
             Hidden::make('selectable')
-                ->default(fn(?Config $record) => $record?->selectable)
+                ->default(fn(?Config $record) => $record?->getAttribute('selectable'))
                 ->dehydrated(false),
-            Placeholder::make('cast_type_display')
+            TextEntry::make('cast_type_display')
                 ->label('Cast Type')
-                ->content(fn(Get $get) => ConfigFilamentMapper::typeLabel($get('cast_type'))),
+                ->state(fn(Get $get) => ConfigFilamentMapper::typeLabel($get('cast_type'))),
             Group::make()
-                ->schema(fn(Get $get) => ConfigFilamentMapper::valueFormComponents($get('cast_type'), $get('selectable')))
+                ->schema(fn(Get $get) => ConfigFilamentMapper::valueFormComponents($get('cast_type'),
+                    $get('selectable')))
                 ->columnSpanFull(),
         ]);
     }
