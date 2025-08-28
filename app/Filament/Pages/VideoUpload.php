@@ -62,7 +62,11 @@ class VideoUpload extends Page implements HasForms
                                     ->values()
                                     ->all()
                             ),
-                        TextInput::make('role')->label('Rolle'),
+                        TextInput::make('role')->label('Rolle')
+                            ->datalist([
+                                'F' => 'Front',
+                                'R' => 'Rear',
+                            ]),
                         Hidden::make('start_sec')->default(0),
                         Hidden::make('end_sec')->default(0),
                     ])
