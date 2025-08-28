@@ -7,7 +7,7 @@ namespace Tests\Helper;
 /**
  * Helpers to generate disposable fake "ffmpeg" binaries for tests.
  * Each method writes a POSIX shell script to a temp file and returns its path.
- * Point your config('services.ffmpeg.bin') to the returned path.
+ * Point your config via Cfg::set('ffmpeg_bin', <path>, 'ffmpeg') to the returned path.
  */
 class FfmpegBinaryFaker
 {
@@ -29,13 +29,26 @@ class FfmpegBinaryFaker
         $payload = str_replace("'", "'\"'\"'", $payload); // shell-escape single quotes
         $code = <<<'SH'
 #!/usr/bin/env sh
+mode="ffmpeg"
+for arg in "$@"; do
+  if [ "$arg" = "-show_streams" ]; then
+    mode="ffprobe"
+  fi
+done
+
+if [ "$mode" = "ffprobe" ]; then
+  echo '{"streams":[{"codec_type":"video"}],"format":{"duration":"1"}}'
+  exit 0
+fi
+
 # Determine destination path = last argument
 dst=""
 for arg in "$@"; do
   dst="$arg"
 done
+printf '%s' '{$payload}' > "$dst"
+exit 0
 SH;
-        $code .= "\nprintf '%s' '{$payload}' > \"\$dst\"\nexit 0\n";
         return $this->writeScript($code);
     }
 

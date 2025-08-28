@@ -9,6 +9,7 @@ use App\Models\Video;
 use Illuminate\Console\Command;
 use Tests\DatabaseTestCase;
 use Tests\Helper\FfmpegBinaryFaker;
+use App\Facades\Cfg;
 
 /**
  * Feature tests for the "ingest:scan" console command with the real IngestScanner.
@@ -23,9 +24,8 @@ final class IngestScanTest extends DatabaseTestCase
     private function useFakeFfmpegSuccess(): string
     {
         $bin = (new FfmpegBinaryFaker())->success('FAKEMP4');
-        config()->set('services.ffmpeg.bin', $bin);
-        config()->set('services.ffmpeg.timeout', 30);
-        config()->set('services.ffmpeg.video_args', []); // keep args simple
+        Cfg::set('ffmpeg_bin', $bin, 'ffmpeg');
+        Cfg::set('ffmpeg_video_args', [], 'ffmpeg', 'json'); // keep args simple
         return $bin;
     }
 

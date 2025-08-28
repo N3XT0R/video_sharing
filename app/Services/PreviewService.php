@@ -6,16 +6,18 @@ namespace App\Services;
 
 use App\Models\Clip;
 use App\Models\Video;
+use App\Facades\Cfg;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\Format\Video\X264;
 use Illuminate\Console\OutputStyle;
-use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\Process\Process;
+use FFMpeg\Filters\Video\VideoFilters;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use Throwable;
 
 final class PreviewService
 {
-    private const MAX_FFMPEG_TIMEOUT = 3600.0; // seconds
-
     private ?OutputStyle $output = null;
 
     // ───────────────────────── public API ─────────────────────────
@@ -29,7 +31,7 @@ final class PreviewService
     {
         $video = $clip->video;
         if (!$video) {
-            $this->warn('Clip ohne zugehöriges Video.');
+            $this->warn('Clip has no associated video.');
 
             return null;
         }
@@ -38,7 +40,7 @@ final class PreviewService
         $end = $clip->end_sec;
 
         if ($start === null || $end === null) {
-            $this->warn("Clip {$clip->getKey()} hat keinen gültigen Zeitbereich.");
+            $this->warn("Clip {$clip->getKey()} has no valid time range.");
 
             return null;
         }
@@ -49,83 +51,71 @@ final class PreviewService
     public function generate(Video $video, int $start, int $end): ?string
     {
         if (!$this->isValidRange($start, $end)) {
-            $this->warn("Ungültiger Zeitbereich: start={$start}, end={$end}");
+            $this->warn("Invalid time range: start={$start}, end={$end}");
 
             return null;
         }
 
         $duration = $end - $start;
-
-        /** @var FilesystemContract $sourceDisk */
-        $sourceDisk = Storage::disk($video->disk ?? 'local');
+        $sourceDisk = $video->disk ?? 'local';
         $relPath = $this->normalizeRelative($video->path);
 
-        // Ziel (Cache) prüfen
+        // Check target (cache)
         $previewDisk = Storage::disk('public');
         $previewPath = $this->buildPath($video, $start, $end);
 
         if ($previewDisk->exists($previewPath)) {
-            $this->info("Preview vorhanden (Cache): {$previewPath}");
+            $this->info("Preview exists in cache: {$previewPath}");
 
             return $previewDisk->url($previewPath);
         }
 
-        // Quelle → lokaler Pfad (mehrstufige Fallbacks)
-        [$srcPath, $isTempSrc] = $this->resolveLocalSourcePath($sourceDisk, $relPath);
-        if ($srcPath === null) {
-            $this->error("Quelldatei nicht lesbar: disk={$video->disk} path={$relPath}");
+        // Ensure destination directory exists (especially for fake disks)
+        $previewDisk->makeDirectory(dirname($previewPath));
 
-            return null;
+        // Configure FFMpeg binary
+        if ($bin = Cfg::get('ffmpeg_bin', 'ffmpeg', null)) {
+            config(['laravel-ffmpeg.ffmpeg.binaries' => $bin]);
+            config(['laravel-ffmpeg.ffprobe.binaries' => $bin]);
         }
-
-        // ffmpeg vorbereiten
-        $tmpOut = $this->makeTempFile('.mp4');
-        if ($tmpOut === null) {
-            $this->error('Konnte temporäre Datei nicht anlegen.');
-            if ($isTempSrc) {
-                @unlink($srcPath);
-            }
-
-            return null;
-        }
-
-        $args = $this->makeFfmpegArgs(
-            srcPath: $srcPath,
-            dstPath: $tmpOut,
-            start: $start,
-            duration: $duration
-        );
-
-        $this->info("Erzeuge Preview: start={$start}s, end={$end}s, duration={$duration}s");
-        $this->debug('ffmpeg args: '.json_encode($args, JSON_UNESCAPED_SLASHES));
 
         try {
-            $ok = $this->runFfmpeg($args, $elapsedSec);
-            if (!$ok || !is_file($tmpOut)) {
-                $this->error('ffmpeg fehlgeschlagen'.($elapsedSec !== null ? ' (t='.number_format($elapsedSec,
-                            2).'s)' : ''));
+            $audioCodec = (string)Cfg::get('ffmpeg_audio_codec', 'ffmpeg', 'aac');
+            $videoCodec = (string)Cfg::get('ffmpeg_video_codec', 'ffmpeg', 'libx264');
+            $format = new X264($audioCodec, $videoCodec);
+            $params = $this->ffmpegParams();
+            if ($params !== []) {
+                $format->setAdditionalParameters($params);
+            }
+
+            FFMpeg::fromDisk($sourceDisk)
+                ->open($relPath)
+                ->addFilter(function (VideoFilters $filters) use ($start, $duration): void {
+                    $filters->clip(TimeCode::fromSeconds($start), TimeCode::fromSeconds($duration));
+                })
+                ->export()
+                ->toDisk('public')
+                ->inFormat($format)
+                ->save($previewPath);
+
+            if (!$previewDisk->exists($previewPath)) {
+                $this->error('ffmpeg failed: output missing');
 
                 return null;
             }
 
-            // Ergebnis speichern
-            $size = @filesize($tmpOut) ?: 0;
-            $put = $this->putFileToDisk($previewDisk, $previewPath, $tmpOut);
-            if (!$put) {
-                $this->error("Konnte Preview nicht in public speichern: {$previewPath}");
-
-                return null;
+            try {
+                $size = $previewDisk->size($previewPath);
+            } catch (Throwable $e) {
+                $size = 0;
             }
-
-            $this->info("Preview erstellt: {$previewPath} (".$this->humanBytes($size).($elapsedSec !== null ? ', t='.number_format($elapsedSec,
-                        2).'s' : '').')');
+            $this->info("Preview created: {$previewPath} (".$this->humanBytes($size).')');
 
             return $previewDisk->url($previewPath);
-        } finally {
-            @unlink($tmpOut);
-            if ($isTempSrc) {
-                @unlink($srcPath);
-            }
+        } catch (Throwable $e) {
+            $this->error('ffmpeg failed: '.$e->getMessage());
+
+            return null;
         }
     }
 
@@ -141,7 +131,16 @@ final class PreviewService
         return $previewDisk->exists($previewPath) ? $previewDisk->url($previewPath) : null;
     }
 
-    // ───────────────────────── intern / helpers ─────────────────────────
+    // ───────────────────────── internal / helpers ─────────────────────────
+
+    private function ffmpegParams(): array
+    {
+        $crf = (int)Cfg::get('ffmpeg_crf', 'ffmpeg', 28);
+        $preset = (string)Cfg::get('ffmpeg_preset', 'ffmpeg', 'veryfast');
+        $extra = (array)Cfg::get('ffmpeg_video_args', 'ffmpeg', []);
+
+        return array_merge(['-preset', $preset, '-crf', (string)$crf], $extra);
+    }
 
     private function isValidRange(int $start, int $end): bool
     {
@@ -161,212 +160,7 @@ final class PreviewService
         return "previews/{$hash}.mp4";
     }
 
-    /**
-     * Disk → lokaler Pfad:
-     *  1) lokale Disks: path()
-     *  2) remote: readStream() → Tempdatei
-     *  3) Fallback: get() → Tempdatei
-     *
-     * @return array{0:?string,1:bool} [localPath|null, isTemp]
-     */
-    private function resolveLocalSourcePath(FilesystemContract $disk, string $relativePath): array
-    {
-        // 1) Lokale Disks: path()
-        if (method_exists($disk, 'path')) {
-            try {
-                /** @var string $path */
-                $path = $disk->path($relativePath);
-                if (is_string($path) && $path !== '' && is_file($path) && is_readable($path)) {
-                    return [$path, false];
-                }
-            } catch (\Throwable $e) {
-                $this->debug('Disk path() nicht verfügbar/nutzbar: '.$e->getMessage());
-            }
-        }
-
-        // 2) Remote: readStream()
-        try {
-            $stream = $disk->readStream($relativePath);
-        } catch (\Throwable $e) {
-            $this->error("readStream Exception: {$relativePath} :: {$e->getMessage()}");
-            $stream = null;
-        }
-
-        if (is_resource($stream)) {
-            $tmp = $this->makeTempFile('.src');
-            if ($tmp === null) {
-                @fclose($stream);
-                $this->error('Konnte Tempdatei für Source nicht anlegen.');
-
-                return [null, false];
-            }
-
-            $out = @fopen($tmp, 'wb');
-            if ($out === false) {
-                @fclose($stream);
-                @unlink($tmp);
-                $this->error('Konnte Tempdatei nicht öffnen (write).');
-
-                return [null, false];
-            }
-
-            try {
-                stream_copy_to_stream($stream, $out);
-            } finally {
-                @fclose($stream);
-                @fclose($out);
-            }
-
-            return [$tmp, true];
-        }
-
-        // 3) Fallback: get()
-        try {
-            $contents = $disk->get($relativePath);
-        } catch (\Throwable $e) {
-            $this->error("get() Exception: {$relativePath} :: {$e->getMessage()}");
-            $contents = null;
-        }
-
-        if (is_string($contents) && $contents !== '') {
-            $tmp = $this->makeTempFile('.src');
-            if ($tmp === null) {
-                $this->error('Konnte Tempdatei für Source (get) nicht anlegen.');
-
-                return [null, false];
-            }
-            $bytes = @file_put_contents($tmp, $contents);
-            if ($bytes === false) {
-                @unlink($tmp);
-                $this->error('Konnte Tempdatei (get) nicht schreiben.');
-
-                return [null, false];
-            }
-            $this->info("Quelle über get() geladen: {$relativePath} (".$this->humanBytes($bytes).')');
-
-            return [$tmp, true];
-        }
-
-        return [null, false];
-    }
-
-    /**
-     * Erstellt sichere ffmpeg-Argumente basierend auf Konfiguration.
-     */
-    private function makeFfmpegArgs(string $srcPath, string $dstPath, int $start, int $duration): array
-    {
-        $ffmpeg = (string)config('services.ffmpeg.bin', 'ffmpeg');
-        $crf = (int)config('services.ffmpeg.crf', 28);
-        $preset = (string)config('services.ffmpeg.preset', 'veryfast');
-        $extra = (array)config('services.ffmpeg.video_args', []); // z. B. ['-vf','scale=-2:720']
-
-        $args = [
-            $ffmpeg,
-            '-y',
-            '-ss',
-            (string)$start,
-            '-i',
-            $srcPath,
-            '-t',
-            (string)$duration,
-            '-an',
-            '-vcodec',
-            'libx264',
-            '-preset',
-            $preset,
-            '-crf',
-            (string)$crf,
-        ];
-
-        if ($extra) {
-            $args = array_merge($args, $extra);
-        }
-        $args[] = $dstPath;
-
-        return $args;
-    }
-
-    /**
-     * Führt ffmpeg via Symfony Process aus, loggt live stdout/stderr und liefert Erfolg + Zeit zurück.
-     *
-     * @param  array<int,string>  $args
-     * @param  float|null  $elapsedSec  (out)
-     */
-    private function runFfmpeg(array $args, ?float &$elapsedSec = null): bool
-    {
-        $timeout = (float)config('services.ffmpeg.timeout', self::MAX_FFMPEG_TIMEOUT);
-        $timeout = min($timeout, self::MAX_FFMPEG_TIMEOUT);
-        $idle = config('services.ffmpeg.idle_timeout');
-
-        $t0 = microtime(true);
-
-        $process = new Process($args);
-        $process->setTimeout($timeout);
-        if ($idle !== null && method_exists($process, 'setIdleTimeout')) {
-            $process->setIdleTimeout((float)$idle);
-        }
-
-        $process->run(function (string $type, string $buffer): void {
-            $line = trim($buffer);
-            if ($line === '') {
-                return;
-            }
-            Log::debug('[ffmpeg]['.($type === Process::ERR ? 'stderr' : 'stdout').'] '.$line,
-                ['service' => 'PreviewService']);
-        });
-
-        $elapsedSec = microtime(true) - $t0;
-
-        if ($process->isSuccessful()) {
-            return true;
-        }
-
-        $this->error(sprintf(
-            'ffmpeg exit=%s (%s)',
-            (string)$process->getExitCode(),
-            $process->getExitCodeText() ?: 'unknown'
-        ));
-        $this->debug("stdout tail:\n".$this->tailLines($process->getOutput(), 10));
-        $this->debug("stderr tail:\n".$this->tailLines($process->getErrorOutput(), 10));
-
-        return false;
-    }
-
-    private function putFileToDisk(FilesystemContract $disk, string $dstPath, string $localFile): bool
-    {
-        $stream = @fopen($localFile, 'rb');
-        if (!is_resource($stream)) {
-            $this->error("Konnte lokale Datei nicht öffnen: {$localFile}");
-
-            return false;
-        }
-
-        try {
-            return (bool)$disk->put($dstPath, $stream);
-        } finally {
-            if (is_resource($stream)) {
-                @fclose($stream);
-            }
-        }
-    }
-
-    private function makeTempFile(string $suffix = ''): ?string
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'preview_');
-        if ($tmp === false) {
-            return null;
-        }
-        if ($suffix !== '') {
-            $renamed = $tmp.$suffix;
-            @rename($tmp, $renamed);
-
-            return $renamed;
-        }
-
-        return $tmp;
-    }
-
-    // ───────────────────────── Logging-Helpers ─────────────────────────
+    // ───────────────────────── logging helpers ─────────────────────────
 
     private function info(string $message): void
     {
@@ -391,18 +185,11 @@ final class PreviewService
         Log::debug($message, ['service' => 'PreviewService']);
     }
 
-    private function tailLines(string $text, int $n): string
-    {
-        $lines = preg_split('/\R/', $text) ?: [];
-
-        return implode(PHP_EOL, array_slice($lines, -$n));
-    }
-
     private function humanBytes(int $bytes): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
         $i = 0;
-        while ($bytes >= 1024 && $i < \count($units) - 1) {
+        while ($bytes >= 1024 && $i < count($units) - 1) {
             $bytes /= 1024;
             $i++;
         }
@@ -410,3 +197,4 @@ final class PreviewService
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 }
+
