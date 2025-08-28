@@ -7,6 +7,7 @@ use App\Models\Clip;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -50,7 +51,10 @@ class VideoUpload extends Page implements HasForms
                             ->storeFiles(false),
                         View::make('filament.forms.components.clip-selector')
                             ->dehydrated(false),
-                        TextInput::make('note')->label('Notiz'),
+                        Textarea::make('note')->label('Notiz')
+                            ->rows(5)
+                            ->autosize()
+                            ->trim(),
                         TextInput::make('bundle_key')
                             ->label('Bundle ID')
                             ->datalist(
@@ -61,12 +65,14 @@ class VideoUpload extends Page implements HasForms
                                     ->unique()
                                     ->values()
                                     ->all()
-                            ),
+                            )
+                            ->trim(),
                         TextInput::make('role')->label('Rolle')
                             ->datalist([
                                 'F' => 'Front',
                                 'R' => 'Rear',
-                            ]),
+                            ])
+                            ->trim(),
                         Hidden::make('start_sec')->default(0),
                         Hidden::make('end_sec')->default(0),
                     ])
