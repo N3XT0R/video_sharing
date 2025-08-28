@@ -13,7 +13,7 @@ use Tests\DatabaseTestCase;
 
 final class AssignmentStatusChartTest extends DatabaseTestCase
 {
-    public function testComputesPercentagesPerChannel(): void
+    public function testComputesCountsPerChannel(): void
     {
         $channelA = Channel::factory()->create(['name' => 'A']);
         $channelB = Channel::factory()->create(['name' => 'B']);
@@ -47,19 +47,19 @@ final class AssignmentStatusChartTest extends DatabaseTestCase
         $this->assertEquals([
             [
                 'label' => 'Picked up',
-                'data' => [50.0, 50.0],
+                'data' => [2, 1],
                 'backgroundColor' => '#10b981',
                 'borderColor' => '#10b981',
             ],
             [
                 'label' => 'Notified',
-                'data' => [25.0, 50.0],
+                'data' => [1, 1],
                 'backgroundColor' => '#3b82f6',
                 'borderColor' => '#3b82f6',
             ],
             [
                 'label' => 'Rejected',
-                'data' => [25.0, 0.0],
+                'data' => [1, 0],
                 'backgroundColor' => '#ef4444',
                 'borderColor' => '#ef4444',
             ],
