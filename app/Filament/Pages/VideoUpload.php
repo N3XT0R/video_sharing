@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Jobs\ProcessUploadedVideo;
+use App\Models\Clip;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -15,7 +16,6 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Clip;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class VideoUpload extends Page implements HasForms
@@ -46,7 +46,7 @@ class VideoUpload extends Page implements HasForms
                         FileUpload::make('file')
                             ->label('Video')
                             ->required()
-                            ->acceptedFileTypes(['video/*'])
+                            ->acceptedFileTypes(['video/mp4'])
                             ->storeFiles(false),
                         View::make('filament.forms.components.clip-selector')
                             ->dehydrated(false),
@@ -56,7 +56,7 @@ class VideoUpload extends Page implements HasForms
                             ->datalist(
                                 Clip::query()
                                     ->whereNotNull('bundle_key')
-                                    ->whereHas('video', fn ($q) => $q->doesntHave('assignments'))
+                                    ->whereHas('video', fn($q) => $q->doesntHave('assignments'))
                                     ->pluck('bundle_key')
                                     ->unique()
                                     ->values()
